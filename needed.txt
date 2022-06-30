@@ -1,0 +1,2 @@
+1. HDMI_mini - do połączenia monitora z raspberry pi zero
+2. USB
