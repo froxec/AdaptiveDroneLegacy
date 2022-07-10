@@ -1,13 +1,13 @@
 #X-configuration
 #ccw is positive
-#       4  🢁🢁🢁  2
+#   cw  4  🢁🢁🢁  2 ccw
 #         \    /  
 #          \  /
 #           \/
 #           /\
 #          /  \
 #         /    \
-#       3        1
+#   ccw 3        1 cw
 
 
 motor1 = thrust + roll - pitch - yaw
