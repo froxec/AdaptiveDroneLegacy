@@ -1,2 +1,3 @@
 1. HDMI_mini - do połączenia monitora z raspberry pi zero
 2. USB
+3. rama jest trochę za mała, żeby zmieścić CM4 wewnątrz - można umieścić u góry lub kupić większą ramę. 
