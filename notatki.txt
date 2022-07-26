@@ -1,0 +1,1 @@
+Najlepiej wykorzystywać rpi w nadrzędnej pętli sterowania i FC w podrzędnej - wymóg real time.
