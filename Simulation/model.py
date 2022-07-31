@@ -42,7 +42,7 @@ def inputToForces(omega):
 def inputToMomentum(omega):
     return np.multiply(Kd, omega)
 
-def model(x, t):
+def model(x):
     dstate = np.zeros(12)
     omega = np.array([2000, 2000, 2000, 2000])
     F = inputToForces(omega)
@@ -53,3 +53,15 @@ def model(x, t):
     dstate[6:9] = x[9:12]
     dstate[9:12] = angularMotion(F, M, x[9:12])
     return dstate 
+
+def modelRT(x, deltaT, u):
+    state = np.zeros(12)
+    omega = np.array([u])
+    F = inputToForces(omega)
+    M = inputToMomentum(omega)
+    R = transfomationMatrix(x[3], x[4], x[5])
+    state[0:3] = x[3:6] * deltaT + x[0:3]
+    state[3:6] = translationalMotion(R, F) * deltaT + x[3:6]
+    state[6:9] = x[9:12] * deltaT + x[6:9]
+    state[9:12] = angularMotion(F, M, x[9:12]) * deltaT + x[9:12]
+    return state 
