@@ -11,18 +11,18 @@ def transfomationMatrix(roll, pitch, yaw):
     sY = sin(yaw)
     R = np.array([[cP*cY, sR*sP*cY - cR*sY, cR*sP*cY + sR*sY],
                   [cP*sY, sR*sP*sY - cR*cY, cR*sP*sY - sR*cY],
-                  [-sP, sR*cP, cR*cP]], dtype=float)
+                  [-sP, sR*cP, cR*cP]], dtype=np.float32)
     return R
 
 def translationalMotion(R, F):
     f = F[0] + F[1]  + F[2] + F[3]
-    accelerations = np.zeros((3, 1), dtype=float)
+    accelerations = np.zeros((3, 1), dtype=np.float32)
     bodyFrameThrust = np.array([[0], 
                                [0],
-                               [f]], dtype=float)
+                               [f]], dtype=np.float32)
     referenceFrame = np.matmul(R, bodyFrameThrust) + np.array([[0],
                                                                [0],
-                                                               [-m*g]], dtype=float)
+                                                               [-m*g]], dtype=np.float32)
     accelerations = referenceFrame/m
     accelerations = np.reshape(accelerations, 3)
     return accelerations
@@ -54,7 +54,7 @@ def model(x):
     dstate[9:12] = angularMotion(F, M, x[9:12])
     return dstate 
 
-def modelRT(x, deltaT, u):
+def modelRT(x, u, deltaT):
     state = np.zeros(12)
     omega = np.array([u])
     F = inputToForces(omega)
