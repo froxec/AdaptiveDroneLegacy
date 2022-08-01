@@ -56,7 +56,7 @@ def model(x):
 
 def modelRT(x, u, deltaT):
     state = np.zeros(12)
-    omega = np.array([u])
+    omega = np.array(u)
     F = inputToForces(omega)
     M = inputToMomentum(omega)
     R = transfomationMatrix(x[3], x[4], x[5])
@@ -64,4 +64,6 @@ def modelRT(x, u, deltaT):
     state[3:6] = translationalMotion(R, F) * deltaT + x[3:6]
     state[6:9] = x[9:12] * deltaT + x[6:9]
     state[9:12] = angularMotion(F, M, x[9:12]) * deltaT + x[9:12]
+    if (state[2] < 0):
+        state[2] = 0
     return state 
