@@ -16,7 +16,7 @@ from model_parameters import pendulum_parameters
 
 
 class quadcopterModel():
-    def __init__(self, state0, quad_parameters, load):
+    def __init__(self, state0, quad_parameters):
         self.mass = quad_parameters['m']
         self.g = quad_parameters['g'] ## move to Environment class
         self.inertia = quad_parameters['I']
@@ -84,7 +84,7 @@ class quadcopterModel():
     def model_ode(self, x, t):
         self.state = x if isinstance(x, np.ndarray) else np.array(x)
         self.updateStateDict()
-        dstate = np.zeros(12)
+        dstate = np.zeros(14)
         omega = np.array([2000, 898, 2000, 898])
         self.inputToForces(omega)
         self.inputToMomentum(omega)
@@ -93,6 +93,7 @@ class quadcopterModel():
         dstate[3:6] = self.translationalMotion()
         dstate[6:9] = self.state[9:12]
         dstate[9:12] = self.angularMotion()
+        dstate[12:14] = loadPendulum.updateState()
         return dstate 
 
     def modelRT(self, u, deltaT):
