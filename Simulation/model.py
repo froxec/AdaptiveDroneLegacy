@@ -19,10 +19,19 @@ def exchangeData(quadcopter_object, load_pendulum_object):
     return True
 
 def odeSystem(x, t, quadcopter_object, load_pendulum_object):
+    #doesnt work ATM
     exchangeData(quadcopter_object, load_pendulum_object)
     quad_dstate = quadcopter_object.model_ode(x[0:12], t)
     load_dstate = load_pendulum_object.updateStateOde(x[12:16], t)
-    return np.concatenate([quad_dstate, load_dstate])
+    dstate = np.concatenate([quad_dstate, load_dstate])
+    return dstate
+
+def system(u, deltaT, quadcopter_object, load_pendulum_object):
+    exchangeData(quadcopter_object, load_pendulum_object)
+    quadcopter_object.modelRT(u, deltaT)
+    load_pendulum_object.updateState(deltaT)
+    return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
+
 class quadcopterModel():
     def __init__(self, state0, quad_parameters):
         self.mass = quad_parameters['m']
@@ -43,6 +52,7 @@ class quadcopterModel():
         self.M = np.zeros((3))
         self.translational_accelerations = np.zeros((3))
     def updateStateDict(self):
+        #change - use existing structre
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, self.state)}
 
     def transfomationMatrix(self):
@@ -97,7 +107,7 @@ class quadcopterModel():
         self.state = x if isinstance(x, np.ndarray) else np.array(x)
         self.updateStateDict()
         dstate = np.zeros(12)
-        omega = np.array([898, 898, 898, 898])
+        omega = np.array([2000, 2000, 2000, 2000])
         self.inputToForces(omega)
         self.inputToMomentum(omega)
         self.transfomationMatrix()
@@ -113,10 +123,11 @@ class quadcopterModel():
         self.inputToForces(omega)
         self.inputToMomentum(omega)
         self.transfomationMatrix()
-        self.state[0:3] = self.state[3:6] * deltaT + self.state[0:3]
+        state[0:3] = self.state[3:6] * deltaT + self.state[0:3]
         state[3:6] = self.translationalMotion() * deltaT + self.state[3:6]
-        state[6:9] = self.state[self.state_names[9:12]] * deltaT + self.state[6:9]
+        state[6:9] = self.state[9:12] * deltaT + self.state[6:9]
         state[9:12] = self.angularMotion() * deltaT + self.state[9:12]
+        self.state = state
         self.updateStateDict()
         if (self.state[2] < 0):
             self.state[2] = 0
@@ -197,8 +208,8 @@ class loadPendulum():
     def updateState(self, deltaT):
         forces = self.calculateForces()
         net_force = self.netForce(forces)
-        self.tension_force = self.tensionForce(self.DirectionVector()[2], net_force)
-        self.state[0:2] = self.state[2:4]
-        self.state[2:4] = self.angularMotion(net_force)*deltaT + self.state
+        self.tension_force = self.tensionForce(self.directionVectors()[2], net_force)
+        self.state[0:2] = self.state[2:4] * deltaT + self.state[0:2]
+        self.state[2:4] = self.angularMotion(net_force)*deltaT + self.state[2:4]
         self.updateStateDict()
         return self.state
