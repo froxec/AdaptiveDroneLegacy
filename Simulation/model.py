@@ -31,6 +31,7 @@ def system(u, deltaT, quadcopter_object, load_pendulum_object):
     quadcopter_object.modelRT(u, deltaT)
     load_pendulum_object.updateState(deltaT)
     return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
+    #return quadcopter_object.modelRT(u, deltaT)
 
 class quadcopterModel():
     def __init__(self, state0, quad_parameters):
@@ -51,6 +52,7 @@ class quadcopterModel():
         self.F = np.zeros((3))
         self.M = np.zeros((3))
         self.translational_accelerations = np.zeros((3))
+        self.angular_accelerations = np.zeros((3))
     def updateStateDict(self):
         #change - use existing structre
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, self.state)}
@@ -89,6 +91,7 @@ class quadcopterModel():
         T[2] = self.M[1] + self.M[2] - self.M[0] - self.M[3]
         accelerations =  T - np.cross(self.state[9:12], np.multiply(self.inertia, self.state[9:12]))
         accelerations = np.divide(accelerations, self.inertia)
+        self.angular_accelerations = accelerations
         return accelerations
 
     def updateTensionForce(self, load_pendulum_object):
@@ -153,7 +156,7 @@ class loadPendulum():
         pass
     def vectorProjection(self, vector, direction):
         #projects vector a on vector b
-        return (np.dot(vector, direction)/np.dot(direction, direction))*direction
+        return (np.dot(vector, direction)/(np.dot(direction, direction)**2))*direction
     def inertialForce(self, quad_acceleration):
         return -self.mass*quad_acceleration
     def angularMotion(self, net_force):
@@ -165,8 +168,8 @@ class loadPendulum():
         y_magnitude = np.sqrt(np.dot(force_y, force_y))
         torque_x = self.length*x_magnitude
         torque_y = self.length*y_magnitude
-        acceleration_alpha = torque_y/self.I
-        acceleration_beta = torque_x/self.I
+        acceleration_alpha = torque_x/self.I
+        acceleration_beta = torque_y/self.I
         return np.array([acceleration_alpha, acceleration_beta])
     def tensionForce(self, load_direction, netForce):
         ## tension force acting at cog of quadcopter
