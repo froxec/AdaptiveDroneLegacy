@@ -17,7 +17,7 @@ class PID():
         self.Kp = pid_settings['Kp']
         self.Ki = pid_settings['Ki']
         self.Kd = pid_settings['Kd']
-        self.signals = np.zeros(3)
+        self.signals = np.zeros((3), dtype=np.float32)
         self.signal_names = {'P', 'I', 'D'}
         self.signal_dict = {key: signal_value for key, signal_value in zip(self.signal_names, self.signals)}
         self.deltaT = dT

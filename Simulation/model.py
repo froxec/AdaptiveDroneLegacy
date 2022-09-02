@@ -4,14 +4,15 @@ from numpy import deg2rad
 
 #X-configuration
 #ccw is positive
-#   cw  4  🢁🢁🢁  2 ccw
+#   cw  4        2 ccw
 #         \    /  
 #          \  /
-#           \/->y
+#           \/->y forward
 #           /\
 #          /  \
 #         /    \
-#   ccw 3        1 cw
+#   ccw 3  ⬇⬇  1 cw
+# right-hand, ccw is positive, z: up, y: forward, x: right
 
 def exchangeData(quadcopter_object, load_pendulum_object):
     load_pendulum_object.updateAcceleration(quadcopter_object)
@@ -33,6 +34,8 @@ def system(u, deltaT, quadcopter_object, load_pendulum_object):
     return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
     #return quadcopter_object.modelRT(u, deltaT)
 
+def RungeKutta4(dxdt, deltaT):
+    pass
 class quadcopterModel():
     def __init__(self, state0, quad_parameters):
         self.mass = quad_parameters['m']
@@ -48,11 +51,12 @@ class quadcopterModel():
                             'droll', 'dpitch', 'dyaw')
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, state0)}
         self.state = state0 if isinstance(state0, np.ndarray) else np.array(state0)
-        self.tension_force = np.zeros((3))
-        self.F = np.zeros((3))
-        self.M = np.zeros((3))
-        self.translational_accelerations = np.zeros((3))
-        self.angular_accelerations = np.zeros((3))
+        self.tension_force = np.zeros((3), dtype=np.float32)
+        self.F = np.zeros((3), dtype=np.float32)
+        self.M = np.zeros((3), dtype=np.float32)
+        self.translational_accelerations = np.zeros((3), dtype=np.float32)
+        self.angular_accelerations = np.zeros((3), dtype=np.float32)
+
     def updateStateDict(self):
         #change - use existing structre
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, self.state)}
@@ -85,7 +89,7 @@ class quadcopterModel():
         return accelerations
 
     def angularMotion(self):
-        T = np.zeros(3)
+        T = np.zeros((3), dtype=np.float32)
         T[0] = (self.F[0] + self.F[1] - self.F[2] - self.F[3])*self.arm_length*cos(self.arm_angle)
         T[1] = (self.F[1] + self.F[3] - self.F[0] - self.F[2])*self.arm_length*sin(self.arm_angle)
         T[2] = self.M[1] + self.M[2] - self.M[0] - self.M[3]
@@ -152,6 +156,7 @@ class loadPendulum():
         self.state = state0 if isinstance(state0, np.ndarray) else np.array(state0)
         self.quad_acceleration = quad_acceleration
         self.tension_force = np.zeros((3)) 
+        self.direction_vectors = ()
     def __call__():
         pass
     def vectorProjection(self, vector, direction):
@@ -160,17 +165,21 @@ class loadPendulum():
     def inertialForce(self, quad_acceleration):
         return -self.mass*quad_acceleration
     def angularMotion(self, net_force):
-        direction_x = self.directionVectors()[0]
-        direction_y = self.directionVectors()[1]
-        force_x = self.vectorProjection(net_force, direction_x)
-        force_y = self.vectorProjection(net_force, direction_y)
-        x_magnitude = np.sqrt(np.dot(force_x, force_x))
-        y_magnitude = np.sqrt(np.dot(force_y, force_y))
-        torque_x = self.length*x_magnitude
-        torque_y = self.length*y_magnitude
-        acceleration_alpha = torque_x/self.I
-        acceleration_beta = torque_y/self.I
-        return np.array([acceleration_alpha, acceleration_beta])
+        # direction_x = self.direction_vectors[0]
+        # direction_y = self.direction_vectors[1]
+        direction_z = self.direction_vectors[2]
+        r = direction_z*self.length
+        # force_x = self.vectorProjection(net_force, direction_x)
+        # force_y = self.vectorProjection(net_force, direction_y)
+        #x_magnitude = np.sqrt(np.dot(force_x, force_x))
+        #y_magnitude = np.sqrt(np.dot(force_y, force_y))
+        torque = np.cross(net_force, r)
+        # torque_x = self.length*x_magnitude
+        # torque_y = self.length*y_magnitude
+        # acceleration_alpha = torque_x/self.I
+        # acceleration_beta = torque_y/self.I
+        angular_acceleration = torque/self.I
+        return np.array([angular_acceleration[1], angular_acceleration[0]])
     def tensionForce(self, load_direction, netForce):
         ## tension force acting at cog of quadcopter
         return self.vectorProjection(netForce, load_direction)
@@ -186,9 +195,10 @@ class loadPendulum():
         ## unit vector in direction from quadcopter COG to load COG
         alpha = self.state[0] ## alpha is rotation in y axis
         beta = self.state[1] ## beta is rotation in x axis
-        r_x = np.array([cos(alpha), 0, -sin(alpha)])
-        r_y = np.array([0, cos(beta), -sin(beta)])
-        r_z = np.array([-sin(alpha)*cos(beta), cos(alpha)*sin(beta), -cos(alpha)*cos(beta)])
+        r_x = np.array([cos(alpha), 0, sin(alpha)])
+        r_y = np.array([0, cos(beta), sin(beta)])
+        r_z = np.array([sin(alpha)*cos(beta), cos(alpha)*sin(beta), -cos(alpha)*cos(beta)])
+        self.direction_vectors = (r_x, r_y, r_z)
         return (r_x, r_y, r_z)
     def calculateForces(self):
         gravityForce = np.array([0, 0, -self.mass*self.g])
@@ -204,15 +214,16 @@ class loadPendulum():
         dstate = np.zeros(4)
         forces = self.calculateForces()
         net_force = self.netForce(forces)
-        self.tension_force = self.tensionForce(self.directionVectors()[2], net_force)
-        dstate[0:2] = self.state[2:4]
+        self.tension_force = self.tensionForce(self.direction_vectors[2], net_force)
         dstate[2:4] = self.angularMotion(net_force)
+        dstate[0:2] = self.state[2:4]
         return dstate
     def updateState(self, deltaT):
         forces = self.calculateForces()
         net_force = self.netForce(forces)
-        self.tension_force = self.tensionForce(self.directionVectors()[2], net_force)
-        self.state[0:2] = self.state[2:4] * deltaT + self.state[0:2]
+        self.directionVectors()
+        self.tension_force = self.tensionForce(self.direction_vectors[2], net_force)
         self.state[2:4] = self.angularMotion(net_force)*deltaT + self.state[2:4]
+        self.state[0:2] = self.state[2:4] * deltaT + self.state[0:2] ## calculation order seems to have impact on increasing energy in oscilatory system
         self.updateStateDict()
         return self.state

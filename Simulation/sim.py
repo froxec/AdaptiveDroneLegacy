@@ -11,15 +11,15 @@ if __name__ == '__main__':
     load0 = np.zeros(4)
     quad = quadcopterModel(quad0, quad_parameters)
     load = loadPendulum(load0, pendulum_parameters, quad.translational_accelerations)
-    deltaT = 0.01
+    deltaT = 0.0001
     controler = control.quadControler(deltaT)
     state0 = np.concatenate([quad0, load0])
     #t = linspace(0, 25, 100)
     #x = odeint(odeSystem, state0, t, args=(quad, load))
-    t = linspace(0, 10, 1000)
-    x = np.zeros((1000, 16))
+    t = linspace(0, 10, 100000)
+    x = np.zeros((100000, 16))
     thrust_setpoint = 1200
-    attitude_setpoint = np.array([-deg2rad(5), deg2rad(0), deg2rad(0)])
+    attitude_setpoint = np.array([deg2rad(5), deg2rad(0), deg2rad(0)])
     for i, time in enumerate(t):
         motors = controler(attitude_setpoint, quad.state[6:9], quad.state[9:12], quad.angular_accelerations, thrust_setpoint)
         x[i] = system(np.array(motors), deltaT, quad, load)

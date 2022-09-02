@@ -10,7 +10,7 @@ quad_parameters = {
     'arm_angle': deg2rad(45) # X-configuration, angle between arm 2 or 4 and x axis
 }
 pendulum_parameters = {
-    'm': 0.05,
+    'm': 1,
     'l': 0.2,
     'g': 9.81
 }
