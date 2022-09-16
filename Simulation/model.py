@@ -1,6 +1,7 @@
 from math import sin, cos
 import numpy as np
 from numpy import deg2rad
+import copy
 
 #X-configuration
 #ccw is positive
@@ -15,7 +16,7 @@ from numpy import deg2rad
 # right-hand, ccw is positive, z: up, y: forward, x: right
 
 def exchangeData(quadcopter_object, load_pendulum_object):
-    load_pendulum_object.updateAcceleration(quadcopter_object)
+    load_pendulum_object.updateQuadStateRepresentation(quadcopter_object)
     quadcopter_object.updateTensionForce(load_pendulum_object)
     return True
 
@@ -30,12 +31,21 @@ def odeSystem(x, t, quadcopter_object, load_pendulum_object):
 def system(u, deltaT, quadcopter_object, load_pendulum_object):
     exchangeData(quadcopter_object, load_pendulum_object)
     quadcopter_object.modelRT(u, deltaT)
-    load_pendulum_object.updateState(deltaT)
+    #load_pendulum_object.updateState(deltaT)
+    RungeKutta4(deltaT, load_pendulum_object)
     return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
     #return quadcopter_object.modelRT(u, deltaT)
 
-def RungeKutta4(dxdt, deltaT):
-    pass
+def RungeKutta4(deltaT, load_object):
+    model = copy.deepcopy(load_object) #might be bottleneck/make class
+    state0 = model.state
+    k1 = deltaT*model.updateStateOde(state0)
+    k2 = deltaT*model.updateStateOde(state0 + 0.5*k1)
+    k3 = deltaT*model.updateStateOde(state0 + 0.5*k2)
+    k4 = deltaT*model.updateStateOde(state0 + k3)
+    load_object.state = load_object.state + (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4) 
+    return load_object.state
+
 class quadcopterModel():
     def __init__(self, state0, quad_parameters):
         self.mass = quad_parameters['m']
@@ -145,16 +155,21 @@ class quadcopterModel():
 
 class loadPendulum():
     ##  assumption -> force vector at quad CoG
-    def __init__(self, state0, pendulum_parameters, quad_acceleration):
+    def __init__(self, state0, pendulum_parameters, quad_acceleration, quad_speed):
         self.mass = pendulum_parameters['m']
         self.length = pendulum_parameters['l']
         self.I = self.mass*(self.length**2)
         self.g = pendulum_parameters['g']
+        self.r = pendulum_parameters['r']
+        self.Cd = pendulum_parameters['Cd']
+        self.ro = pendulum_parameters['ro'] #move to environment class/parameters
+        self.A = np.pi*(self.r**2)
         self.state_names = ('alpha', 'beta',
                             'dalpha', 'dbeta')
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, state0)}
         self.state = state0 if isinstance(state0, np.ndarray) else np.array(state0)
         self.quad_acceleration = quad_acceleration
+        self.quad_speed = quad_speed
         self.tension_force = np.zeros((3)) 
         self.direction_vectors = ()
     def __call__():
@@ -173,13 +188,13 @@ class loadPendulum():
         # force_y = self.vectorProjection(net_force, direction_y)
         #x_magnitude = np.sqrt(np.dot(force_x, force_x))
         #y_magnitude = np.sqrt(np.dot(force_y, force_y))
-        torque = np.cross(net_force, r)
+        torque = np.cross(r, net_force) #right-hand rule
         # torque_x = self.length*x_magnitude
         # torque_y = self.length*y_magnitude
         # acceleration_alpha = torque_x/self.I
         # acceleration_beta = torque_y/self.I
         angular_acceleration = torque/self.I
-        return np.array([angular_acceleration[1], angular_acceleration[0]])
+        return np.array([-angular_acceleration[1], angular_acceleration[0]])
     def tensionForce(self, load_direction, netForce):
         ## tension force acting at cog of quadcopter
         return self.vectorProjection(netForce, load_direction)
@@ -200,20 +215,32 @@ class loadPendulum():
         r_z = np.array([sin(alpha)*cos(beta), cos(alpha)*sin(beta), -cos(alpha)*cos(beta)])
         self.direction_vectors = (r_x, r_y, r_z)
         return (r_x, r_y, r_z)
+    def calculateLoadSpeed(self):
+        alpha = self.state[0] ## alpha is rotation in y axis
+        beta = self.state[1] ## beta is rotation in x axis
+        Vx = self.state[2]*self.length*np.array([cos(alpha), 0, sin(alpha)])
+        Vy = self.state[3]*self.length*np.array([0, cos(beta), sin(beta)])
+        V = Vx + Vy + self.quad_speed
+        return V
+    def calculateDragForce(self, V):
+        return -self.Cd*self.A*self.ro*(V**2)
     def calculateForces(self):
         gravityForce = np.array([0, 0, -self.mass*self.g])
         inertialForce = self.inertialForce(self.quad_acceleration)
+        dragForce = self.calculateDragForce(self.calculateLoadSpeed())
         return [gravityForce, inertialForce]
     def updateStateDict(self):
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, self.state)}
-    def updateAcceleration(self, quadcopter_object):
+    def updateQuadStateRepresentation(self, quadcopter_object):
         self.quad_acceleration = quadcopter_object.translational_accelerations
-    def updateStateOde(self, x, t):
+        self.quad_speed = quadcopter_object.state[3:6]
+    def updateStateOde(self, x, t=0):
         self.state = x if isinstance(x, np.ndarray) else np.array(x)
-        self.updateStateDict()
+        #self.updateStateDict()
         dstate = np.zeros(4)
         forces = self.calculateForces()
         net_force = self.netForce(forces)
+        self.directionVectors()
         self.tension_force = self.tensionForce(self.direction_vectors[2], net_force)
         dstate[2:4] = self.angularMotion(net_force)
         dstate[0:2] = self.state[2:4]

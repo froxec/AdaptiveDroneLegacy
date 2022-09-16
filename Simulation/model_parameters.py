@@ -12,5 +12,8 @@ quad_parameters = {
 pendulum_parameters = {
     'm': 1,
     'l': 0.2,
-    'g': 9.81
+    'g': 9.81,
+    'r': 0.1,
+    'Cd': 0.47,
+    'ro': 1.23
 }
