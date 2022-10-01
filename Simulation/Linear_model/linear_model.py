@@ -1,28 +1,32 @@
 import numpy as np
+from numpy import linspace
 from math import cos, sin
-from model_parameters import quad_parameters
+from Simulation.model_parameters import quad_parameters
+from Simulation.plots import plotTrajectory
 ##Linearized quadcopter model
-
+def linearModelEulerMethod(A, B, delta_x, delta_u, dt):
+    return ((np.matmul(A, delta_x) + np.matmul(B, delta_u))*dt + delta_x).reshape((12))
 class linearizedModel():
     def __init__(self, equlibrium_state, equilibrium_input):
         self.Kt = quad_parameters['Kt']
         self.Kd = quad_parameters['Kd']
-        self.m_q = quad_parameters['m_q']
+        self.m_q = quad_parameters['m']
         self.l_q = quad_parameters['l']
         self.arm_angle = quad_parameters['arm_angle']
-        self.Ix = quad_parameters['I'][0]
-        self.Iy = quad_parameters['I'][1]
-        self.Iz = quad_parameters['I'][2]
-        phi = equlibrium_state[6]
-        theta = equlibrium_state[7]
-        psi = equlibrium_state[8]
-        phi_dot = equlibrium_state[9]
-        theta_dot = equlibrium_state[10]
-        psi_dot = equlibrium_state[11]
-        u1 = equilibrium_input[0]
-        u2 = equilibrium_input[1]
-        u3 = equilibrium_input[2]
-        u4 = equilibrium_input[3]
+        self.Ix = quad_parameters['I'].item(0)
+        self.Iy = quad_parameters['I'].item(1)
+        self.Iz = quad_parameters['I'].item(2)
+        phi = equlibrium_state.item(6)
+        theta = equlibrium_state.item(7)
+        psi = equlibrium_state.item(8)
+        phi_dot = equlibrium_state.item(9)
+        theta_dot = equlibrium_state.item(10)
+        psi_dot = equlibrium_state.item(11)
+        u1 = equilibrium_input.item(0)
+        u2 = equilibrium_input.item(1)
+        u3 = equilibrium_input.item(2)
+        u4 = equilibrium_input.item(3)
+        # ordinary indexing was throwing ragged nested sequences warning
         self.A = np.array([[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
                            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
                            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
@@ -50,22 +54,22 @@ class linearizedModel():
     def __call__(self, equlibrium_state, equilibrium_input):
         self.Kt = quad_parameters['Kt']
         self.Kd = quad_parameters['Kd']
-        self.m_q = quad_parameters['m_q']
+        self.m_q = quad_parameters['m']
         self.l_q = quad_parameters['l']
         self.arm_angle = quad_parameters['arm_angle']
-        self.Ix = quad_parameters['I'][0]
-        self.Iy = quad_parameters['I'][1]
-        self.Iz = quad_parameters['I'][2]
-        phi = equlibrium_state[6]
-        theta = equlibrium_state[7]
-        psi = equlibrium_state[8]
-        phi_dot = equlibrium_state[9]
-        theta_dot = equlibrium_state[10]
-        psi_dot = equlibrium_state[11]
-        u1 = equilibrium_input[0]
-        u2 = equilibrium_input[1]
-        u3 = equilibrium_input[2]
-        u4 = equilibrium_input[3]
+        self.Ix = quad_parameters['I'].item(0)
+        self.Iy = quad_parameters['I'].item(1)
+        self.Iz = quad_parameters['I'].item(2)
+        phi = equlibrium_state.item(6)
+        theta = equlibrium_state.item(7)
+        psi = equlibrium_state.item(8)
+        phi_dot = equlibrium_state.item(9)
+        theta_dot = equlibrium_state.item(10)
+        psi_dot = equlibrium_state.item(11)
+        u1 = equilibrium_input.item(0)
+        u2 = equilibrium_input.item(1)
+        u3 = equilibrium_input.item(2)
+        u4 = equilibrium_input.item(3)
         self.A = np.array([[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
@@ -90,7 +94,18 @@ class linearizedModel():
                 [2*self.Kt*self.l_q*u1*cos(self.arm_angle)/self.Ix, 2*self.Kt*self.l_q*u2*cos(self.arm_angle)/self.Ix, -2*self.Kt*self.l_q*u3*cos(self.arm_angle)/self.Ix, -2*self.Kt*self.l_q*u4*cos(self.arm_angle)/self.Ix],
                 [-2*self.Kt*self.l_q*u1*sin(self.arm_angle)/self.Iy, 2*self.Kt*self.l_q*u2*sin(self.arm_angle)/self.Iy, -2*self.Kt*self.l_q*u3*sin(self.arm_angle)/self.Iy, 2*self.Kt*self.l_q*u4*sin(self.arm_angle)/self.Iy],
                 [-2*self.Kd*u1/self.Iz, 2*self.Kd*u2/self.Iz, 2*self.Kd*u3/self.Iz, -2*self.Kd*u4/self.Iz]])
-u_val_eq = np.sqrt((quad_parameters['m_q']*quad_parameters['g']/4)/quad_parameters['Kt'])
-equilibrium_state = np.zeros((12))
-equilibrium_input = np.full((12), u_val_eq) # F = m*g
+
+u_val_eq = np.sqrt((quad_parameters['m']*quad_parameters['g']/4)/quad_parameters['Kt'])
+equilibrium_state = np.zeros((12, 1))
+equilibrium_input = np.full((4, 1), u_val_eq - 100) # F = m*g
 model = linearizedModel(equilibrium_state, equilibrium_input)
+## linear_model validation
+dt = 0.1
+t = np.arange(0, 100, dt)
+samples = t.size
+state_trajectory = np.zeros((samples, 12))
+for i in range(samples):
+    if i == 0:
+        continue
+    state_trajectory[i] = linearModelEulerMethod(model.A, model.B, state_trajectory[i - 1].reshape((12, 1)), np.zeros((4, 1)), dt)
+plotTrajectory(t, state_trajectory.transpose(), 4, 3)
