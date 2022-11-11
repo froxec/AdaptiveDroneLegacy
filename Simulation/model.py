@@ -60,7 +60,7 @@ class quadcopterModel():
                             'roll', 'pitch', 'yaw',
                             'droll', 'dpitch', 'dyaw')
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, state0)}
-        self.state = state0 if isinstance(state0, np.ndarray) else np.array(state0)
+        self.state = state0 if isinstance(state0, np.ndarray) else np.array(state0, dtype=np.float32)
         self.tension_force = np.zeros((3), dtype=np.float32)
         self.F = np.zeros((3), dtype=np.float32)
         self.M = np.zeros((3), dtype=np.float32)
@@ -81,6 +81,9 @@ class quadcopterModel():
         self.R = np.array([[cP*cY, sR*sP*cY - cR*sY, cR*sP*cY + sR*sY],
                     [cP*sY, sR*sP*sY - cR*cY, cR*sP*sY - sR*cY],
                     [-sP, sR*cP, cR*cP]], dtype=np.float32)
+        # self.R = np.array([[cP * cY, sY * cP, sP],
+        #               [sP * sR * cY - sY * cR, sP * sR * sY + cR * cY, -sR * cP],
+        #               [-sP * cR * cY - sR * sY, -sP * sY * cR + sR * cY, cP * cR]], dtype=np.float32)
         return self.R
 
     def translationalMotion(self):

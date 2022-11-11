@@ -6,7 +6,7 @@ def plotTrajectory(t, x, rows, cols):
     f1, axs = plt.subplots(rows, cols)
     for i, ax in enumerate(axs.reshape(-1)):
         ax.plot(t, x[i]) 
-    plt.show()
+    plt.show(block=True)
 
 def groupDataFromPIDs(controler_object):
     controler_names = ('roll', 'pitch', 'yaw')

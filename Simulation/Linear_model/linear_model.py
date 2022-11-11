@@ -3,6 +3,8 @@ from numpy import linspace
 from math import cos, sin
 from Simulation.model_parameters import quad_parameters
 from Simulation.plots import plotTrajectory
+from numpy.linalg import eig
+
 ##Linearized quadcopter model
 def linearModelEulerMethod(A, B, delta_x, delta_u, dt):
     return ((np.matmul(A, delta_x) + np.matmul(B, delta_u))*dt + delta_x).reshape((12))
@@ -97,7 +99,7 @@ class linearizedModel():
 
 u_val_eq = np.sqrt((quad_parameters['m']*quad_parameters['g']/4)/quad_parameters['Kt'])
 equilibrium_state = np.zeros((12, 1))
-equilibrium_input = np.full((4, 1), u_val_eq - 100) # F = m*g
+equilibrium_input = np.full((4, 1), u_val_eq)  # F = m*g
 model = linearizedModel(equilibrium_state, equilibrium_input)
 ## linear_model validation
 dt = 0.1
@@ -107,5 +109,8 @@ state_trajectory = np.zeros((samples, 12))
 for i in range(samples):
     if i == 0:
         continue
-    state_trajectory[i] = linearModelEulerMethod(model.A, model.B, state_trajectory[i - 1].reshape((12, 1)), np.zeros((4, 1)), dt)
+    state_trajectory[i] = linearModelEulerMethod(model.A, model.B, state_trajectory[i - 1].reshape((12, 1)), np.array([1, 0, 0, 1]).reshape((4, 1)), dt)
+
 plotTrajectory(t, state_trajectory.transpose(), 4, 3)
+w, v = eig(model.A)
+print(w)
