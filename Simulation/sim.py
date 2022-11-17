@@ -10,6 +10,7 @@ from Simulation.Visualization.vis import Visualizer, ParallelVisualizer
 import time
 import multiprocessing as mp
 
+
 if __name__ == '__main__':
     load0 = np.zeros(4)
     quad0 = np.zeros(12)

@@ -62,8 +62,8 @@ class quadcopterModel():
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, state0)}
         self.state = state0 if isinstance(state0, np.ndarray) else np.array(state0, dtype=np.float32)
         self.tension_force = np.zeros((3), dtype=np.float32)
-        self.F = np.zeros((3), dtype=np.float32)
-        self.M = np.zeros((3), dtype=np.float32)
+        self.F = np.zeros((4), dtype=np.float32)
+        self.M = np.zeros((4), dtype=np.float32)
         self.translational_accelerations = np.zeros((3), dtype=np.float32)
         self.angular_accelerations = np.zeros((3), dtype=np.float32)
 
@@ -254,6 +254,6 @@ class loadPendulum():
         self.directionVectors()
         self.tension_force = self.tensionForce(self.direction_vectors[2], net_force)
         self.state[2:4] = self.angularMotion(net_force)*deltaT + self.state[2:4]
-        self.state[0:2] = self.state[2:4] * deltaT + self.state[0:2] ## calculation order seems to have impact on increasing energy in oscilatory system
+        self.state[0:2] = self.state[2:4] * deltaT + self.state[0:2] ## calculation order seems to have an impact on increasing energy in oscilatory system
         self.updateStateDict()
         return self.state

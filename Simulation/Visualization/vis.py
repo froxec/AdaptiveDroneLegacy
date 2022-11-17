@@ -123,7 +123,6 @@ class Visualizer:
             self.quiver = self.ax.quiver(x, y, z, self.u, self.v, self.w, color=['b', 'b', 'r'])
             self.ax.draw_artist(self.quiver)
             self.ax.draw_artist(self.time_text)
-            start = time.time()
             self.fig.canvas.blit(self.ax.bbox)
         else:
             self.ax.quiver(x, y, z, self.u, self.v, self.w)
@@ -137,25 +136,21 @@ class ParallelVisualizer(Visualizer):
     def __init__(self, do_blit=True, azimuth_init=45, elevation_init=45):
         super().__init__(self)
 
-    def __call__(self, pipe):
-        self.timer = self.fig.canvas.new_timer(interval=10)
-        self.timer.add_callback(self.call_back)
-        self.timer.start()
-        self.pipe = pipe
-        print('...done')
-        plt.show()
-
     def call_back(self):
         while self.pipe.poll():
             command = self.pipe.recv()
             if command is None:
-                self.terminate()
-                return False
+                print("No data yet")
             else:
                 self.transform_base_vectors([command[3], command[4], command[5]])
                 self.visualize_body_frame([command[0], command[1], command[2]], command[6])
         return True
 
+    def __call__(self, pipe):
+        self.pipe = pipe
+        self.timer = self.fig.canvas.new_timer(interval=10)
+        self.timer.add_callback(self.call_back())
+        self.timer.start()
     def terminate(self):
         plt.close('all')
 
