@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import deg2rad
 quad_parameters = {
-    'm': 1.025,
+    'm': 10,#1.025,
     'g': 9.81,
     'Kt': 3.122e-6,
     'Kd': 4.759e-9,
