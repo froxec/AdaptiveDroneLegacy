@@ -10,6 +10,8 @@ from Simulation.Visualization.vis import Visualizer, ParallelVisualizer
 import time
 import multiprocessing as mp
 
+FPS = 30
+PAUSE_INCREMENT = 1e-5
 
 if __name__ == '__main__':
     load0 = np.zeros(4)
@@ -30,22 +32,29 @@ if __name__ == '__main__':
     #x = odeint(odeSystem, state0, t, args=(quad, load))
     t = np.arange(0, 10, deltaT)
     x = np.zeros((t.size, 16))
-    thrust_setpoint = 1000
-    attitude_setpoint = np.array([deg2rad(0), deg2rad(0), deg2rad(30)])
-    start = time.time()
+    thrust_setpoint = 3000
+    attitude_setpoint = np.array([deg2rad(0), deg2rad(0), deg2rad(0)])
     plot_process.start()
+    prev_stop_time = deltaT
+    start = time.time()
     for i, t_i in enumerate(t):
         motors = controler(attitude_setpoint, quad.state[6:9], quad.state[9:12], quad.angular_accelerations, thrust_setpoint)
         x[i] = system(np.array(motors), deltaT, quad, load)
-        if (i % 10//deltaT) == 0:
+        if (i % int(1/(deltaT*FPS))) == 0:
+            print(i)
             #visualizer(quad.state[0:3], quad.state[6:9], t_i)
             send = plot_pipe.send
             data_to_send = np.concatenate((quad.state[0:3], quad.state[6:9], np.array([t_i])))
             send(data_to_send)
-        print(t_i)
-        time.sleep(deltaT)
+        #time.sleep(deltaT)
+        while(time.time() - start < t_i + deltaT):
+            time.sleep(PAUSE_INCREMENT)
+
+        #print(prev_stop_time)
+        #print(time.time() - t1)
     send(None)
     print(time.time() - start)
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     #plotDataPID(t, controler, 'roll')
     plotTrajectory(t, x.transpose()[12:16], 2, 2)
+    time.sleep(1000)

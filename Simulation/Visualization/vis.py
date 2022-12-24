@@ -25,6 +25,7 @@ class Visualizer:
         self.time_text = self.ax.text(0, 0, 0, 'time=%s' % 0.0)
         self.background = self.init_fig(do_blit)
         self.do_blit = do_blit
+        self.fig.canvas.blit(self.fig.bbox)
         self.font = {
             'family': 'serif',
             'color': 'green',
@@ -62,7 +63,8 @@ class Visualizer:
         plt.pause(0.1)  # wait for a while so we have background to render on
         if do_blit:
             # cache the background
-            background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
+            background = self.fig.canvas.copy_from_bbox(self.fig.bbox)
+            self.ax.draw_artist(self.quiver)
             return background
 
     def __call__(self, position, angles, t, azimuth=45, elevation=45, stop=False):
@@ -114,19 +116,19 @@ class Visualizer:
         x = position[0]
         y = position[1]
         z = position[2]
-
+        # TODO bliting time is around 0.04 -this is around 30 FPS max, fix this
         if self.do_blit:
             self.fig.canvas.restore_region(self.background)
-            self.time_text.set_position((x, y, z))
-            self.time_text.set_text('time=%s' % t)
-            self.quiver.remove()
-            self.quiver = self.ax.quiver(x, y, z, self.u, self.v, self.w, color=['b', 'b', 'r'])
-            self.ax.draw_artist(self.quiver)
-            self.ax.draw_artist(self.time_text)
+            #self.time_text.set_position((x, y, z))
+            #self.time_text.set_text('time=%s' % t)
+            #self.quiver.remove()
+            #self.quiver = self.ax.quiver(x, y, z, self.u, self.v, self.w, color=['b', 'b', 'r'])
+            #self.ax.draw_artist(self.quiver)
+            #self.ax.draw_artist(self.time_text)
             self.fig.canvas.blit(self.ax.bbox)
         else:
             self.ax.quiver(x, y, z, self.u, self.v, self.w)
-        plt.draw()
+            plt.draw()
 
     def end_job(self):
         plt.show(block=True)
@@ -134,23 +136,51 @@ class Visualizer:
 
 class ParallelVisualizer(Visualizer):
     def __init__(self, do_blit=True, azimuth_init=45, elevation_init=45):
-        super().__init__(self)
+        self.u_base = np.array([-1, 0, 0], dtype=np.float32)
+        self.v_base = np.array([0, 1, 0], dtype=np.float32)
+        self.w_base = np.array([0, 0, 1], dtype=np.float32)
+        self.u = np.array([1, 0, 0], dtype=np.float32)
+        self.v = np.array([0, 1, 0], dtype=np.float32)
+        self.w = np.array([0, 0, 1], dtype=np.float32)
+        self.azimuth = azimuth_init
+        self.elevation = elevation_init
+        self.do_blit = do_blit
+        self.font = {
+            'family': 'serif',
+            'color': 'green',
+            'weight': 'normal',
+            'size': 9
+        }
+    def __call__(self, pipe):
+
+        #figure must be created in subprocess, so its moved to child __call__() from parent's __init__()
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.quiver = self.ax.quiver(0, 0, 0, self.u, self.v, self.w, color=['b', 'b', 'r'], animated='True')
+        self.time_text = self.ax.text(0, 0, 0, 'time=%s' % 0.0)
+        self.background = self.init_fig(self.do_blit)
+        self.fig.canvas.blit(self.fig.bbox)
+
+        self.pipe = pipe
+        print('starting plotter...')
+        timer = self.fig.canvas.new_timer(interval=1)
+        timer.add_callback(self.call_back())
+        timer.start()
+
+        print('...done')
 
     def call_back(self):
-        while self.pipe.poll():
+        while self.pipe.poll(timeout=0.2):
             command = self.pipe.recv()
             if command is None:
                 print("No data yet")
             else:
+                t1 = time.time()
                 self.transform_base_vectors([command[3], command[4], command[5]])
                 self.visualize_body_frame([command[0], command[1], command[2]], command[6])
+                print("Plotting time", time.time() - t1)
         return True
 
-    def __call__(self, pipe):
-        self.pipe = pipe
-        self.timer = self.fig.canvas.new_timer(interval=10)
-        self.timer.add_callback(self.call_back())
-        self.timer.start()
     def terminate(self):
         plt.close('all')
 
