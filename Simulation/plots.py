@@ -3,9 +3,15 @@ import numpy as np
 
 def plotTrajectory(t, x, rows, cols):
     #x = x.transpose()
+    labels = ['x [m]', 'y[m]', 'z[m]',
+              'Vx[m/s]', 'Vy[m/s]', 'Vz [m/s]',
+              'φ [rad]', 'θ [rad]', 'ψ [rad]',
+              'ω_x [rad/s]', 'ω_y [rad/s]', 'ω_z [rad/s]']
     f1, axs = plt.subplots(rows, cols)
     for i, ax in enumerate(axs.reshape(-1)):
-        ax.plot(t, x[i]) 
+        ax.plot(t, x[i])
+        ax.set_xlabel('t')
+        ax.set_ylabel(labels[i])
     plt.show(block=True)
 
 def groupDataFromPIDs(controler_object):

@@ -32,8 +32,8 @@ if __name__ == '__main__':
     #x = odeint(odeSystem, state0, t, args=(quad, load))
     t = np.arange(0, 10, deltaT)
     x = np.zeros((t.size, 16))
-    thrust_setpoint = 3000
-    attitude_setpoint = np.array([deg2rad(0), deg2rad(0), deg2rad(0)])
+    thrust_setpoint = 1200
+    attitude_setpoint = np.array([deg2rad(10), deg2rad(0), deg2rad(0)])
     plot_process.start()
     prev_stop_time = deltaT
     start = time.time()
