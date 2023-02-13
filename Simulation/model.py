@@ -28,23 +28,38 @@ def odeSystem(x, t, quadcopter_object, load_pendulum_object):
     dstate = np.concatenate([quad_dstate, load_dstate])
     return dstate
 
-def system(u, deltaT, quadcopter_object, load_pendulum_object):
-    exchangeData(quadcopter_object, load_pendulum_object)
-    quadcopter_object.modelRT(u, deltaT)
-    #load_pendulum_object.updateState(deltaT)
-    RungeKutta4(deltaT, load_pendulum_object)
-    return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
-    #return quadcopter_object.modelRT(u, deltaT)
+def system(u, deltaT, quadcopter_object, load_pendulum_object=None, solver='RK'):
+    if load_pendulum_object==None:
+        if solver == 'Euler':
+            quadcopter_object.modelRT(u, deltaT)
+        if solver == 'RK':
+            RungeKutta4(deltaT, quadcopter_object, u)
+        return quadcopter_object.state
+    else:
+        exchangeData(quadcopter_object, load_pendulum_object)
+        if solver == 'Euler':
+            quadcopter_object.modelRT(u, deltaT)
+        if solver == 'RK':
+            RungeKutta4(deltaT, quadcopter_object, u)
+        #load_pendulum_object.updateState(deltaT)
+        RungeKutta4(deltaT, load_pendulum_object)
+        return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
 
-def RungeKutta4(deltaT, load_object):
-    model = copy.deepcopy(load_object) #might be bottleneck/make class
+def RungeKutta4(deltaT, model_object, u=None):
+    model = copy.deepcopy(model_object) #might be bottleneck/make class
     state0 = model.state
-    k1 = deltaT*model.updateStateOde(state0)
-    k2 = deltaT*model.updateStateOde(state0 + 0.5*k1)
-    k3 = deltaT*model.updateStateOde(state0 + 0.5*k2)
-    k4 = deltaT*model.updateStateOde(state0 + k3)
-    load_object.state = load_object.state + (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4) 
-    return load_object.state
+    if u.any() == None:
+        k1 = deltaT*model.updateStateOde(state0)
+        k2 = deltaT*model.updateStateOde(state0 + 0.5*k1)
+        k3 = deltaT*model.updateStateOde(state0 + 0.5*k2)
+        k4 = deltaT*model.updateStateOde(state0 + k3)
+    else:
+        k1 = deltaT * model.updateStateOde(state0, u)
+        k2 = deltaT * model.updateStateOde(state0 + 0.5 * k1, u)
+        k3 = deltaT * model.updateStateOde(state0 + 0.5 * k2, u)
+        k4 = deltaT * model.updateStateOde(state0 + k3, u)
+    model_object.state = model_object.state + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+    return model_object.state
 
 class quadcopterModel():
     def __init__(self, state0, quad_parameters):
@@ -123,11 +138,11 @@ class quadcopterModel():
         self.M = np.multiply(self.Kd, omega**2)
         return self.M
 
-    def model_ode(self, x, t):
+    def updateStateOde(self, x, u):
         self.state = x if isinstance(x, np.ndarray) else np.array(x)
         self.updateStateDict()
         dstate = np.zeros(12)
-        omega = np.array([2000, 2000, 2000, 2000])
+        omega = u
         self.inputToForces(omega)
         self.inputToMomentum(omega)
         self.transfomationMatrix()

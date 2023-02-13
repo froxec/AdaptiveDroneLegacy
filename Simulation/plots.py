@@ -1,18 +1,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plotTrajectory(t, x, rows, cols):
+def plotTrajectory(t, x, rows, cols, fix_scale=[]):
     #x = x.transpose()
     labels = ['x [m]', 'y[m]', 'z[m]',
               'Vx[m/s]', 'Vy[m/s]', 'Vz [m/s]',
               'φ [rad]', 'θ [rad]', 'ψ [rad]',
-              'ω_x [rad/s]', 'ω_y [rad/s]', 'ω_z [rad/s]']
+              'ωx [rad/s]', 'ωy [rad/s]', 'ωz [rad/s]']
     f1, axs = plt.subplots(rows, cols)
     for i, ax in enumerate(axs.reshape(-1)):
         ax.plot(t, x[i])
-        ax.set_xlabel('t')
+        ax.set_xlabel('t [s]')
         ax.set_ylabel(labels[i])
+        if i + 1in fix_scale:
+            ax.set_ylim([-1, 1])
     plt.show(block=True)
+
 
 def groupDataFromPIDs(controler_object):
     controler_names = ('roll', 'pitch', 'yaw')
