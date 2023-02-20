@@ -1,0 +1,5 @@
+.vscode
+./dronekit_env
+./images
+./Simulation/__pycache__
+./QuadcopterIntegration/Utilities/__pycache__

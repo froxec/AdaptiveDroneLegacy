@@ -28,4 +28,4 @@ if __name__ == '__main__':
     print(time.time() - start)
     plotTrajectory(t, x.transpose()[0:12], 4, 3, fix_scale=[2, 5, 7, 9, 10, 12])
 
-    time.sleep(1000)
+    time.sleep(0)
