@@ -1,5 +1,11 @@
+<<<<<<< HEAD
+./ardupilot_master/*
+./*/__pycache__
+./idea
+=======
 .vscode
 ./dronekit_env
 ./images
 ./Simulation/__pycache__
 ./QuadcopterIntegration/Utilities/__pycache__
+>>>>>>> origin/loadPendulum

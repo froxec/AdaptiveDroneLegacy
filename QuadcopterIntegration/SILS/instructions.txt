@@ -1,0 +1,5 @@
+## Uruchomienie symulacji SITL
+1. Uruchom dronekit-sitl copter-3.3 (zmiana trybu lotu nie działa)
+2. Wprowadź komendę, aby przekierować komunikację na odpowiedni port: mavproxy.py --out 127.0.0.1:14550 --out 127.0.0.1:14551 --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out udp:192.168.0.27:8000
+ 
+3. Możesz odbierać i wysyłać komendy używając dronekit lub pymavlink 
