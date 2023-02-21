@@ -14,7 +14,7 @@ def plotTrajectory(t, x, rows, cols, fix_scale=[]):
         ax.set_ylabel(labels[i])
         if i + 1in fix_scale:
             ax.set_ylim([-1, 1])
-    plt.show(block=True)
+    plt.savefig("trajectory.png")
 
 
 def groupDataFromPIDs(controler_object):
