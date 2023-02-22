@@ -1,5 +1,5 @@
 import numpy as np
-from Simulation.model_parameters import quad_parameters
+from ModelsFactory.model_parameters import quad_parameters
 
 
 class QuadAccelerationModel:

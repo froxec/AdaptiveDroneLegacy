@@ -1,6 +1,6 @@
 
 from Simulation.model import quadcopterModel, loadPendulum, odeSystem, system
-from Simulation.model_parameters import quad_parameters, pendulum_parameters
+from ModelsFactory.model_parameters import quad_parameters, pendulum_parameters
 import numpy as np
 from Simulation.plots import plotDataPID, plotTrajectory, groupDataFromPIDs
 import time

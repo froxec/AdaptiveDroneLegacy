@@ -1,6 +1,6 @@
 import control
 import numpy as np
-from Simulation.model_parameters import *
+from ModelsFactory.model_parameters import *
 import matplotlib.pyplot as plt
 import control.optimal as obc
 import time
