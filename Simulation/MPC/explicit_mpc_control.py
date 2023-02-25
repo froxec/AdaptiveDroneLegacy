@@ -17,7 +17,7 @@ if __name__ == "__main__":
     # Discretization
     Ad = np.eye(nx) + Ac*Ts
     Bd = Bc*Ts
-    xref = np.array([0, 10, 100, 0, 0, 0])
+    xref = np.array([50, 50, 100, 0, 0, 0])
     uref = np.array([0, 0, 0, 0])
     uminus1 = np.array([0, 0.0, 0.0, 0.0])
     # Constraints
@@ -30,9 +30,9 @@ if __name__ == "__main__":
     Dumin = np.array([-5, -np.pi/12, -np.pi/12, -np.pi/12])
     Dumax = np.array([5, np.pi/12, np.pi/12, np.pi/12])
 
-    Qx = sparse.diags([100000, 10, 100, 1, 1, 1])  # Quadratic cost for states x0, x1, ..., x_N-1
-    QxN = sparse.diags([1, 1, 1, 1, 1, 1])  # Quadratic cost for xN
-    Qu = sparse.diags([10, 0, 0, 0])  # Quadratic cost for u0, u1, ...., u_N-1
+    Qx = sparse.diags([1000, 1000, 1000, 1, 1, 1])  # Quadratic cost for states x0, x1, ..., x_N-1
+    QxN = sparse.diags([10, 10, 10, 10, 10, 10])  # Quadratic cost for xN
+    Qu = sparse.diags([1, 1, 1, 1])  # Quadratic cost for u0, u1, ...., u_N-1
     QDu = sparse.diags([0, 0, 0, 0])  # Quadratic cost for Du0, Du1, ...., Du_N-1
     x0 = np.zeros(6)
     x0[2] = 100

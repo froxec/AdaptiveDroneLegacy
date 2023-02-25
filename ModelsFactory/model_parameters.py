@@ -17,7 +17,7 @@ pendulum_parameters = {
     'Cd': 0.47,
     'ro': 1.23
 }
-ardupilot_parameters = {
+arducopter_parameters = {
     'm': 1.0,
     'g': 9.81,
     'Kt': 3e-6,
