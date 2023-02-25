@@ -5,3 +5,5 @@ https://www.youtube.com/watch?v=bD6V3rcr_54 - tworzenie własnego środowiska w 
 https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html#sitl-simulator-software-in-the-loop - SITL
 https://ai.stackexchange.com/questions/12255/can-q-learning-be-used-for-continuous-state-or-action-spaces - wyjaśnienie Q-learning dla ciągłej przestrzeni sterowań
 https://www.youtube.com/watch?v=LawaN3BdI00 - Actor Critic explanations
+https://www.sciencedirect.com/science/article/pii/S1110016822005245 - ciekawy artykuł z pomysłem na pomiar położenia wahadła
+https://www.ti.com/lit/ug/sbau380a/sbau380a.pdf - texas instruments - joystick z magnesem sferycznym
