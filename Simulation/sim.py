@@ -1,6 +1,6 @@
 from numpy import linspace
 from model import quadcopterModel, loadPendulum, odeSystem, system
-from model_parameters import quad_parameters, pendulum_parameters
+from ModelsFactory.model_parameters import quad_parameters, pendulum_parameters
 from scipy.integrate import odeint
 import numpy as np
 from plots import plotDataPID, plotTrajectory, groupDataFromPIDs

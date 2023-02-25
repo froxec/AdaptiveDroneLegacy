@@ -50,7 +50,9 @@ print("Take off complete")
 
 print("Setting attitude")
 while True:
-  set_attitude(vehicle, 0.5, 0, 0, 0.5)
+  set_attitude(vehicle, 0, 0.5, 0, 0.5)
+  state = get_state(vehicle)
+  print(state)
 # Hover for 10 seconds
 time.sleep(10)
 

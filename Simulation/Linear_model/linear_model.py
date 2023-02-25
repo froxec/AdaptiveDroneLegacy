@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import linspace
 from math import cos, sin
-from Simulation.model_parameters import quad_parameters
+from ModelsFactory.model_parameters import quad_parameters
 from Simulation.plots import plotTrajectory
 from numpy.linalg import eig
 

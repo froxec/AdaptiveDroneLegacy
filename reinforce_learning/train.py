@@ -1,6 +1,6 @@
 import numpy as np
 from quad_model import QuadAccelerationModel
-from Simulation.model_parameters import quad_parameters
+from ModelsFactory.model_parameters import quad_parameters
 import copy
 import matplotlib.pyplot as plt
 class Environment:
