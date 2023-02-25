@@ -1,0 +1,15 @@
+1. Analiza i synteza układu regulacji podsystemu związanego z ruchem obrotowym (analiza stabilności, określenie wymagań jakościowych, dobór parametrów regulatora PID, budowa systemu kaskadowego)
+2. Analiza podsystemu związanego z ruchem postępowym (analiza stabilności, obserwowalności, sterowalności)
+3. Projekt układu regulacji dla podsystemu związanego z ruchem postepowym (MPC)
+4. Przetestowanie zaprojektowanego układu regulacji w trybie SIL (podsystem MPC + podsystem PID)
+5. Przetestowanie zaprojektowaneog układu regulacji w trybie HIL (podsystem MPC + podsystem PID na urządzeniach docelowych / ewentualnie sam MPC na raspberry)
+!Na etapie symulacji założenie o dostępności pomiarowej wszystkich zmiennych stanu -> C macierz diagonalna
+6. Przetestowanie zaprojektowanego układu w rzeczywistości (waypoint tracking z wykorzystaniem pomiarów z GPS)
+7. Analiza wpływu podwieszonego wahadła na system (założenie o braku wpływu wahadła na ruch obrotowy - uzasadnienie polegające na umieszczeniu punktu zaczepienia wahadła w środku ciężkości)
+8. Podsystem sterowania ruchem obrotowym pozostaje taki sam. 
+9. Projekt podsystemu sterowania ruchem postępowym z podwieszonym wahadłem (MPC)
+10. Symulacja SIL
+11. Symulacja HIL
+12. Symulacja na rzeczywistym dronie. Pomiar stanu wahadła z wykorzystaniem joysticka (położenie + prędkość jako pochodna)
+13. Projekt mechanizmu adaptacyjnego wykorzystującego uczenie ze wzmocnieniem (wykorzystanie symulacji SIL do uczenia)
+14. Porównanie działania mechanizmu adaptacyjnego RL z mechanizmem adaptacyjnym wytrenowanym na rzeczywistych danych (sieć splotowa)
