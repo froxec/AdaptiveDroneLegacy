@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 __pycache__/
 ./idea
-=======
 .vscode/
 .idea/
 images/
->>>>>>> origin/loadPendulum

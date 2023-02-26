@@ -7,13 +7,17 @@ def plotTrajectory(t, x, rows, cols, fix_scale=[]):
               'Vx[m/s]', 'Vy[m/s]', 'Vz [m/s]',
               'φ [rad]', 'θ [rad]', 'ψ [rad]',
               'ωx [rad/s]', 'ωy [rad/s]', 'ωz [rad/s]']
-    f1, axs = plt.subplots(rows, cols)
+    f1, axs = plt.subplots(rows, cols, figsize=(18, 12))
     for i, ax in enumerate(axs.reshape(-1)):
         ax.plot(t, x[i])
-        ax.set_xlabel('t [s]')
-        ax.set_ylabel(labels[i])
+        ax.set_xlabel('t [s]', fontsize=20)
+        ax.set_ylabel(labels[i], fontsize=20)
+        ax.tick_params(axis='x', labelsize=16)
+        ax.tick_params(axis='y', labelsize=16)
         if i + 1in fix_scale:
             ax.set_ylim([-1, 1])
+    plt.tight_layout()
+    plt.show(block=True)
     plt.savefig("trajectory.png")
 
 
