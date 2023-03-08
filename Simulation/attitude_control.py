@@ -39,6 +39,7 @@ class PID():
     def iTerm(self, error):
         self.signals[1] = self.signals[1] + self.Ki*self.deltaT*error
         return self.signals[1]
+    ##TODO ADD ANTI-WINDUP TO iTerm
     def dTerm(self, error):
         self.signals[2] = (error - self.prev_error)/self.deltaT
         self.signals[2] = self.signals[2]*self.Kd
@@ -55,24 +56,41 @@ class PID():
     
 class angleControler():
     def __init__(self, pid_parameters, dT):
-        self.pid_angle = PID(pid_parameters['angle'], dT, save_data = True) #make it possible to pass individual parameters for each PID
-        self.pid_rate = PID(pid_parameters['rate'], dT, save_data = True)
-        self.pid_acceleration = PID(pid_parameters['acceleration'], dT, save_data = True)
+        self.pid_angle = None
+        self.pid_rate = None
+        self.pid_acceleration = None
         self.pids = [self.pid_angle, self.pid_rate, self.pid_acceleration]
-    def __call__(self, angle_setpoint, angle, angle_rate, angle_acceleration):
-        error = angle_setpoint - angle
-        rate_setpoint = self.pid_angle(error)
-        error_rate = rate_setpoint - angle_rate
-        acceleration_setpoint = self.pid_rate(error_rate)
-        error_acceleration = acceleration_setpoint - angle_acceleration
-        u = self.pid_acceleration(error_acceleration)
+    def __call__(self, top_setpoint, angle=None, angle_rate=None, angle_acceleration=None):
+        setpoints = [top_setpoint]
+        measured_state = [angle, angle_rate, angle_acceleration]
+        for i, pid in enumerate(self.pids):
+            if pid == None:
+                continue
+            else:
+                error = setpoints[-1] - measured_state[i]
+                pid_output = pid(error)
+                setpoints.append(pid_output)
+        u = pid_output
         return u
 
+class TripleCascadeLoop(angleControler):
+    def __init__(self, pid_parameters, dT):
+        self.pid_angle = PID(pid_parameters['angle'], dT, save_data=True)
+        self.pid_rate = PID(pid_parameters['rate'], dT, save_data=True)
+        self.pid_acceleration = PID(pid_parameters['acceleration'], dT, save_data=True)
+        self.pids = [self.pid_angle, self.pid_rate, self.pid_acceleration]
+
+class DoubleCascadeLoop(angleControler):
+    def init(self, pid_parameters, dT):
+        self.pid_angle = PID(pid_parameters['angle'], dT, save_data=True)
+        self.pid_rate = PID(pid_parameters['rate'], dT, save_data=True)
+        self.pid_acceleration = None
+        self.pids = [self.pid_angle, self.pid_rate, self.pid_acceleration]
 class attitudeControler():
     def __init__(self, dT):
-        roll_control = angleControler(roll_pid, dT) ## pass parameters as arguments 
-        pitch_control = angleControler(pitch_pid, dT)
-        yaw_control = angleControler(yaw_pid, dT)
+        roll_control = TripleCascadeLoop(roll_pid, dT) ## pass parameters as arguments
+        pitch_control = TripleCascadeLoop(pitch_pid, dT)
+        yaw_control = TripleCascadeLoop(yaw_pid, dT)
         self.controlers = [roll_control, pitch_control, yaw_control]
     def __call__(self, attitude_setpoint, attitude, attitude_rate, attitude_acceleration):
         u = np.zeros(3)
