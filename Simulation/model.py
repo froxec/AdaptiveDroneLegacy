@@ -45,7 +45,7 @@ def system(u, deltaT, quadcopter_object, load_pendulum_object=None, solver='RK')
         RungeKutta4(deltaT, load_pendulum_object)
         return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
 
-def RungeKutta4(deltaT, model_object, u=None):
+def RungeKutta4(deltaT, model_object, u=np.array([None])):
     model = copy.deepcopy(model_object) #might be bottleneck/make class
     state0 = model.state
     if u.any() == None:
