@@ -1,4 +1,4 @@
-from ModelsFactory.model_parameters import quad_parameters
+from Factories.ModelsFactory.model_parameters import quad_parameters
 import numpy as np
 class LinearizedQuad():
     def __init__(self, dt=0, u4_ss=0, x_ref=0, y_ref=0, z_ref=0):

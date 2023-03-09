@@ -1,8 +1,8 @@
 
-from Simulation.model import quadcopterModel, loadPendulum, odeSystem, system
-from ModelsFactory.model_parameters import quad_parameters, pendulum_parameters, Z550_parameters
+from Simulation.model import quadcopterModel, loadPendulum, system
+from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 import numpy as np
-from Simulation.plots import plotDataPID, plotTrajectory, groupDataFromPIDs
+from Simulation.plots import plotTrajectory
 import time
 
 FPS = 30

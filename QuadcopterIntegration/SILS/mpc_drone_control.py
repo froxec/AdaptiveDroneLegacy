@@ -1,8 +1,7 @@
-from dronekit import connect, VehicleMode, LocationGlobalRelative
+from dronekit import connect
 from QuadcopterIntegration.Utilities.dronekit_commands import *
-from pymavlink import mavutil
 import time
-from ModelsFactory.model_parameters import arducopter_parameters
+from Factories.ModelsFactory.model_parameters import arducopter_parameters
 from Simulation.MPC.configure_mpc_controler import MPC_configurator
 import argparse  
 import numpy as np
