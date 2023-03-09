@@ -1,4 +1,3 @@
-
 from Simulation.model import quadcopterModel, loadPendulum, system
 from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 import numpy as np

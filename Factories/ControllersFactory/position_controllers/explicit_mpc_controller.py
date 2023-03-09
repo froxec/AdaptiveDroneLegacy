@@ -8,7 +8,7 @@ from Factories.ModelsFactory.linear_models import LinearizedQuad
 class ModelPredictiveController():
     def __init__(self, quad_parameters, x0, xref, Ts, linear_model=LinearizedQuad, save_history=False):
         self.Ts = Ts
-        self.linear_model = linear_model(x_ref=xref[0], y_ref=xref[1], z_ref=xref[2])
+        self.linear_model = linear_model(quad_parameters, x_ref=xref[0], y_ref=xref[1], z_ref=xref[2])
         self.Ac = self.linear_model.A
         self.Bc = self.linear_model.B
         self.x_num, self.u_num = self.Bc.shape
@@ -30,14 +30,14 @@ class ModelPredictiveController():
 
         #cost parameters
         self.Qx = sparse.diags([0.5,0.5, 3, 0.5, 0.5, 0.5])  # Quadratic cost for states x0, x1, ..., x_N-1
-        self.QxN = sparse.diags([0, 0, 0, 0, 0, 0])  # Quadratic cost for xN
+        self.QxN = sparse.diags([1, 1, 1, 0, 0, 0])  # Quadratic cost for xN
         self.Qu = sparse.diags([0.5, 50, 50, 50])  # Quadratic cost for u0, u1, ...., u_N-1
         self.QDu = sparse.diags([0, 0, 0, 0])  # Quadratic cost for Du0, Du1, ...., Du_N-1
 
         self.x0 = x0
         self.x = x0
         self.u_prev = self.uminus1
-        self.Np = 20
+        self.Np = 50
 
         self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, x0=self.x0, xref=self.xref, uminus1=self.uminus1,
                                  Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,
