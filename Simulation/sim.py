@@ -11,7 +11,7 @@ from attitude_control import Normalizer, ThrustToAngularVelocity
 FPS = 30
 PAUSE_INCREMENT = 1e-5
 INNER_LOOP_FREQ = 100
-OUTER_LOOP_FREQ = 100
+OUTER_LOOP_FREQ = 50
 MODULO_FACTOR = INNER_LOOP_FREQ/OUTER_LOOP_FREQ
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
@@ -35,6 +35,7 @@ class MPC_output_converter():
 if __name__ == '__main__':
     load0 = np.zeros(4)
     quad0 = np.zeros(12)
+    #quad0[2] = 10
     quad = quadcopterModel(quad0, Z550_parameters)
     load = loadPendulum(load0, pendulum_parameters, quad.translational_accelerations, quad.state[3:6])
     esc = ElectronicSpeedControler(pwm_range=PWM_RANGE, angular_velocity_range=ANGULAR_VELOCITY_RANGE)
@@ -48,14 +49,14 @@ if __name__ == '__main__':
     # )
     deltaT = 1/INNER_LOOP_FREQ
     attitude_controler = control.quadControler(deltaT)
-    position_controler = ModelPredictiveController(quad_parameters=Z550_parameters, x0=np.array([0, 0, 0, 0, 0, 0]), xref=np.array([0, 0, 10, 0, 0, 0]))
+    position_controler = ModelPredictiveController(quad_parameters=Z550_parameters, x0=np.array([0, 0, 0, 0, 0, 0]), xref=np.array([10, 10, 10, 0, 0, 0]), Ts=1/OUTER_LOOP_FREQ)
     mpc_output_converter = MPC_output_converter(U_SS, Z550_parameters['Kt'], ANGULAR_VELOCITY_RANGE)
     state0 = np.concatenate([quad0, load0])
     #t = linspace(0, 25, 100)
     #x = odeint(odeSystem, state0, t, args=(quad, load))
-    t = np.arange(0, 10, deltaT)
+    t = np.arange(0, 20, deltaT)
     x = np.zeros((t.size, 16))
-    throttle = 0
+    throttle = 10
     attitude_setpoint = np.array([deg2rad(0), deg2rad(0), deg2rad(0)])
     # plot_process.start()
     prev_stop_time = deltaT
@@ -85,5 +86,5 @@ if __name__ == '__main__':
     print(time.time() - start)
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     #plotDataPID(t, controler, 'roll')
-    plotTrajectory(t, x.transpose()[12:16], 2, 2)
+    plotTrajectory(t[1:], np.vstack(position_controler.history).transpose(), 2, 2)
     time.sleep(1000)
