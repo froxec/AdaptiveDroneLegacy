@@ -29,8 +29,8 @@ class ModelPredictiveController():
         self.Dumax = np.array([5, np.pi *0.025, np.pi *0.025, np.pi *0.025])
 
         #cost parameters
-        self.Qx = sparse.diags([0.5,0.5, 3, 0.5, 0.5, 0.5])  # Quadratic cost for states x0, x1, ..., x_N-1
-        self.QxN = sparse.diags([1, 1, 1, 0, 0, 0])  # Quadratic cost for xN
+        self.Qx = sparse.diags([0.4, 0.4, 0.4, 0.5, 0.5, 0.5])  # Quadratic cost for states x0, x1, ..., x_N-1
+        self.QxN = sparse.diags([0, 0, 0, 0, 0, 0])  # Quadratic cost for xN
         self.Qu = sparse.diags([0.5, 50, 50, 50])  # Quadratic cost for u0, u1, ...., u_N-1
         self.QDu = sparse.diags([0, 0, 0, 0])  # Quadratic cost for Du0, Du1, ...., Du_N-1
 
