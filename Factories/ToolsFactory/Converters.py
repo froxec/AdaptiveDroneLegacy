@@ -13,5 +13,5 @@ class MPC_output_converter():
         omega = self.thrust_converter(u[0])
         throttle = self.angular_vel_normalizer(omega)
         u[0] = throttle
-        u[3] = 0
+        #u[3] = 0
         return u

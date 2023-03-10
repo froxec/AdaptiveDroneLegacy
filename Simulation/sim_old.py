@@ -8,7 +8,7 @@ from Factories.ToolsFactory.AnalysisTools import ParametersPerturber
 FPS = 30
 PAUSE_INCREMENT = 1e-5
 INNER_LOOP_FREQ = 100
-OUTER_LOOP_FREQ = 50
+OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
@@ -19,11 +19,12 @@ if __name__ == '__main__':
     quad_conf = QuadConfiguration(Z550_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE, ANGULAR_VELOCITY_RANGE)
 
     perturber = ParametersPerturber(Z550_parameters)
+    perturber({'m': 1.0})
     print(perturber.perturbed_parameters)
 
     control_conf = ControllerConfiguration(perturber.perturbed_parameters, position0=np.array([0, 0, 0, 0, 0, 0]),
-                                           position_ref=np.array([10, 10, 10, 0, 0, 0]),
-                                           u_ss=[perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0, 0, 0],
+                                           position_ref=np.array([0, 10, 10, 0, 0, 0]),
+                                           u_ss=[perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0, 0],
                                            INNER_LOOP_FREQ=INNER_LOOP_FREQ, OUTER_LOOP_FREQ=OUTER_LOOP_FREQ,
                                            ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE)
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, control_conf.position_controller, control_conf.attitude_controller, control_conf.position_controller_output_converter, quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
@@ -49,8 +50,7 @@ if __name__ == '__main__':
         #print(prev_stop_time)
         #print(time.time() - t1)
     # send(None)
-    t, x = simulator.run(20, deltaT, state0[0:12])
+    t, x = simulator.run(50, deltaT, state0[0:12])
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     #plotDataPID(t, controler, 'roll')
-    plotTrajectory(t[1::MODULO_FACTOR], np.vstack(control_conf.position_controller.history).transpose(), 2, 2)
-    time.sleep(1000)
+    plotTrajectory(t[1::MODULO_FACTOR], np.vstack(control_conf.position_controller.history).transpose(), 3, 1)

@@ -21,7 +21,7 @@ class SoftwareInTheLoop:
             if (i % self.MODULO_FACTOR) == 1:
                 ref = self.position_controller.update_state_control(x[i - 1, :6])
                 ref_converted = self.mpc_output_converter(ref)
-                attitude_setpoint = np.array(ref_converted[1:])
+                attitude_setpoint =np.concatenate([ref_converted[1:], np.array([0])])
                 throttle = ref_converted[0]
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12], throttle)
             motors = self.esc(ESC_PWMs)

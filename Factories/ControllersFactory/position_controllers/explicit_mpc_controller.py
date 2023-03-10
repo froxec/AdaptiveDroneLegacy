@@ -4,7 +4,6 @@ import scipy.sparse as sparse
 import time
 import matplotlib.pyplot as plt
 from Factories.ModelsFactory.linear_models import LinearizedQuad
-
 class ModelPredictiveController():
     def __init__(self, quad_parameters, x0, xref, Ts, linear_model=LinearizedQuad, save_history=False):
         self.Ts = Ts
@@ -16,35 +15,34 @@ class ModelPredictiveController():
         self.Bd = self.Bc*Ts
         #reference values
         self.xref = xref
-        self.uminus1 = np.array([0, 0.0, 0.0, 0.0])
+        self.uminus1 = np.array([0, 0.0, 0.0])
 
         #constraints
-        self.xmin = np.array([-np.inf, -np.inf, -np.inf, -10, -10, -10])
-        self.xmax = np.array([np.inf, np.inf, np.inf, 10, 10, 10])
+        self.xmin = np.array([-np.inf, -np.inf, -np.inf, -2.5, -2.5, -2.5])
+        self.xmax = np.array([np.inf, np.inf, np.inf, 2.5, 2.5, 2.5])
 
-        self.umin = np.array([-quad_parameters['m'] * quad_parameters['g'], -np.pi / 6, -np.pi / 6, -np.inf])
-        self.umax = np.array([quad_parameters['m'] * quad_parameters['g'], np.pi / 6, np.pi / 6, np.inf])
+        self.umin = np.array([-np.inf, -np.pi / 6, -np.pi / 6])
+        self.umax = np.array([np.inf, np.pi / 6, np.pi / 6])
 
-        self.Dumin = np.array([-2, -np.pi *0.025 , -np.pi *0.025, -np.pi *0.025])
-        self.Dumax = np.array([5, np.pi *0.025, np.pi *0.025, np.pi *0.025])
+        self.Dumin = np.array([-np.inf, -np.pi*Ts/6 , -np.pi*Ts/6])
+        self.Dumax = np.array([np.inf, np.pi*Ts/6, np.pi*Ts/6])
 
         #cost parameters
-        self.Qx = sparse.diags([0.4, 0.4, 0.4, 0.5, 0.5, 0.5])  # Quadratic cost for states x0, x1, ..., x_N-1
-        self.QxN = sparse.diags([0, 0, 0, 0, 0, 0])  # Quadratic cost for xN
-        self.Qu = sparse.diags([0.5, 50, 50, 50])  # Quadratic cost for u0, u1, ...., u_N-1
-        self.QDu = sparse.diags([0, 0, 0, 0])  # Quadratic cost for Du0, Du1, ...., Du_N-1
+        self.Qx = sparse.diags([5, 5, 5, 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
+        self.QxN = sparse.diags([0, 0, 0, 1, 1, 1])  # Quadratic cost for xN
+        self.Qu = sparse.diags([0, 1000, 1000])  # Quadratic cost for u0, u1, ...., u_N-1
+        self.QDu = sparse.diags([0, 0, 0])  # Quadratic cost for Du0, Du1, ...., Du_N-1
 
         self.x0 = x0
         self.x = x0
         self.u_prev = self.uminus1
         self.Np = 50
-
-        self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, x0=self.x0, xref=self.xref, uminus1=self.uminus1,
+        self.Nc = 10
+        self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, Nc =self.Nc, x0=self.x0, xref=self.xref, uminus1=self.uminus1,
                                  Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,
                                  xmin=self.xmin, xmax=self.xmax, umin=self.umin, umax=self.umax, Dumin=self.Dumin,
                                  Dumax=self.Dumax)
         self.MPC.setup()
-
         self.history = []
     def update_state_control(self, x):
         self.x = x

@@ -85,6 +85,8 @@ class ThrustToAngularVelocity():
     def __init__(self, Kt):
         self.Kt = Kt
     def __call__(self, thrust):
+        if thrust < 0:
+            thrust = 0
         angular_velocity = np.sqrt(0.25*thrust/self.Kt)
         return angular_velocity
 

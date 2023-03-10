@@ -3,6 +3,7 @@ from Factories.ModelsFactory.general_models import ElectronicSpeedControler
 from Factories.ToolsFactory.Converters import MPC_output_converter
 from Simulation import attitude_control as control
 from Simulation.model import quadcopterModel, loadPendulum
+from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
 
 
 class QuadConfiguration:
@@ -18,7 +19,7 @@ class QuadConfiguration:
 class ControllerConfiguration:
     def __init__(self, model_parameters, position0, position_ref, u_ss, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE):
         self.position_controller = ModelPredictiveController(quad_parameters=model_parameters, x0=position0,
-                                                   xref=position_ref, Ts= 1 / OUTER_LOOP_FREQ)
+                                                   xref=position_ref, Ts= 1 / OUTER_LOOP_FREQ, linear_model=LinearizedQuadNoYaw)
         self.position_controller_output_converter = MPC_output_converter(u_ss, model_parameters['Kt'], ANGULAR_VELOCITY_RANGE)
         self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ)
         self.inner_loop_freq = INNER_LOOP_FREQ
