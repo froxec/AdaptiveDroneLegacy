@@ -167,7 +167,14 @@ class quadcopterModel():
         if (self.state[2] < 0):
             self.state[2] = 0
         return self.state
-
+    def update_parameters(self, parameters):
+        self.mass = parameters['m']
+        self.g = parameters['g']  ## move to Environment class
+        self.inertia = parameters['I']
+        self.arm_length = parameters['l']
+        self.arm_angle = parameters['arm_angle']
+        self.Kt = parameters['Kt']
+        self.Kd = parameters['Kd']
     def __call__(self, mode, ):
         pass
 
