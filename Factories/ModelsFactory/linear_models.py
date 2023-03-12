@@ -1,9 +1,11 @@
 import numpy as np
+from copy import deepcopy
 class LinearizedQuad():
     def __init__(self, parameters, u4_ss=0, x_ref=0, y_ref=0, z_ref=0):
-        self.parameters = parameters
+        self.parameters = deepcopy(parameters)
         self.m = parameters['m']
         self.g = parameters['g']
+        self.u4_ss = u4_ss
         self.A = np.array([[0, 0, 0, 1, 0, 0],
                       [0, 0, 0, 0, 1, 0],
                       [0, 0, 0, 0, 0, 1],
@@ -71,11 +73,15 @@ class LinearizedQuadNoYaw(LinearizedQuad):
                            [0, self.g * np.sin(self.yaw_ss), self.g * np.cos(self.yaw_ss)],
                            [0, -self.g * np.cos(self.yaw_ss), self.g * np.sin(self.yaw_ss)],
                            [1 / self.m, 0, 0]])
+        self.U_OP = np.array([self.m*self.g, 0, 0, self.u4_ss])
     def discretize_model(self, Ts):
         self.Ad = np.eye(self.A.shape[0]) + self.A * Ts
         self.Bd = self.B * Ts
         return self.Ad, self.Bd
     def discrete_prediction(self, x, u, Ts):
+        delta_x = x - self.X_OP
+        delta_u = u - self.U_OP[:-1]
         self.discretize_model(Ts)
-        x_next = self.Ad@x + self.Bd@u
+        delta_x_next = self.Ad@delta_x + self.Bd@delta_u
+        x_next = delta_x_next + self.X_OP
         return x_next

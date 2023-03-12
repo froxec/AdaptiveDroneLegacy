@@ -39,5 +39,6 @@ if __name__ == "__main__":
                                          nominal_control_conf.position_controller_output_converter,
                                          quad_conf.esc,
                                          STEP_TIME, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, prediction_model, step_trajectory_buffer)
-    state, reward = environment.step(10)
-    print(state, reward)
+    for i in range(10):
+        state, reward = environment.step(quad_conf.model_parameters['m']*2)
+        print(reward)

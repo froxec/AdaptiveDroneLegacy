@@ -17,7 +17,7 @@ class ControlLoopEnvironment():
         self.x0 = x0
         self.u0 = u0
         self.x = self.x0
-        self.x_prev = None
+        self.prediction_prev = self.x
         self.u_prev = None
         self.trajectory_buffer = step_buffer
         self.position_controller = position_controller
@@ -33,11 +33,11 @@ class ControlLoopEnvironment():
                 ref_converted = self.mpc_output_converter(ref)
                 attitude_setpoint = np.concatenate([ref_converted[1:], np.array([0])])
                 throttle = ref_converted[0]
-                if self.x_prev is not None and self.u_prev is not None:
-                    prediction = self.prediction_model.discrete_prediction(self.x_prev[:6], self.u_prev, self.prediction_deltaT)
-                    self.add_sample_to_buffer(self.x_prev[:6], prediction, self.u_prev)
-                self.u_prev = ref_converted
-                self.x_prev = self.x
+                if self.u_prev is not None:
+                    prediction = self.prediction_model.discrete_prediction(self.prediction_prev, self.u_prev, self.prediction_deltaT)
+                    self.add_sample_to_buffer(self.x[:6], prediction, self.u_prev)
+                    self.prediction_prev = prediction
+                self.u_prev = ref + self.mpc_output_converter.u_ss
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12],
                                                 throttle)
             motors = self.esc(ESC_PWMs)
