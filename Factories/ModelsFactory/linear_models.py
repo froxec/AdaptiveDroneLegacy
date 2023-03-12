@@ -1,6 +1,6 @@
 import numpy as np
 class LinearizedQuad():
-    def __init__(self, parameters, dt=0, u4_ss=0, x_ref=0, y_ref=0, z_ref=0):
+    def __init__(self, parameters, u4_ss=0, x_ref=0, y_ref=0, z_ref=0):
         self.parameters = parameters
         self.m = parameters['m']
         self.g = parameters['g']
@@ -45,8 +45,8 @@ class LinearizedQuad():
         self.U_OP = np.array([ self.m*self.g, 0, 0, u4_ss])
 
 class LinearizedQuadNoYaw(LinearizedQuad):
-    def __init__(self, parameters, dt=0, yaw_ss=0, x_ref=0, y_ref=0, z_ref=0):
-        super().__init__(parameters, dt=0, u4_ss=0, x_ref=0, y_ref=0, z_ref=0)
+    def __init__(self, parameters, yaw_ss=0, x_ref=0, y_ref=0, z_ref=0):
+        super().__init__(parameters, u4_ss=yaw_ss, x_ref=x_ref, y_ref=y_ref, z_ref=z_ref)
         self.yaw_ss=yaw_ss
         self.B = np.array([[0, 0, 0],
                            [0, 0, 0],
@@ -71,3 +71,11 @@ class LinearizedQuadNoYaw(LinearizedQuad):
                            [0, self.g * np.sin(self.yaw_ss), self.g * np.cos(self.yaw_ss)],
                            [0, -self.g * np.cos(self.yaw_ss), self.g * np.sin(self.yaw_ss)],
                            [1 / self.m, 0, 0]])
+    def discretize_model(self, Ts):
+        self.Ad = np.eye(self.A.shape[0]) + self.A * Ts
+        self.Bd = self.B * Ts
+        return self.Ad, self.Bd
+    def discrete_prediction(self, x, u, Ts):
+        self.discretize_model(Ts)
+        x_next = self.Ad@x + self.Bd@u
+        return x_next

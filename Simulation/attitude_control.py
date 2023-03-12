@@ -10,7 +10,7 @@
 #   ccw 3        1 cw
 
 import numpy as np
-from controler_parameters import pitch_pid, roll_pid, yaw_pid
+from Factories.ControllersFactory.attitude_controllers.controler_parameters import pitch_pid, roll_pid, yaw_pid
 
 ## TODO PRZENIESC KLASY DO MODUŁU "BUILDING BLOCKS"
 class PID():

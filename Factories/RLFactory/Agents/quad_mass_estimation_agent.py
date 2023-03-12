@@ -27,31 +27,67 @@ class QuadMassEstimator:
         loc, scale = self.policy_network(state)
         mass = np.random.normal(loc, scale)
         return mass
-class ReplayBuffer():
-    def __init__(self, sample_shape, buffer_size=100):
+class RollBuffers():
+    def __init__(self, names, sample_shapes, buffer_size=100):
+        '''shapes - subsequent buffers sample shapes, resultant shape is (buffer_size, sample_shape),
+        names - subsequent buffers names - used to create dict'''
         self.buffer_size = (buffer_size,)
-        self.sample_shape = sample_shape
-        self.buffer_shape = self.buffer_size + sample_shape
+        self.sample_shapes = sample_shapes
+        self.names = names
+        self.buffer_shapes = [self.buffer_size + shape for shape in sample_shapes]
+        self.buffers = {self.names[i]: np.zeros(self.buffer_shapes[i]) for i in range(len(names))}
+        self.full = {name: False for name in self.names}
+        self.samples_to_fulfil = {name: buffer_size for name in self.names}
+    def add_sample(self, names, samples):
+        for i, name in enumerate(names):
+            if name not in self.names:
+                return print("Name {} refers to non existent buffer. Try one of valid names: {}".format(name, self.names))
+            self.buffers[name] = np.roll(self.buffers[name], 1, axis=0)
+            self.buffers[name][0] = samples[i]
+            if self.samples_to_fulfil[name] > 0:
+                self.samples_to_fulfil[name] -= 1
+            elif self.full[name] == False:
+                self.full[name] = True
+    def flush(self):
         self.buffer = np.zeros(self.buffer_shape)
         self.full = False
-        self.samples_to_fulfil = buffer_size
-    def add_sample(self, sample):
-        self.buffer = np.roll(self.buffer, 1)
-        self.buffer[0] = sample
-        if self.samples_to_fulfil > 0:
-            self.samples_to_fulfil -= 1
-        elif self.full == False:
-            self.full = True
-    def sample_batch(self, batch_size):
-        if batch_size > len(self):
-            batch_size = len(self)
-            print("Batch size is bigger than amount of samples. Returning batch of size {}".format(len(self)))
-        indices = np.random.choice(range(len(self)), size=batch_size, replace=False)
-        batches = self.buffer[indices]
-        batches_torch = torch.from_numpy(batches)
-        return batches_torch
+        self.samples_to_fulfil = self.buffer_size[0]
     def __len__(self):
-        return self.buffer_size[0] - self.samples_to_fulfil
+        return self.buffer_size[0]
+    def __getitem__(self, name):
+        return self.buffers[name]
+
+class ReplayBuffer(RollBuffers):
+    def __init__(self, sample_shapes, names, buffer_size=100):
+        super().__init__(sample_shapes, names, buffer_size)
+        self.data_counter = {name: 0 for name in names}
+    def add_sample(self, names, samples):
+        for i, name in enumerate(names):
+            if name not in self.names:
+                return print("Name {} refers to non existent buffer. Try one of valid names: {}".format(name, self.names))
+            self.buffers[name] = np.roll(self.buffers[name], 1, axis=0)
+            self.buffers[name][0] = samples[i]
+            self.data_counter[name] += 1
+            if self.samples_to_fulfil[name] > 0:
+                self.samples_to_fulfil[name] -= 1
+            elif self.full[name] == False:
+                self.full[name] = True
+    def sample_batch(self, batch_size):
+        basic_samples_to_fulfil = self.samples_to_fulfil[self.names[0]]
+        basic_data_counter = self.data_counter[self.names[0]]
+        if basic_samples_to_fulfil == self.buffer_size[0]:
+            print("At least one of the buffers empty. Cannot sample.")
+            return
+        buffer_size = self.buffer_size[0]
+        if len(self.names) > 1:
+            for name in self.names[1:]:
+                assert self.data_counter[name] == basic_data_counter, f"number of elements added to each buffer should be equal (data shift prevention)"
+        if batch_size > buffer_size - basic_samples_to_fulfil:
+            batch_size = buffer_size - basic_samples_to_fulfil
+            print("Batch size is bigger than amount of samples. Returning batch of size {}".format(buffer_size - basic_samples_to_fulfil))
+        indices = np.random.choice(range(buffer_size - basic_samples_to_fulfil), size=batch_size, replace=False)
+        batches = {name: torch.from_numpy(self.buffers[name][indices]) for name in self.names}
+        return batches
 class PolicyGradientLearning:
     def __init__(self, policy_network, alpha, gamma, max_episodes=1000):
         self.alpha = alpha
