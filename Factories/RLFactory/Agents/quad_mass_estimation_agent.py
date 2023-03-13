@@ -3,33 +3,37 @@ import torch.nn as nn
 import math
 import numpy as np
 class QuadMassEstimator(nn.Module):
-    def __init__(self, input_shape, output_shape):
+    def __init__(self, input_shape, output_shape, mass_min, mass_max):
+        super().__init__()
         self.input_shape = input_shape
         self.output_shape = output_shape
         self.signals_num = input_shape[0]
         self.samples = input_shape[1]
+        self.mass_min = mass_min
+        self.mass_max = mass_max
         self.policy_network = torch.nn.Sequential(
             torch.nn.Conv1d(self.signals_num, 4, kernel_size=3),
-            torch.nn.ReLU(),
             torch.nn.Conv1d(4, 16,  kernel_size=3),
             torch.nn.ReLU(),
             torch.nn.Flatten(),
-            torch.nn.Linear(16*(self.samples - 4), 32),
+            torch.nn.Linear(16*(self.samples - 4), 16),
             torch.nn.ReLU(),
-            torch.nn.Linear(32, 16),
-            torch.nn.ReLU(),
-            torch.nn.Linear(16, 8),
-            torch.nn.ReLU(),
-            torch.nn.Linear(8, 4),
+            torch.nn.Linear(16, 4),
             torch.nn.ReLU(),
             torch.nn.Linear(4, 2),
-            torch.nn.Flatten()
+            torch.nn.Flatten(),
+            torch.nn.Tanh()
         )
-    def get_mass(self, state):
-        scale = self.policy_network(state)
-        print(scale)
-        #mass = np.random.normal(loc, scale)
-        #return mass
+    def predict(self, state):
+        ##TODO zmienić wyjście, tak aby generowało wartości tylko z podanego zakresu
+        output = self.policy_network(state).detach().numpy()
+        output = output.flatten()
+        loc = output[0]*(self.mass_max - self.mass_min) + self.mass_min
+        scale = np.sqrt(output[1])
+        mass = np.random.normal(loc, scale)
+        if mass < self.mass_min:
+            mass = self.mass_min
+        return mass
 class RollBuffers():
     def __init__(self, names, sample_shapes, buffer_size=100):
         '''shapes - subsequent buffers sample shapes, resultant shape is (buffer_size, sample_shape),
@@ -52,17 +56,18 @@ class RollBuffers():
             elif self.full[name] == False:
                 self.full[name] = True
     def flush(self):
-        self.buffer = np.zeros(self.buffer_shape)
-        self.full = False
-        self.samples_to_fulfil = self.buffer_size[0]
+        for i, name in enumerate(self.names):
+            self.buffers[name] = np.zeros(self.buffer_shapes[i])
+            self.full[name] = False
+            self.samples_to_fulfil[name] = self.buffer_size[0]
     def __len__(self):
         return self.buffer_size[0]
     def __getitem__(self, name):
         return self.buffers[name]
 
 class ReplayBuffer(RollBuffers):
-    def __init__(self, sample_shapes, names, buffer_size=100):
-        super().__init__(sample_shapes, names, buffer_size)
+    def __init__(self, names, sample_shapes, buffer_size=100):
+        super().__init__(names, sample_shapes, buffer_size)
         self.data_counter = {name: 0 for name in names}
     def add_sample(self, names, samples):
         for i, name in enumerate(names):

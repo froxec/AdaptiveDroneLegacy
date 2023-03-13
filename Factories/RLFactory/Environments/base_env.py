@@ -51,7 +51,7 @@ class ControlLoopEnvironment():
         self.prediction_model.update_parameters(prediction_model_parameters)
         self.quad.update_parameters(real_quad_parameters)
         self.x = self.x0
-        self.u_prev = self.u0
+        self.u_prev = None
         self.trajectory_buffer.flush()
 
     def add_sample_to_buffer(self, state, state_prediction, control_input):

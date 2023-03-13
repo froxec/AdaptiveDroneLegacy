@@ -2,7 +2,6 @@ from math import sin, cos
 import numpy as np
 from numpy import deg2rad
 import copy
-
 #X-configuration
 #ccw is positive
 #   cw  4        2 ccw
@@ -168,6 +167,7 @@ class quadcopterModel():
             self.state[2] = 0
         return self.state
     def update_parameters(self, parameters):
+        parameters = copy.deepcopy(parameters)
         self.mass = parameters['m']
         self.g = parameters['g']  ## move to Environment class
         self.inertia = parameters['I']

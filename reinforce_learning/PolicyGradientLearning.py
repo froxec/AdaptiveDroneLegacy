@@ -22,6 +22,8 @@ QUAD_STATE0 = np.zeros(12)
 LOAD_STATE0 = np.zeros(4)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
+MASS_MIN = 0.2
+MASS_MAX = 2
 GAMMA = 0.0
 ALPHA = 1e-5
 
@@ -32,7 +34,7 @@ if __name__ == "__main__":
     u_ss = [quad_conf.model_parameters['m']*quad_conf.model_parameters['g'], 0, 0]
     nominal_control_conf = ControllerConfiguration(Z550_parameters, position0, position_ref, u_ss, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE)
     prediction_model = LinearizedQuadNoYaw(Z550_parameters)
-    mass_estimator = QuadMassEstimator(ESTIMATOR_INPUT_SHAPE, ESTIMATOR_OUTPUT_SHAPE)
+    mass_estimator = QuadMassEstimator(ESTIMATOR_INPUT_SHAPE, ESTIMATOR_OUTPUT_SHAPE, MASS_MIN, MASS_MAX)
     learning_algorithm = PolicyGradientLearning(mass_estimator.policy_network, ALPHA, GAMMA)
     step_trajectory_buffer = RollBuffers(['state', 'state_prediction', 'control_input'], [(STATES_NUM,), (STATES_NUM,), (CONTROLS_NUM,)], buffer_size=ATOMIC_TRAJ_SAMPLES_NUM)
     replay_buffer = ReplayBuffer(['state', 'action', 'reward'], [ESTIMATOR_INPUT_SHAPE, (1,), (1,)])
@@ -41,11 +43,16 @@ if __name__ == "__main__":
                                          nominal_control_conf.position_controller_output_converter,
                                          quad_conf.esc,
                                          STEP_TIME, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, prediction_model, step_trajectory_buffer)
-    state = np.zeros([10, 9], dtype=np.float32).transpose() #channels first
-    for i in range(10):
-        state = np.expand_dims(state, axis = 0)
-        state_tensor = torch.from_numpy(state)
-        action = mass_estimator.get_mass(torch.from_numpy(state))
-        print("Action", action)
-        state, reward = environment.step(action)
-        print("Reward", reward)
+    for i in range(EPISODES_NUM):
+        state = np.zeros([10, 9])  # channels first
+        done = False
+        environment.reset(Z550_parameters, Z550_parameters)
+        while not done:
+            state = state.transpose().astype(np.float32)
+            state = np.expand_dims(state, axis = 0)
+            action = mass_estimator.predict(torch.from_numpy(state))
+            print("Action", action)
+            state_next, reward, done = environment.step(action)
+            print("Reward", reward)
+            replay_buffer.add_sample(['state', 'action', 'reward'], [state, action, reward])
+            state = state_next
