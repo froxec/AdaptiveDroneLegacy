@@ -17,14 +17,15 @@ class ControlLoopEnvironment():
         self.x0 = x0
         self.u0 = u0
         self.x = self.x0
-        self.prediction_prev = self.x
         self.u_prev = None
+        self.x_prev = self.x
         self.trajectory_buffer = step_buffer
         self.position_controller = position_controller
         self.attitude_controller = attitude_controller
         self.mpc_output_converter = mpc_output_converter
         self.esc = esc
     def step(self, mass):
+        prediction_prev = self.x_prev[:6]
         self.prediction_model_parameters['m'] = mass
         self.prediction_model.update_parameters(self.prediction_model_parameters)
         for i in range(1, int(self.inner_loop_freq*self.step_time)+1):
@@ -34,15 +35,16 @@ class ControlLoopEnvironment():
                 attitude_setpoint = np.concatenate([ref_converted[1:], np.array([0])])
                 throttle = ref_converted[0]
                 if self.u_prev is not None:
-                    prediction = self.prediction_model.discrete_prediction(self.prediction_prev, self.u_prev, self.prediction_deltaT)
+                    prediction = self.prediction_model.discrete_prediction(prediction_prev, self.u_prev, self.prediction_deltaT)
                     self.add_sample_to_buffer(self.x[:6], prediction, self.u_prev)
-                    self.prediction_prev = prediction
+                    prediction_prev = prediction
                 self.u_prev = ref + self.mpc_output_converter.u_ss
+                self.x_prev = self.x
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12],
                                                 throttle)
             motors = self.esc(ESC_PWMs)
             self.x = system(np.array(motors), self.deltaT, self.quad, self.load)[:12]
-        reward = self.calculate_reward()
+        reward = 1/self.calculate_penalty()
         env_state = np.concatenate((self.trajectory_buffer['state'], self.trajectory_buffer['control_input']), axis=1)
         return env_state, reward
     def reset(self, real_quad_parameters, prediction_model_parameters):
@@ -55,7 +57,7 @@ class ControlLoopEnvironment():
     def add_sample_to_buffer(self, state, state_prediction, control_input):
         self.trajectory_buffer.add_sample(['state', 'state_prediction', 'control_input'], [state, state_prediction, control_input])
 
-    def calculate_reward(self):
+    def calculate_penalty(self):
         reward = 0
         state, state_prediction = self.trajectory_buffer['state'], self.trajectory_buffer['state_prediction']
         for i in range(self.samples_per_step):

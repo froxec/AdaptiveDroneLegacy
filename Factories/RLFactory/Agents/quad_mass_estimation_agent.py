@@ -1,7 +1,8 @@
 import torch
+import torch.nn as nn
 import math
 import numpy as np
-class QuadMassEstimator:
+class QuadMassEstimator(nn.Module):
     def __init__(self, input_shape, output_shape):
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -21,12 +22,14 @@ class QuadMassEstimator:
             torch.nn.ReLU(),
             torch.nn.Linear(8, 4),
             torch.nn.ReLU(),
-            torch.nn.Linear(4, 2)
+            torch.nn.Linear(4, 2),
+            torch.nn.Flatten()
         )
     def get_mass(self, state):
-        loc, scale = self.policy_network(state)
-        mass = np.random.normal(loc, scale)
-        return mass
+        scale = self.policy_network(state)
+        print(scale)
+        #mass = np.random.normal(loc, scale)
+        #return mass
 class RollBuffers():
     def __init__(self, names, sample_shapes, buffer_size=100):
         '''shapes - subsequent buffers sample shapes, resultant shape is (buffer_size, sample_shape),

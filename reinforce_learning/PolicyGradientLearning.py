@@ -1,3 +1,5 @@
+import torch
+
 from Factories.RLFactory.Agents.quad_mass_estimation_agent import QuadMassEstimator, PolicyGradientLearning, ReplayBuffer, RollBuffers
 from Factories.RLFactory.Environments.base_env import ControlLoopEnvironment
 from Factories.ConfigurationsFactory.configurations import ControllerConfiguration, QuadConfiguration
@@ -14,7 +16,7 @@ CHANNELS_NUM = STATES_NUM + CONTROLS_NUM #real trajectory, control input
 ATOMIC_TRAJ_SAMPLES_NUM = STEP_TIME*SAMPLING_FREQ
 MAX_EPISODE_TIME = 15 #s
 EPISODES_NUM = 1000
-ESTIMATOR_INPUT_SHAPE = (CHANNELS_NUM, ATOMIC_TRAJ_SAMPLES_NUM )
+ESTIMATOR_INPUT_SHAPE = (CHANNELS_NUM, ATOMIC_TRAJ_SAMPLES_NUM)
 ESTIMATOR_OUTPUT_SHAPE = 2 #mean and variance
 QUAD_STATE0 = np.zeros(12)
 LOAD_STATE0 = np.zeros(4)
@@ -39,6 +41,11 @@ if __name__ == "__main__":
                                          nominal_control_conf.position_controller_output_converter,
                                          quad_conf.esc,
                                          STEP_TIME, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, prediction_model, step_trajectory_buffer)
+    state = np.zeros([10, 9], dtype=np.float32).transpose() #channels first
     for i in range(10):
-        state, reward = environment.step(quad_conf.model_parameters['m']*2)
-        print(reward)
+        state = np.expand_dims(state, axis = 0)
+        state_tensor = torch.from_numpy(state)
+        action = mass_estimator.get_mass(torch.from_numpy(state))
+        print("Action", action)
+        state, reward = environment.step(action)
+        print("Reward", reward)
