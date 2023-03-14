@@ -2,7 +2,7 @@ import numpy as np
 from Simulation.model import system
 from Factories.ToolsFactory.GeneralTools import manhattan_distance
 class ControlLoopEnvironment():
-    def __init__(self, quad, load, position_controller, attitude_controller, mpc_output_converter, esc, step_time, inner_loop_freq, outer_loop_freq, prediction_model, step_buffer, x0 = np.zeros(6), u0 = np.zeros(3)):
+    def __init__(self, quad, load, position_controller, attitude_controller, mpc_output_converter, esc, step_time, MAX_STEPS_NUM, inner_loop_freq, outer_loop_freq, prediction_model, step_buffer, x0 = np.zeros(6), u0 = np.zeros(3)):
         self.quad = quad
         self.load = load
         self.step_time = step_time
@@ -24,6 +24,10 @@ class ControlLoopEnvironment():
         self.attitude_controller = attitude_controller
         self.mpc_output_converter = mpc_output_converter
         self.esc = esc
+        self.MAX_STEPS_NUM = MAX_STEPS_NUM
+        self.done = False
+        self.steps_done = 0
+        self.REWARD_COEFFICIENT = 10
     def step(self, mass):
         prediction_prev = self.x_prev[:6]
         self.prediction_model_parameters['m'] = mass
@@ -44,14 +48,17 @@ class ControlLoopEnvironment():
                                                 throttle)
             motors = self.esc(ESC_PWMs)
             self.x = system(np.array(motors), self.deltaT, self.quad, self.load)[:12]
-        reward = 1/self.calculate_penalty()
+        reward = self.REWARD_COEFFICIENT/self.calculate_penalty()
         env_state = np.concatenate((self.trajectory_buffer['state'], self.trajectory_buffer['control_input']), axis=1)
-        return env_state, reward
+        self.update_done()
+        return env_state, reward, self.done
     def reset(self, real_quad_parameters, prediction_model_parameters):
         self.prediction_model.update_parameters(prediction_model_parameters)
         self.quad.update_parameters(real_quad_parameters)
         self.x = self.x0
         self.u_prev = None
+        self.done = False
+        self.steps_done = 0
         self.trajectory_buffer.flush()
 
     def add_sample_to_buffer(self, state, state_prediction, control_input):
@@ -63,5 +70,10 @@ class ControlLoopEnvironment():
         for i in range(self.samples_per_step):
             reward += manhattan_distance(state[i], state_prediction[i])*self.prediction_deltaT
         return reward
+
+    def update_done(self):
+        self.steps_done += 1
+        if self.steps_done > self.MAX_STEPS_NUM:
+            self.done = True
 
 

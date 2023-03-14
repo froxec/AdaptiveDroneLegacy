@@ -14,8 +14,9 @@ CONTROLS_NUM = 3
 STATES_NUM = 6
 CHANNELS_NUM = STATES_NUM + CONTROLS_NUM #real trajectory, control input
 ATOMIC_TRAJ_SAMPLES_NUM = STEP_TIME*SAMPLING_FREQ
-MAX_EPISODE_TIME = 15 #s
-EPISODES_NUM = 1000
+MAX_EPISODE_TIME = 10 #s
+MAX_STEPS_NUM = int(MAX_EPISODE_TIME/STEP_TIME)
+EPISODES_NUM = 10000
 ESTIMATOR_INPUT_SHAPE = (CHANNELS_NUM, ATOMIC_TRAJ_SAMPLES_NUM)
 ESTIMATOR_OUTPUT_SHAPE = 2 #mean and variance
 QUAD_STATE0 = np.zeros(12)
@@ -35,14 +36,14 @@ if __name__ == "__main__":
     nominal_control_conf = ControllerConfiguration(Z550_parameters, position0, position_ref, u_ss, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE)
     prediction_model = LinearizedQuadNoYaw(Z550_parameters)
     mass_estimator = QuadMassEstimator(ESTIMATOR_INPUT_SHAPE, ESTIMATOR_OUTPUT_SHAPE, MASS_MIN, MASS_MAX)
-    learning_algorithm = PolicyGradientLearning(mass_estimator.policy_network, ALPHA, GAMMA)
+    learning_algorithm = PolicyGradientLearning(mass_estimator, ALPHA, GAMMA)
     step_trajectory_buffer = RollBuffers(['state', 'state_prediction', 'control_input'], [(STATES_NUM,), (STATES_NUM,), (CONTROLS_NUM,)], buffer_size=ATOMIC_TRAJ_SAMPLES_NUM)
     replay_buffer = ReplayBuffer(['state', 'action', 'reward'], [ESTIMATOR_INPUT_SHAPE, (1,), (1,)])
     environment = ControlLoopEnvironment(quad_conf.quadcopter, quad_conf.load, nominal_control_conf.position_controller,
                                          nominal_control_conf.attitude_controller,
                                          nominal_control_conf.position_controller_output_converter,
                                          quad_conf.esc,
-                                         STEP_TIME, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, prediction_model, step_trajectory_buffer)
+                                         STEP_TIME, MAX_STEPS_NUM, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, prediction_model, step_trajectory_buffer)
     for i in range(EPISODES_NUM):
         state = np.zeros([10, 9])  # channels first
         done = False
@@ -50,9 +51,18 @@ if __name__ == "__main__":
         while not done:
             state = state.transpose().astype(np.float32)
             state = np.expand_dims(state, axis = 0)
-            action = mass_estimator.predict(torch.from_numpy(state))
+            with torch.no_grad():
+                mean, std = mass_estimator.predict(torch.from_numpy(state))
+            mean = mean.numpy().item()
+            std = std.numpy().item()
+            action = np.random.normal(mean, std)
+            if action < MASS_MIN:
+                action = MASS_MIN
             print("Action", action)
             state_next, reward, done = environment.step(action)
-            print("Reward", reward)
             replay_buffer.add_sample(['state', 'action', 'reward'], [state, action, reward])
             state = state_next
+        if replay_buffer.full['state'] and replay_buffer.full['action'] and replay_buffer.full['action']:
+            print("Learning...")
+            batch = replay_buffer.sample_batch(64)
+            learning_algorithm.update_policy(batch['state'], batch['action'], batch['reward'])

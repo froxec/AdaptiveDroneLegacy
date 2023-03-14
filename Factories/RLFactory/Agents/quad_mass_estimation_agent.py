@@ -21,19 +21,17 @@ class QuadMassEstimator(nn.Module):
             torch.nn.Linear(16, 4),
             torch.nn.ReLU(),
             torch.nn.Linear(4, 2),
-            torch.nn.Flatten(),
-            torch.nn.Tanh()
+            torch.nn.Flatten()
         )
+        self.mean_output = torch.nn.Hardtanh(self.mass_min, self.mass_max)
+        self.std_output = torch.nn.Hardtanh(1e-5, 1.0)
     def predict(self, state):
         ##TODO zmienić wyjście, tak aby generowało wartości tylko z podanego zakresu
-        output = self.policy_network(state).detach().numpy()
-        output = output.flatten()
-        loc = output[0]*(self.mass_max - self.mass_min) + self.mass_min
-        scale = np.sqrt(output[1])
-        mass = np.random.normal(loc, scale)
-        if mass < self.mass_min:
-            mass = self.mass_min
-        return mass
+        # w pewien sposób zrealizowano poprzez funkcję aktywacji
+        output = self.policy_network(state)
+        loc = self.mean_output(output[:, 0])
+        scale = self.std_output(output[:, 1])
+        return loc, scale
 class RollBuffers():
     def __init__(self, names, sample_shapes, buffer_size=100):
         '''shapes - subsequent buffers sample shapes, resultant shape is (buffer_size, sample_shape),
@@ -94,7 +92,7 @@ class ReplayBuffer(RollBuffers):
             batch_size = buffer_size - basic_samples_to_fulfil
             print("Batch size is bigger than amount of samples. Returning batch of size {}".format(buffer_size - basic_samples_to_fulfil))
         indices = np.random.choice(range(buffer_size - basic_samples_to_fulfil), size=batch_size, replace=False)
-        batches = {name: torch.from_numpy(self.buffers[name][indices]) for name in self.names}
+        batches = {name: torch.from_numpy(self.buffers[name][indices].astype(np.float32)) for name in self.names}
         return batches
 class PolicyGradientLearning:
     def __init__(self, policy_network, alpha, gamma, max_episodes=1000):
@@ -107,10 +105,10 @@ class PolicyGradientLearning:
         self.optimizer = torch.optim.Adam(self.policy_network.parameters(), lr=alpha)
 
     def log_gaussian_loss(self, state, action, reward):
-        mean, variance = self.policy_network(state)
-        std = torch.sqrt(variance)
-        action_prob = torch.exp(-0.5 * ((action - mean)**2/variance))/(std*torch.sqrt(2*self.pi))
-        loss = torch.log(action_prob + self.epsilon)*reward
+        state, action, reward = torch.squeeze(state), torch.squeeze(action), torch.squeeze(reward)
+        mean, std = self.policy_network.predict(state)
+        action_prob = torch.exp(-0.5 * ((action - mean)/std)**2)/(std*torch.sqrt(2*self.pi))
+        loss = -torch.sum(torch.log(action_prob + self.epsilon)*reward)
         return loss
 
     def update_policy(self, state, action, reward):
