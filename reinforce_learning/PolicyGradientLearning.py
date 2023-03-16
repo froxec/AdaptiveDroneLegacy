@@ -64,7 +64,8 @@ if __name__ == "__main__":
             mean = mean.numpy().item()
             std = std.numpy().item()
             std = abs(std)
-            action = np.random.normal(mean, std) + exploration*np.random.normal((MASS_MAX - MASS_MIN/2), MASS_MAX/2)
+            # action = np.random.normal(mean, std) + exploration*np.random.normal((MASS_MAX - MASS_MIN/2), MASS_MAX/2)
+            action = mean + exploration * np.random.normal(0, MASS_MAX)
             if action < MASS_MIN:
                 action = MASS_MIN
             print("Action", action)
@@ -76,7 +77,7 @@ if __name__ == "__main__":
         rl_monitor.accumulate_data(learning_loss)
         if replay_buffer.full['state'] and replay_buffer.full['action'] and replay_buffer.full['action']:
             print("Learning...")
-            exploration = max(0, exploration - 0.005)
+            exploration = max(0, exploration - 0.05)
             batch = replay_buffer.sample_batch(2)
             learning_algorithm.update_policy(batch['state'], batch['action'], batch['reward'])
             learning_loss = learning_algorithm.current_loss

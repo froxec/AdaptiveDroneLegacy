@@ -35,6 +35,7 @@ class QuadMassEstimator(nn.Module):
             torch.nn.Linear(16, 4),
             torch.nn.ReLU(),
             torch.nn.Linear(4, 1),
+            torch.nn.Tanh()
         )
     def predict(self, state):
         ##TODO zmienić wyjście, tak aby generowało wartości tylko z podanego zakresu
@@ -42,7 +43,7 @@ class QuadMassEstimator(nn.Module):
         ##inicjalizacja biasu
         features = self.feature_extractor(state)
         loc = (self.mean_head(features) + 1)  + 0.2
-        scale = self.std_head(features) + 1e-5
+        scale = (self.std_head(features) + 1) + 1e-5
         return loc, scale
 
 class RollBuffers():

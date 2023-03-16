@@ -48,7 +48,7 @@ class ControlLoopEnvironment():
                                                 throttle)
             motors = self.esc(ESC_PWMs)
             self.x = system(np.array(motors), self.deltaT, self.quad, self.load)[:12]
-        reward = self.REWARD_COEFFICIENT/self.calculate_penalty()**2
+        reward = self.REWARD_COEFFICIENT/self.calculate_penalty()
         env_state = np.concatenate((self.trajectory_buffer['state'], self.trajectory_buffer['control_input']), axis=1)
         self.update_done()
         return env_state, reward, self.done
