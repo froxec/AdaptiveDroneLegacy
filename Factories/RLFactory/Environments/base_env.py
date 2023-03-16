@@ -27,7 +27,7 @@ class ControlLoopEnvironment():
         self.MAX_STEPS_NUM = MAX_STEPS_NUM
         self.done = False
         self.steps_done = 0
-        self.REWARD_COEFFICIENT = 10
+        self.REWARD_COEFFICIENT = 1
     def step(self, mass):
         prediction_prev = self.x_prev[:6]
         self.prediction_model_parameters['m'] = mass
@@ -48,7 +48,7 @@ class ControlLoopEnvironment():
                                                 throttle)
             motors = self.esc(ESC_PWMs)
             self.x = system(np.array(motors), self.deltaT, self.quad, self.load)[:12]
-        reward = self.REWARD_COEFFICIENT/self.calculate_penalty()
+        reward = self.REWARD_COEFFICIENT/self.calculate_penalty()**2
         env_state = np.concatenate((self.trajectory_buffer['state'], self.trajectory_buffer['control_input']), axis=1)
         self.update_done()
         return env_state, reward, self.done

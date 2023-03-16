@@ -11,27 +11,40 @@ class QuadMassEstimator(nn.Module):
         self.samples = input_shape[1]
         self.mass_min = mass_min
         self.mass_max = mass_max
-        self.policy_network = torch.nn.Sequential(
+        self.feature_extractor = torch.nn.Sequential(
+            #torch.nn.BatchNorm1d(self.signals_num),
             torch.nn.Conv1d(self.signals_num, 4, kernel_size=3),
-            torch.nn.Conv1d(4, 16,  kernel_size=3),
+            #torch.nn.BatchNorm1d(4),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(4, 8, kernel_size=3),
+           # torch.nn.BatchNorm1d(8),
             torch.nn.ReLU(),
             torch.nn.Flatten(),
-            torch.nn.Linear(16*(self.samples - 4), 16),
+        )
+        self.mean_head = torch.nn.Sequential(
+            torch.nn.Linear((self.samples-4)*8, 16),
             torch.nn.ReLU(),
             torch.nn.Linear(16, 4),
             torch.nn.ReLU(),
-            torch.nn.Linear(4, 2),
-            torch.nn.Flatten()
+            torch.nn.Linear(4, 1),
+            torch.nn.Tanh()
         )
-        self.mean_output = torch.nn.Hardtanh(self.mass_min, self.mass_max)
-        self.std_output = torch.nn.Hardtanh(1e-5, 1.0)
+        self.std_head = torch.nn.Sequential(
+            torch.nn.Linear((self.samples - 4) * 8, 16),
+            torch.nn.ReLU(),
+            torch.nn.Linear(16, 4),
+            torch.nn.ReLU(),
+            torch.nn.Linear(4, 1),
+        )
     def predict(self, state):
         ##TODO zmienić wyjście, tak aby generowało wartości tylko z podanego zakresu
         # w pewien sposób zrealizowano poprzez funkcję aktywacji
-        output = self.policy_network(state)
-        loc = self.mean_output(output[:, 0])
-        scale = self.std_output(output[:, 1])
+        ##inicjalizacja biasu
+        features = self.feature_extractor(state)
+        loc = (self.mean_head(features) + 1)  + 0.2
+        scale = self.std_head(features) + 1e-5
         return loc, scale
+
 class RollBuffers():
     def __init__(self, names, sample_shapes, buffer_size=100):
         '''shapes - subsequent buffers sample shapes, resultant shape is (buffer_size, sample_shape),
@@ -103,12 +116,16 @@ class PolicyGradientLearning:
         self.pi = torch.tensor(math.pi)
         self.epsilon = 1e-6
         self.optimizer = torch.optim.Adam(self.policy_network.parameters(), lr=alpha)
+        self.current_loss = 0.0
 
     def log_gaussian_loss(self, state, action, reward):
         state, action, reward = torch.squeeze(state), torch.squeeze(action), torch.squeeze(reward)
         mean, std = self.policy_network.predict(state)
-        action_prob = torch.exp(-0.5 * ((action - mean)/std)**2)/(std*torch.sqrt(2*self.pi))
-        loss = -torch.sum(torch.log(action_prob + self.epsilon)*reward)
+        max_pdb = torch.exp(-0.5 * ((mean - mean)/std)**2)/(std*torch.sqrt(2*self.pi))
+        action_pdb = torch.exp(-0.5 * ((action - mean)/std)**2)/(std*torch.sqrt(2*self.pi))
+        scaled_action_pdb = action_pdb/max_pdb
+        loss = -torch.sum(torch.log(scaled_action_pdb + self.epsilon)*reward)
+        self.current_loss = loss.detach().numpy().item()
         return loss
 
     def update_policy(self, state, action, reward):
