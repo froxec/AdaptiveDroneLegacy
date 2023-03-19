@@ -13,11 +13,12 @@ class GaussianProcess():
     def __call__(self, obs_x, obs_y):
         self.memory['obs_x'].extend(obs_x.flatten().tolist())
         self.memory['obs_y'].extend(obs_y)
-        cov11 = self.kernel_function(obs_x, obs_x) + np.eye(obs_x.shape[0])*self.noise_std**2
+        obs_x = np.array(self.memory['obs_x']).reshape(-1, 1)
+        cov11 = self.kernel_function(obs_x, obs_x) + np.eye(obs_x.shape[0])*(self.noise_std**2 + 3e-7)
         cov12 = self.kernel_function(self.X2, obs_x)
 
         K = scipy.linalg.solve(cov11, cov12, assume_a='pos').T
-        self.mean = K @ obs_y
+        self.mean = K @ self.memory['obs_y']
         self.cov22 = self.kernel_function(self.X2, self.X2)
         self.cov = self.cov22 - (K @ cov12)
         self.std = np.sqrt(np.diag(self.cov))
@@ -25,13 +26,16 @@ class GaussianProcess():
         return self.mean, self.cov
     def sample_functions(self, number_of_functions=1):
         self.sample = np.random.multivariate_normal(self.mean, self.cov, size=number_of_functions)
-        return {'x':self.X2.flatten(), 'y': self.sample.flatten(), 'name': 'GaussianProcessRealization'}
-    def Thompson_sampling(self):
-        sample_signal = self.sample_functions(number_of_functions=1)
+        return {'x':self.X2.flatten(), 'y': self.sample, 'name': 'GaussianProcessRealization'}
+    def Thompson_sampling(self, mode='max', number_of_samples=1):
+        sample_signal = self.sample_functions(number_of_functions=number_of_samples)
         x = sample_signal['x']
         y = sample_signal['y']
-        best_action_idx = np.argmax(y)
-        best_action = x[best_action_idx]
+        if mode == 'max':
+            best_action_idx = np.unravel_index(np.argmax(y), y.shape)
+        else:
+            best_action_idx = np.unravel_index(np.argmin(y), y.shape)
+        best_action = x[best_action_idx[1]]
         predicted_reward = y[best_action_idx]
         return {'best_action': best_action, 'predicted_reward': predicted_reward}
     def plot(self):
