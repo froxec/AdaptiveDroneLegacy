@@ -1,6 +1,7 @@
 import torch
 
-from Factories.RLFactory.Agents.quad_mass_estimation_agent import QuadMassEstimator, PolicyGradientLearning, ReplayBuffer, RollBuffers
+from Factories.RLFactory.Agents.quad_mass_estimation_agent import QuadMassEstimator, PolicyGradientLearning
+from Factories.ToolsFactory.GeneralTools import RollBuffers, ReplayBuffer
 from Factories.RLFactory.Environments.base_env import ControlLoopEnvironment
 from Factories.ConfigurationsFactory.configurations import ControllerConfiguration, QuadConfiguration
 from Factories.ModelsFactory.model_parameters import Z550_parameters, pendulum_parameters
