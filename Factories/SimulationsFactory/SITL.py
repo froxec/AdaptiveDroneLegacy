@@ -49,26 +49,71 @@ class InnerLoopSITL(SoftwareInTheLoop):
         self.load = load
         self.attitude_controller = attitude_controler
         self.esc = esc
-    def run(self,  attitude_ref, throttle, stop_time, x0):
+    def run(self,  attitude_ref, throttle, stop_time, x0, u0):
         t = np.arange(0, stop_time, self.deltaT)
         x = np.zeros((t.size, 12))
+        u = np.zeros((t.size, 4))
         x[0] = x0
+        u[0] = u0
         for i, t_i in enumerate(t[1:], 1):
             ESC_PWMs = self.attitude_controller(attitude_ref, self.quad.state[6:9], self.quad.state[9:12],
                                                 throttle)
             motors = self.esc(ESC_PWMs)
             x[i] = system(np.array(motors), self.deltaT, self.quad, self.load)[:12]
+            u[i] = motors
+        self.u = u
+        self.attitude_ref = attitude_ref
         self.trajectory = x
         self.time = t
-        self.plot_attitude_trajectory()
-    def plot_attitude_trajectory(self):
-        fig = make_subplots(rows=3, cols=2)
+    def plot_attitude_trajectory(self, tested_variable):
+        fig = make_subplots(rows=3, cols=1,x_title='Czas [s]',
+                            subplot_titles=('Przebieg czasowy położenia kątowego',  'Przebieg czasowy prędkości kątowej',
+                                            'Przebieg czasowy sygnału sterującego'))
+        if tested_variable==0:
+            fig['layout']['yaxis']['title'] = 'φ [rad]'
+            fig['layout']['yaxis2']['title'] = 'ω_x [rad/s]'
+            fig['layout']['yaxis3']['title'] = 'ω_1,2,3,4 [rad/s]'
+            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 6], name='φ [rad]', line = dict(width=3)), row=1, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 9], name='ω_x [rad/s]', line = dict(width=3)), row=2, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=np.repeat([self.attitude_ref[0]], self.time.shape[0]), name='φ_ref [rad]', line = dict(dash = 'dash', color='rgb(255, 0, 0)', width=3)), row=1, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 0], name='ω_1 [rad/s]', line=dict(width=3, color='rgb(0, 0, 255)')), row=3, col=1)
 
-        fig.add_trace(go.Scatter(x=self.time, y=self.x[:, 6]), row=1, col=1)
-        fig.add_trace(go.Scatter(x=self.time, y=self.x[:, 9]), row=1, col=2)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 1], name='ω_2 [rad/s]', line=dict(width=3, dash='dash', color='rgb(255, 255, 0)')),
+                          row=3, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 2], name='ω_3 [rad/s]', line=dict(width=3, color='rgb(255, 150, 0)')),
+                          row=3, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 3], name='ω_4 [rad/s]', line=dict(width=3, dash='dash', color='rgb(100, 100, 100)')),
+                          row=3, col=1)
+        elif tested_variable==1:
+            fig['layout']['yaxis']['title'] = 'θ [rad]'
+            fig['layout']['yaxis2']['title'] = 'ω_y [rad/s]'
+            fig['layout']['yaxis3']['title'] = 'ω_1,2,3,4 [rad/s]'
+            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 7], name='θ [rad]', line=dict(width=3)), row=1,
+                          col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 10], name='ω_y [rad/s]', line=dict(width=3)),
+                          row=2, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=np.repeat([self.attitude_ref[1]], self.time.shape[0]), name='θ_ref [rad]', line = dict(dash = 'dash', color='rgb(255, 0, 0)', width=3)), row=1, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 0], name='ω_1 [rad/s]', line=dict(width=3, color='rgb(0, 0, 255)')), row=3, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 1], name='ω_2 [rad/s]', line=dict(width=3, color='rgb(255, 255, 0)')), row=3, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 2], name='ω_3 [rad/s]', line=dict(width=3,dash='dash', color='rgb(255, 150, 0)')),
+                          row=3, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 3], name='ω_4 [rad/s]', line=dict(width=3, dash='dash', color='rgb(100, 100, 100)')),
+                          row=3, col=1)
+        elif tested_variable==2:
+            fig['layout']['yaxis']['title'] = 'ψ [rad]'
+            fig['layout']['yaxis2']['title'] = 'ω_z [rad/s]'
+            fig['layout']['yaxis3']['title'] = 'ω_1,2,3,4 [rad/s]'
+            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 8], name='ψ [rad]', line=dict(width=3)), row=1,
+                          col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 11], name='ω_z [rad/s]', line=dict(width=3)), row=2,
+                          col=1)
+            fig.add_trace(
+                go.Scatter(x=self.time, y=np.repeat([self.attitude_ref[2]], self.time.shape[0]), name='ψ_ref [rad]',
+                           line=dict(dash='dash', color='rgb(255, 0, 0)', width=3)), row=1, col=1)
 
-        fig.add_trace(go.Scatter(x=self.time, y=self.x[:, 7]), row=2, col=1)
-        fig.add_trace(go.Scatter(x=self.time, y=self.x[:, 10]), row=2, col=2)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 0], name='ω_1 [rad/s]', line=dict(width=3, color = 'rgb(0, 0, 255)')), row=3, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 1], name='ω_2 [rad/s]', line=dict(width=3, color='rgb(255, 255, 0)')), row=3, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 2], name='ω_3 [rad/s]', line=dict(width=3, dash='dash', color='rgb(255, 150, 0)')), row=3, col=1)
+            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 3], name='ω_4 [rad/s]', line=dict(width=3, dash='dash', color='rgb(100, 100, 100)')), row=3, col=1)
 
-        fig.add_trace(go.Scatter(x=self.time, y=self.x[:, 8]), row=3, col=1)
-        fig.add_trace(go.Scatter(x=self.time, y=self.x[:, 11]), row=3, col=2)
+        fig.write_image('../images/yaw_trajectory.jpeg')

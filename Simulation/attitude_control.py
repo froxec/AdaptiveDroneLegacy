@@ -11,6 +11,8 @@
 
 import numpy as np
 from Factories.ControllersFactory.attitude_controllers.controler_parameters import pitch_pid, roll_pid, yaw_pid
+from Factories.ToolsFactory.Converters import Saturation, RateOfChangeSaturation, LinearScaler
+
 
 ## TODO PRZENIESC KLASY DO MODUŁU "BUILDING BLOCKS"
 class PID():
@@ -55,40 +57,6 @@ class PID():
         self.PID_history.append(sum(self.signals)) 
         self.error_history.append(error)
 
-class Saturation():
-    def __init__(self, lower_limit, upper_limit):
-        self.lower_limit = lower_limit
-        self.upper_limit = upper_limit
-    def __call__ (self, signal):
-        if signal < self.lower_limit:
-            signal = self.lower_limit
-        elif signal > self.upper_limit:
-            signal = self.upper_limit
-        return signal
-
-class LinearScaler():
-    def __init__(self, min, max):
-        self.min = min
-        self.max = max
-    def __call__(self, normalized_signal):
-        scaled_signal = normalized_signal*(self.max - self.min) + self.min
-        return scaled_signal
-
-class Normalizer():
-    def __init__(self, min, max):
-        self.min = min
-        self.max = max
-    def __call__(self, signal):
-        normalized_signal = (signal - self.min)/(self.max - self.min)
-        return normalized_signal
-class ThrustToAngularVelocity():
-    def __init__(self, Kt):
-        self.Kt = Kt
-    def __call__(self, thrust):
-        if thrust < 0:
-            thrust = 0
-        angular_velocity = np.sqrt(0.25*thrust/self.Kt)
-        return angular_velocity
 
 class angleControler():
     def __init__(self, pid_parameters, dT):
@@ -135,12 +103,15 @@ class attitudeControler():
         return (u[0], u[1], u[2])
 
 class quadControler():
-    def __init__(self, dT):
+    def __init__(self, dT, PWM_RANGE, PWM0):
         self.attitude_control = attitudeControler(dT)
         self.pid_saturation = Saturation(lower_limit=-1, upper_limit=1)
         self.throttle_saturation = Saturation(lower_limit=0, upper_limit=1)
         self.pid_to_pwm_scaler = LinearScaler(min=-100, max=100)
         self.throttle_to_pwm_scaler = LinearScaler(min=1120, max=1920)
+        self.motor_rate_limiter = RateOfChangeSaturation(rate_limit=2000, deltaT=dT)
+        self.signal_to_ESC_prev = [PWM0, PWM0, PWM0, PWM0]
+        self.pwm_limiter = Saturation(lower_limit=PWM_RANGE[0], upper_limit=PWM_RANGE[1])
     def __call__(self, attitude_setpoint, attitude, attitude_rate, throttle):
         '''throttle_setpoint should be in range (0, 1)'''
         throttle_limited = self.throttle_saturation(throttle)
@@ -149,6 +120,9 @@ class quadControler():
         (roll_PWM, pitch_PWM, yaw_PWM) = (self.pid_to_pwm_scaler(roll_u_limited/2 + 0.5), self.pid_to_pwm_scaler(pitch_u_limited/2 + 0.5), self.pid_to_pwm_scaler(yaw_u_limited/2 + 0.5))
         throttle_PWM = self.throttle_to_pwm_scaler(throttle_limited)
         signal_to_ESC = motor_mixing_algorithm(throttle_PWM, roll_PWM, pitch_PWM, yaw_PWM)
+        signal_to_ESC = self.motor_rate_limiter(signal_to_ESC, self.signal_to_ESC_prev)
+        signal_to_ESC = self.pwm_limiter(signal_to_ESC)
+        self.signal_to_ESC_prev = signal_to_ESC
         return signal_to_ESC
 
 def limits(motors):
