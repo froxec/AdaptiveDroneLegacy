@@ -24,3 +24,10 @@ class ControllerConfiguration:
         self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ)
         self.inner_loop_freq = INNER_LOOP_FREQ
         self.outer_loop_freq = OUTER_LOOP_FREQ
+
+class AttitudeControllerConfiguration():
+    def __init__(self, LOOP_FREQ, PWM_RANGE, PWM0):
+        self.attitude_controller = control.quadControler(1 / LOOP_FREQ, PWM_RANGE, PWM0)
+        self.loop_freq = LOOP_FREQ
+        self.PWM_RANGE = PWM_RANGE
+        self.PWM0 = PWM0

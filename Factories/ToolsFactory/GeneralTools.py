@@ -14,7 +14,13 @@ def plot_signal(signals):
         fig.add_trace(go.Scatter(x=signal['x'], y=signal['y'], name=signal['name']))
     fig.show()
 
+def minmax_normalize(signal, domain):
+    normalized_signal = (signal - domain[0])/(domain[1] - domain[0])
+    return normalized_signal
 
+def minmax_rescale(normalized_signal, domain):
+    signal_rescaled = normalized_signal*(domain[1] - domain[0]) + domain[0]
+    return signal_rescaled
 class RollBuffers():
     def __init__(self, names, sample_shapes, buffer_size=100):
         '''shapes - subsequent buffers sample shapes, resultant shape is (buffer_size, sample_shape),
