@@ -19,14 +19,14 @@ if __name__ == '__main__':
     quad_conf = QuadConfiguration(Z550_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE, ANGULAR_VELOCITY_RANGE)
 
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 1.0})
+    perturber({'m': 0.0})
     print(perturber.perturbed_parameters)
 
     control_conf = ControllerConfiguration(perturber.perturbed_parameters, position0=np.array([0, 0, 0, 0, 0, 0]),
                                            position_ref=np.array([0, 10, 10, 0, 0, 0]),
                                            u_ss=[perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0, 0],
                                            INNER_LOOP_FREQ=INNER_LOOP_FREQ, OUTER_LOOP_FREQ=OUTER_LOOP_FREQ,
-                                           ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE)
+                                           ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE)
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, control_conf.position_controller, control_conf.attitude_controller, control_conf.position_controller_output_converter, quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
     # visualizer = ParallelVisualizer()
     # plot_pipe, remote_end = mp.Pipe()
