@@ -42,7 +42,7 @@ yaw_pid = {
     },
     'rate': {
         'Kp': 5,
-        'Ki': 5,
+        'Ki': 0,
         'Kd': 0
     },
     'acceleration': {

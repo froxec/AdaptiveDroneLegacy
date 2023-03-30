@@ -10,16 +10,16 @@ class ModelPredictiveController():
         self.Ts = Ts
         self.angular_velocity_range = angular_velocity_range
         self.angular_velocity_converter = AngularVelocityToThrust(quad_parameters['Kt'])
-        self.linear_model = linear_model(quad_parameters, x_ref=xref[0], y_ref=xref[1], z_ref=xref[2])
+        self.linear_model = linear_model(quad_parameters, yaw_ss=0.0, x_ref=xref[0], y_ref=xref[1], z_ref=xref[2])
         self.thrust_ss = quad_parameters['m']*quad_parameters['g']
-        self.Ac = self.linear_model.A
-        self.Bc = self.linear_model.B
+        self.Ac = sparse.csc_matrix(self.linear_model.A)
+        self.Bc = sparse.csc_matrix(self.linear_model.B)
         self.x_num, self.u_num = self.Bc.shape
-        self.Ad = np.eye(self.x_num) + self.Ac*self.Ts
-        self.Bd = self.Bc*Ts
+        self.Ad = sparse.csc_matrix(np.eye(self.x_num) + self.Ac*self.Ts)
+        self.Bd = sparse.csc_matrix(self.Bc*Ts)
         #reference values
         self.xref = xref
-        self.uminus1 = np.array([0, 0.0, 0.0])
+        self.uminus1 = np.array([0.0, 0.0, 0.0])
 
         #constraints
         thrust_min = self.angular_velocity_converter(self.angular_velocity_range[0])
@@ -37,7 +37,7 @@ class ModelPredictiveController():
 
         #cost parameters
         self.Qx = sparse.diags([5, 5, 5, 10, 10, 10])  # Quadratic cost for states x0, x1, ..., x_N-1
-        self.QxN = sparse.diags([0, 0, 0, 1, 1, 1])  # Quadratic cost for xN
+        self.QxN = sparse.diags([0, 0, 0, 0, 0, 0])  # Quadratic cost for xN
         self.Qu = sparse.diags([10, 1000, 1000])  # Quadratic cost for u0, u1, ...., u_N-1
         self.QDu = sparse.diags([0, 0, 0])  # Quadratic cost for Du0, Du1, ...., Du_N-1
 
@@ -59,5 +59,14 @@ class ModelPredictiveController():
         self.u_prev = u
         self.save_history(u)
         return u
+    def set_reference(self, ref):
+        self.xref = ref
+        self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, Nc=self.Nc, x0=self.x0, xref=self.xref,
+                                 uminus1=self.uminus1,
+                                 Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,
+                                 xmin=self.xmin, xmax=self.xmax, umin=self.umin, umax=self.umax, Dumin=self.Dumin,
+                                 Dumax=self.Dumax)
+        self.MPC.setup()
+
     def save_history(self, u):
         self.history.append(u)
