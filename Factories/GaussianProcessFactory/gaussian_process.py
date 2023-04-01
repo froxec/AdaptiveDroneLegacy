@@ -44,10 +44,18 @@ class GaussianProcess():
     def plot(self):
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=self.X.flatten(), y=self.mean))
-        fig.add_trace(go.Scatter(x=self.memory['obs_x'], y=self.memory['obs_y'], mode='markers'))
+        fig.add_trace(go.Scatter(x=self.memory['obs_x'], y=self.memory['obs_y'], mode='markers', marker=dict(size=16)))
         fig.add_traces([go.Scatter(x=self.X.flatten(), y=self.mean + self.std, mode='lines', line_color='rgba(0,0,0,0)'),
                         go.Scatter(x=self.X.flatten(), y=self.mean - self.std, mode='lines', line_color='rgba(0,0,0,0)',
                                    fill='tonexty', fillcolor='rgba(0, 0, 255, 0.2)')])
+        fig.update_layout(
+            xaxis_title="X",
+            yaxis_title="Y",
+            font=dict(
+                family="Courier New, monospace",
+                size=18,
+                color="RebeccaPurple"
+            ))
         fig.show()
 
 class EfficientGaussianProcess(GaussianProcess):

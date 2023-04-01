@@ -62,7 +62,7 @@ class LinearizedQuadNoYaw(LinearizedQuad):
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0]])
-        self.U_OP = np.array([self.m * self.g, 0.0, 0.0])
+        self.U_OP = np.array([self.m * self.g, 0.0, 0.0, 0.0])
     def update_parameters(self, parameters):
         self.parameters = deepcopy(parameters)
         self.g = parameters['g']

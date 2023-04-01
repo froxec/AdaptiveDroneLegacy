@@ -3,7 +3,7 @@ from Simulation.model import system
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 class SoftwareInTheLoop:
-    def __init__(self, quad, load, position_controller, attitude_controler, mpc_output_converter, esc, inner_loop_freq, outer_loop_freq):
+    def __init__(self, quad, load, position_controller, attitude_controler, mpc_output_converter, esc, inner_loop_freq, outer_loop_freq, thrust_compensator=None):
         self.INNER_LOOP_FREQ = inner_loop_freq
         self.OUTER_LOOP_FREQ = outer_loop_freq
         self.MODULO_FACTOR = self.INNER_LOOP_FREQ / self.OUTER_LOOP_FREQ
@@ -12,6 +12,7 @@ class SoftwareInTheLoop:
         self.position_controller = position_controller
         self.attitude_controller = attitude_controler
         self.mpc_output_converter = mpc_output_converter
+        self.thrust_compensator = thrust_compensator
         self.esc = esc
     def run(self, stop_time, deltaT, x0):
         t = np.arange(0, stop_time, deltaT)
@@ -20,7 +21,9 @@ class SoftwareInTheLoop:
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:
                 ref = self.position_controller.update_state_control(x[i, :6])
-                ref_converted = self.mpc_output_converter(ref)
+                if self.thrust_compensator is not None:
+                    ref_compensated = self.thrust_compensator(x[i, :6], ref)
+                ref_converted = self.mpc_output_converter(ref_compensated)
                 attitude_setpoint =np.concatenate([ref_converted[1:], np.array([0.0])])
                 throttle = ref_converted[0]
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12], throttle)

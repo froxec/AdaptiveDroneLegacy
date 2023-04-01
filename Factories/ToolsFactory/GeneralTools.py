@@ -3,6 +3,9 @@ import plotly.graph_objects as go
 def manhattan_distance(a, b):
     return np.abs(a - b).sum()
 
+def euclidean_distance(a, b):
+    return np.linalg.norm(a - b)
+
 def plot_signal(signals):
     """
     Function for plotting signals.

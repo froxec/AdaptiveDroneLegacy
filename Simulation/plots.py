@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 
 def plotTrajectory(t, x, rows, cols, fix_scale=[]):
     #x = x.transpose()
@@ -20,7 +21,12 @@ def plotTrajectory(t, x, rows, cols, fix_scale=[]):
     plt.show(block=True)
     plt.savefig("trajectory.png")
 
-
+def plotTrajectory3d(x, xref):
+    fig = go.Figure(data=[go.Scatter3d(x=x[:, 0], y=x[:, 1],
+                                       z=x[:, 2], marker=dict(size=0, line=dict(width=1))),
+                          go.Scatter3d(x=xref[:, 0], y=xref[:, 1],
+                                       z=xref[:, 2], marker=dict(size=0, line=dict(width=1)))])
+    fig.show()
 def groupDataFromPIDs(controler_object):
     controler_names = ('roll', 'pitch', 'yaw')
     pid_names = ('angle', 'rate', 'acceleration')
