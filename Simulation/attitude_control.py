@@ -120,8 +120,9 @@ class quadControler():
         (roll_PWM, pitch_PWM, yaw_PWM) = (self.pid_to_pwm_scaler(roll_u_limited/2 + 0.5), self.pid_to_pwm_scaler(pitch_u_limited/2 + 0.5), self.pid_to_pwm_scaler(yaw_u_limited/2 + 0.5))
         throttle_PWM = self.throttle_to_pwm_scaler(throttle_limited)
         signal_to_ESC = motor_mixing_algorithm(throttle_PWM, roll_PWM, pitch_PWM, yaw_PWM)
-        signal_to_ESC = self.motor_rate_limiter(signal_to_ESC, self.signal_to_ESC_prev)
-        signal_to_ESC = self.pwm_limiter(signal_to_ESC)
+        # TODO wyłączono rate limiter ze względu na to, że predykcja go nie uwzględnia - poprawić
+        #signal_to_ESC = self.motor_rate_limiter(signal_to_ESC, self.signal_to_ESC_prev)
+        signal_to_ESC = self.pwm_limiter(np.array(signal_to_ESC))
         self.signal_to_ESC_prev = signal_to_ESC
         return signal_to_ESC
 

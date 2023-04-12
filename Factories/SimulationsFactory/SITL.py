@@ -17,15 +17,15 @@ class SoftwareInTheLoop:
         t = np.arange(0, stop_time, deltaT)
         x = np.zeros((t.size, 12))
         x[0] = x0
-        for i, t_i in enumerate(t[1:], 1):
-            if (i % self.MODULO_FACTOR) == 1:
-                ref = self.position_controller.update_state_control(x[i - 1, :6])
+        for i, t_i in enumerate(t[1:], 0):
+            if (i % self.MODULO_FACTOR) == 0:
+                ref = self.position_controller.update_state_control(x[i, :6])
                 ref_converted = self.mpc_output_converter(ref)
-                attitude_setpoint =np.concatenate([ref_converted[1:], np.array([0])])
+                attitude_setpoint =np.concatenate([ref_converted[1:], np.array([0.0])])
                 throttle = ref_converted[0]
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12], throttle)
             motors = self.esc(ESC_PWMs)
-            x[i] = system(np.array(motors), deltaT, self.quad, self.load)[:12]
+            x[i + 1] = system(np.array(motors), deltaT, self.quad, self.load)[:12]
             ##TODO move animation into different module
             # if (i % int(1/(deltaT*FPS))) == 0:
             #     #print(i)

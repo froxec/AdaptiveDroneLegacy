@@ -1,5 +1,5 @@
 from Factories.GaussianProcessFactory.kernels import  RBF_Kernel
-from Factories.GaussianProcessFactory.gaussian_process import GaussianProcess
+from Factories.GaussianProcessFactory.gaussian_process import GaussianProcess, EfficientGaussianProcess
 from Factories.ToolsFactory.GeneralTools import plot_signal, RollBuffers
 from Factories.ToolsFactory.Converters import convert_trajectory
 
@@ -29,16 +29,16 @@ MASS_MAX = 2
 if __name__ == "__main__":
     deltaT = STEP_TIME/OUTER_LOOP_FREQ
     samples_num = 100
-    domain = (0.2, 2)
+    domain = (0.2, 4)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
 
     quad_conf = QuadConfiguration(Z550_parameters, pendulum_parameters, QUAD_STATE0, LOAD_STATE0, PWM_RANGE,
                                   ANGULAR_VELOCITY_RANGE)
     position0 = QUAD_STATE0[:6]
-    position_ref = np.array([0, 10, 10, 0, 0, 0])
+    position_ref = np.array([0, 0, 10, 0, 0, 0])
     u_ss = [quad_conf.model_parameters['m'] * quad_conf.model_parameters['g'], 0, 0]
     nominal_control_conf = ControllerConfiguration(Z550_parameters, position0, position_ref, u_ss, INNER_LOOP_FREQ,
-                                                   OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE)
+                                                   OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE)
     prediction_model = LinearizedQuadNoYaw(Z550_parameters)
     step_trajectory_buffer = RollBuffers(['state', 'state_prediction', 'control_input'],
                                          [(STATES_NUM,), (STATES_NUM,), (CONTROLS_NUM,)],
@@ -53,17 +53,19 @@ if __name__ == "__main__":
     # observations
     action = np.random.uniform(domain[0], domain[1], size=(1,))
 
-    rbf_kernel = RBF_Kernel(length=0.3)
-    gp = GaussianProcess(X0, rbf_kernel, noise_std=0.0)
+    rbf_kernel = RBF_Kernel(length=1)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
 
     done = False
     environment.reset(Z550_parameters, Z550_parameters)
+    action = np.array([    quad_conf.model_parameters['m']])
     while not done:
         state_next, reward, done = environment.step(action.item())
         convert_trajectory(state_next[:, 3:6], state_next[:, 6], deltaT)
         gp(np.array(action).reshape(-1, 1), [reward])
         gp.plot()
-        best = gp.Thompson_sampling(mode='min', number_of_samples=10)
-        action = best['best_action']
+        best = gp.Thompson_sampling(mode='min', number_of_samples=1)
+        #action = best['best_action']
+        action = np.array([    quad_conf.model_parameters['m']])
         print("Best action", action)
         predicted_reward = best['predicted_reward']

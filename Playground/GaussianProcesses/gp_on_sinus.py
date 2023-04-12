@@ -1,7 +1,8 @@
 from Factories.GaussianProcessFactory.kernels import  RBF_Kernel
-from Factories.GaussianProcessFactory.gaussian_process import GaussianProcess
+from Factories.GaussianProcessFactory.gaussian_process import GaussianProcess, EfficientGaussianProcess
 from Factories.ToolsFactory.GeneralTools import plot_signal
 import numpy as np
+
 if __name__ == "__main__":
     samples_num = 100
     observations = 5
@@ -12,8 +13,8 @@ if __name__ == "__main__":
     x1 = np.random.uniform(domain[0], domain[1], size=(1, 1))
     y1 = np.sin(x1).flatten()
 
-    rbf_kernel = RBF_Kernel(length=2)
-    gp = GaussianProcess(X0, rbf_kernel, noise_std=0)
+    rbf_kernel = RBF_Kernel(length=5)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0)
     gp(x1, y1)
     gp.plot()
     for i in range(observations):

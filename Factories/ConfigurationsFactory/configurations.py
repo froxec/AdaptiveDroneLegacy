@@ -17,11 +17,12 @@ class QuadConfiguration:
 
 
 class ControllerConfiguration:
-    def __init__(self, model_parameters, position0, position_ref, u_ss, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE):
+    def __init__(self, model_parameters, position0, position_ref, u_ss, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE):
         self.position_controller = ModelPredictiveController(quad_parameters=model_parameters, x0=position0,
-                                                   xref=position_ref, Ts= 1 / OUTER_LOOP_FREQ, linear_model=LinearizedQuadNoYaw)
+                                                   xref=position_ref, Ts= 1 / OUTER_LOOP_FREQ, angular_velocity_range=ANGULAR_VELOCITY_RANGE, linear_model=LinearizedQuadNoYaw)
         self.position_controller_output_converter = MPC_output_converter(u_ss, model_parameters['Kt'], ANGULAR_VELOCITY_RANGE)
-        self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ)
+        PWM0 = PWM_RANGE[0]
+        self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ, PWM_RANGE, PWM0)
         self.inner_loop_freq = INNER_LOOP_FREQ
         self.outer_loop_freq = OUTER_LOOP_FREQ
 

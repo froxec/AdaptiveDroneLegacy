@@ -3,6 +3,7 @@ import scipy.linalg
 import plotly.graph_objects as go
 import itertools
 from Factories.ToolsFactory.GeneralTools import minmax_rescale
+from scipy.linalg import cholesky, cho_solve
 class GaussianProcess():
     def __init__(self, predict_at, kernel_function, noise_std=0):
         self.kernel_function = kernel_function
@@ -17,7 +18,7 @@ class GaussianProcess():
         self.memory['obs_y'].extend(obs_y)
         obs_x = np.array(self.memory['obs_x']).reshape(-1, 1)
         cov11 = self.kernel_function(obs_x, obs_x) + np.eye(obs_x.shape[0])*(self.noise_std**2 + 3e-7)
-        cov12 = self.kernel_function(self.X, obs_x)
+        cov12 = self.kernel_function(obs_x, self.X)
 
         K = scipy.linalg.solve(cov11, cov12, assume_a='pos').T
         self.mean = K @ self.memory['obs_y']
@@ -49,6 +50,23 @@ class GaussianProcess():
                                    fill='tonexty', fillcolor='rgba(0, 0, 255, 0.2)')])
         fig.show()
 
+class EfficientGaussianProcess(GaussianProcess):
+    def __call__(self, obs_x, obs_y):
+        self.memory['obs_x'].extend(obs_x.flatten().tolist())
+        self.memory['obs_y'].extend(obs_y)
+        obs_x = np.array(self.memory['obs_x']).reshape(-1, 1)
+        cov11 = self.kernel_function(obs_x, obs_x) + np.eye(obs_x.shape[0]) * (self.noise_std ** 2 + 3e-7)
+        cov12 = self.kernel_function(self.X, obs_x)
+
+        L = cholesky(cov11, lower=True)
+        self.alpha = cho_solve((L, True), self.memory['obs_y'])
+        self.L = L
+        self.mean = cov12.dot(self.alpha)
+        v = cho_solve((L, True), cov12.T)
+        self.cov = self.cov22 - cov12.dot(v)
+        self.std = np.sqrt(np.diag(self.cov))
+
+        return self.mean, self.cov
 class ContextualGaussianProcess(GaussianProcess):
     def __init__(self, predict_at, kernel, noise_std):
         self.X = predict_at
