@@ -11,6 +11,8 @@ class GaussianProcess():
         self.cov22 = self.kernel_function(self.X, self.X)
         self.noise_std = noise_std
         self.sample = None
+        self.best_action_idx = None
+        self.plots = 0
         self.memory = {'obs_x': [],
                        'obs_y': []}
     def __call__(self, obs_x, obs_y):
@@ -38,25 +40,62 @@ class GaussianProcess():
             best_action_idx = np.unravel_index(np.argmax(y), y.shape)
         else:
             best_action_idx = np.unravel_index(np.argmin(y), y.shape)
+        self.best_action_idx = best_action_idx
         best_action = x[best_action_idx[1]]
         predicted_reward = y[best_action_idx]
         return {'best_action': best_action, 'predicted_reward': predicted_reward}
     def plot(self):
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=self.X.flatten(), y=self.mean))
-        fig.add_trace(go.Scatter(x=self.memory['obs_x'], y=self.memory['obs_y'], mode='markers', marker=dict(size=16)))
-        fig.add_traces([go.Scatter(x=self.X.flatten(), y=self.mean + self.std, mode='lines', line_color='rgba(0,0,0,0)'),
-                        go.Scatter(x=self.X.flatten(), y=self.mean - self.std, mode='lines', line_color='rgba(0,0,0,0)',
-                                   fill='tonexty', fillcolor='rgba(0, 0, 255, 0.2)')])
+        fig.add_trace(go.Scatter(x=self.X.flatten(), y=self.mean, name='mean', line=dict(width=4)))
+        fig.add_trace(go.Scatter(x=self.memory['obs_x'], y=self.memory['obs_y'], name="Obserwacja", mode='markers',
+                                 marker=dict(size=16)))
+        fig.add_traces(
+            [go.Scatter(x=self.X.flatten(), y=self.mean + self.std, name="std", showlegend=False, mode='lines',
+                        line_color='rgba(0,0,0,0)'),
+             go.Scatter(x=self.X.flatten(), y=self.mean - self.std, name="std", mode='lines',
+                        line_color='rgba(0, 0, 255, 0.2)',
+                        fill='tonexty', fillcolor='rgba(0, 0, 255, 0.2)')])
         fig.update_layout(
+            autosize=False,
+            width=1600,
+            height=800,
             xaxis_title="X",
             yaxis_title="Y",
             font=dict(
                 family="Courier New, monospace",
-                size=18,
+                size=28,
                 color="RebeccaPurple"
             ))
-        fig.show()
+        fig.write_image("../../images/gp/gp_plot{}.jpg".format(self.plots))
+        self.plots += 1
+
+    def plot_with_sample(self):
+        sample = np.reshape(self.sample, (-1, 1))
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=self.X.flatten(), y=self.mean, name='mean', line=dict(width=4)))
+        fig.add_trace(go.Scatter(x=self.memory['obs_x'], y=self.memory['obs_y'], name="Obserwacja", mode='markers', marker=dict(size=16)))
+        fig.add_traces(
+            [go.Scatter(x=self.X.flatten(), y=self.mean + self.std, name="std", showlegend=False, mode='lines', line_color='rgba(0,0,0,0)'),
+             go.Scatter(x=self.X.flatten(), y=self.mean - self.std, name="std", mode='lines', line_color='rgba(0, 0, 255, 0.2)',
+                        fill='tonexty', fillcolor='rgba(0, 0, 255, 0.2)')])
+        fig.update_layout(
+            autosize=False,
+            width=1600,
+            height=800,
+            xaxis_title="X",
+            yaxis_title="Y",
+            font=dict(
+                family="Courier New, monospace",
+                size=28,
+                color="RebeccaPurple"
+            ))
+        fig.add_trace(
+            go.Scatter(x=self.X.flatten(), y=sample.flatten(), name="Realizacja procesu", line=dict(width=4, color='rgb(0, 255, 0)')))
+        fig.add_trace(
+            go.Scatter(x=[self.X.reshape(1, -1)[self.best_action_idx]], y=[sample.reshape(1, -1)[self.best_action_idx]], name="Najlepsza akcja", mode='markers', marker=dict(size=16, color ='rgba(255, 0, 0, 0.5)')))
+        fig.write_image("../../images/gp/gp_plot{}.jpg".format(self.plots))
+        self.plots += 1
+
 
 class EfficientGaussianProcess(GaussianProcess):
     def __call__(self, obs_x, obs_y):

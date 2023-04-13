@@ -19,6 +19,7 @@ if __name__ == "__main__":
     gp.plot()
     for i in range(observations):
         best = gp.Thompson_sampling()
+        gp.plot_with_sample()
         action = best['best_action']
         y = np.sin(action).flatten()
         gp(np.array([action]).reshape(-1, 1), y)
