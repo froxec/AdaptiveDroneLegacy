@@ -1,5 +1,5 @@
 import numpy as np
-
+from copy import deepcopy
 class MPC_output_converter():
     def __init__(self, u_ss, Kt, angular_velocity_range):
         self.angular_vel_min = angular_velocity_range[0]
@@ -7,13 +7,26 @@ class MPC_output_converter():
         self.u_ss = u_ss
         self.thrust_converter = ThrustToAngularVelocity(Kt)
         self.angular_vel_normalizer = Normalizer(min=self.angular_vel_min, max=self.angular_vel_max)
+        self.nominal_u = None
     def __call__(self, delta_u):
         u = delta_u + self.u_ss
+        self.nominal_u = deepcopy(u)
         omega = self.thrust_converter(u[0])
         throttle = self.angular_vel_normalizer(omega)
         u[0] = throttle
         #u[3] = 0
         return u
+
+
+class MPC_input_converter():
+    def __init__(self, x_ss, u_ss):
+        self.x_ss = x_ss
+        self.u_ss = u_ss
+
+    def __call__(self, x0, u0):
+        delta_x0 = x0 - self.x_ss
+        delta_u0 = u0 - self.u_ss
+        return delta_x0, delta_u0
 
 def convert_trajectory(velocity_trajectory, input_trajectory, deltaT):
     ## pitch, roll, yaw are ommited (not required)
