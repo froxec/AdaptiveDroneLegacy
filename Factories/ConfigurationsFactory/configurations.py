@@ -1,4 +1,4 @@
-from Factories.ControllersFactory.position_controllers.explicit_mpc_controller import ModelPredictiveController
+from Factories.ControllersFactory.position_controllers.mpc_controllers import ModelPredictiveController
 from Factories.ModelsFactory.general_models import ElectronicSpeedControler
 from Factories.ToolsFactory.Converters import MPC_output_converter, MPC_input_converter
 from Simulation import attitude_control as control

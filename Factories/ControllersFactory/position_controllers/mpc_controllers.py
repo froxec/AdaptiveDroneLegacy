@@ -10,7 +10,7 @@ import numpy as np
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
+import time
 class PositionController():
     def __init__(self, model=None, control_horizon=None, outer_loop_freq=None):
         self.model = model
@@ -38,6 +38,7 @@ class ModelPredictiveController(PositionController):
         self.x_num, self.u_num = self.Bc.shape
         self.Ad = sparse.csc_matrix(np.eye(self.x_num) + self.Ac*self.Ts)
         self.Bd = sparse.csc_matrix(self.Bc*Ts)
+        self.epsilon = 1e-2
         #reference values
         self.uminus1 = np.array([0.0, 0.0, 0.0])
 
@@ -56,9 +57,9 @@ class ModelPredictiveController(PositionController):
         self.Dumax = np.array([np.inf, np.pi*Ts/6, np.pi*Ts/6])
 
         #cost parameters
-        self.Qx = sparse.diags([5, 5, 5, 10, 10, 10])  # Quadratic cost for states x0, x1, ..., x_N-1
-        self.QxN = sparse.diags([0, 0, 0, 0, 0, 0])  # Quadratic cost for xN
-        self.Qu = sparse.diags([10, 1000, 1000])  # Quadratic cost for u0, u1, ...., u_N-1
+        self.Qx = sparse.diags([1/(np.abs(self.xref[0]) + self.epsilon), 1/(np.abs(self.xref[1]) + self.epsilon), 1/(np.abs(self.xref[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for states x0, x1, ..., x_N-1
+        self.QxN = sparse.diags([0/(np.abs(self.xref[0]) + self.epsilon), 0/(np.abs(self.xref[1]) + self.epsilon),0/(np.abs(self.xref[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for xN
+        self.Qu = sparse.diags([1, 40, 40])  # Quadratic cost for u0, u1, ...., u_N-1
         self.QDu = sparse.diags([0, 0, 0])  # Quadratic cost for Du0, Du1, ...., Du_N-1
 
         self.x0 = x0
@@ -72,21 +73,22 @@ class ModelPredictiveController(PositionController):
                                  Dumax=self.Dumax)
         self.MPC.setup()
         self.history = []
-    def update_state_control(self, x):
-        self.x = x
-        wp_reached = self.check_if_reached_waypoint(x)
+    def predict(self, x0, u0, setpoint):
+        self.x = x0
+        wp_reached = self.check_if_reached_waypoint(x0)
         if wp_reached and self.current_waypoint_id is not None:
             self.current_waypoint_id = self.current_waypoint_id + 1 if self.current_waypoint_id < self.position_trajectory.generated_trajectory.shape[0] - 1 else None
             if self.current_waypoint_id is not None:
                 self.xref = np.concatenate([self.position_trajectory.generated_trajectory[self.current_waypoint_id], np.array([0, 0, 0])])
                 self.set_reference(self.xref)
-        self.MPC.update(self.x, self.u_prev)
+        self.MPC.update(self.x, self.u_prev, solve=True)
         u = self.MPC.output()
         self.u_prev = u
         self.save_history(u)
         return u
     def set_reference(self, ref):
         self.xref = ref
+        self.Qx = sparse.diags([5/(self.xref[0] + self.epsilon), 5/(self.xref[1] + self.epsilon), 5/(self.xref[2] + self.epsilon), 100, 100, 100])  # Quadratic cost for states x0, x1, ..., x_N-1
         self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, Nc=self.Nc, x0=self.x0, xref=self.xref,
                                  uminus1=self.uminus1,
                                  Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,
@@ -112,10 +114,10 @@ class gekkoMPC(PositionController):
         self.u_bounds = {'lower': [-model.parameters['m']*model.parameters['g'], -np.pi/6, -np.pi/6],
                          'upper': [model.parameters['m']*model.parameters['g'], np.pi/6, np.pi/6]} #poprawić maksymalne ograniczenie na ciąg
         self.setpoint = None
-        self.deadbands = [0.5, 0.5, 0.5]
+        self.deadbands = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
         self.costs = {'delta_mv_cost': [0, 0, 0],
                       'delta_mv_max': [np.Inf, np.Inf, np.Inf],
-                      'cv_cost': [1, 1, 1, 5, 5, 5]}
+                      'cv_cost': [1, 1, 1, 0, 0, 0]}
         self.m = GEKKO(remote=False)
         self.x, self.y, self.u = self.m.state_space(self.model.Ad, self.model.Bd, self.model.C, D=None, discrete=True)
         self.m.time = np.arange(0, control_horizon, 1/outer_loop_freq)
@@ -140,38 +142,25 @@ class gekkoMPC(PositionController):
             var.DMAX = self.costs['delta_mv_max'][i]
             var.STATUS = 1
             var.FSTATUS = 0
-        for i, var in enumerate(self.x):
-            var.LOWER = self.x_bounds['lower'][i]
-            var.UPPER = self.x_bounds['upper'][i]
-            var.FSTATUS = 1
         for i, var in enumerate(self.y):
-            var.LOWER = self.x_bounds['lower'][i]
-            var.UPPER = self.x_bounds['upper'][i]
+            # var.LOWER = self.x_bounds['lower'][i]
+            # var.UPPER = self.x_bounds['upper'][i]
             #var.COST = self.costs['cv_cost'][i]
             var.STATUS = 1
             var.FSTATUS = 1
-        self.m.options.CV_TYPE = 2
+        self.m.options.CV_TYPE = 1
         self.m.options.IMODE = 6
-        self.m.options.NODES = 2
-        self.m.options.LINEAR = 0
-        self.m.options.SOLVER = 3
-        self.m.options.COLDSTART = 0
+        self.m.options.MAX_ITER = 1000
+        print(self.m.path)
     def predict(self, y0, u0, setpoint):
         self.setpoint = setpoint
         self.y0 = y0
         self.u0 = u0
-        for i, var in enumerate(self.u):
-            var.MEAS = self.u0[i]
-        for i, var in enumerate(self.x):
-            var.MEAS = self.y0[i]
-            var.VALUE = self.y0[i]
         for i, var in enumerate(self.y):
-            # var.SPHI = self.setpoint[i] + self.deadbands[i]
-            # var.SPLO = self.setpoint[i] - self.deadbands[i]
+            var.SPHI = self.setpoint[i] + self.deadbands[i]
+            var.SPLO = self.setpoint[i] - self.deadbands[i]
             var.SP = self.setpoint[i]
-            var.VALUE = self.y0[i]
             var.MEAS = self.y0[i]
-            var.TR_INIT = setpoint[i]
         self.m.solve(disp=False)
         return np.array([self.u[i].NEWVAL for i in range(len(self.u))])
     def plot(self):
@@ -196,11 +185,11 @@ class gekkoMPC(PositionController):
         x_fig.add_trace(go.Scatter(x=self.m.time, y=list(self.x[4]), name='deltaVy [rad]'), row=2, col=2)
         x_fig.add_trace(go.Scatter(x=self.m.time, y=list(self.x[5]), name='deltaBz [rad]'), row=3, col=2)
         u_fig.show()
-        x_fig.show()
+        #x_fig.show()
         y_fig.show()
 
 if __name__ == "__main__":
     model = LinearizedQuadNoYaw(Z550_parameters)
     mpc = gekkoMPC(model, 5 , 10)
-    u = mpc.predict([0, 0, 50, 0, 0, 0], [0, 0, 0], [0, 60, 60, 0, 0, 0])
+    u = mpc.predict([0, 0, 50, 0, 0, 0], [0, 0, 0], [0, 10, 60, 0, 0, 0])
     mpc.plot()

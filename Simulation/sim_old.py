@@ -16,8 +16,8 @@ MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(15)
-#trajectory = np.array([0, 10, 10])
-trajectory = spiral_trajectory
+trajectory = np.array([0, 50, 10])
+#trajectory = spiral_trajectory
 if __name__ == '__main__':
     deltaT = 1 / INNER_LOOP_FREQ
 
@@ -37,8 +37,8 @@ if __name__ == '__main__':
                                             x_ss = np.array([0, 0, 0, 0, 0, 0]),
                                            u_ss=np.array([perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0.0, 0.0]), prediction_model=LinearizedQuadNoYaw,
                                            INNER_LOOP_FREQ=INNER_LOOP_FREQ, OUTER_LOOP_FREQ=OUTER_LOOP_FREQ,
-                                           ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE, control_horizon=2)
-    simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, gekko_controller_conf.position_controller, gekko_controller_conf.attitude_controller,
+                                           ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE, control_horizon=5)
+    simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_compensator_conf.position_controller, controller_compensator_conf.attitude_controller,
                                   [gekko_controller_conf.position_controller_input_converter, gekko_controller_conf.position_controller_output_converter]
                                   , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
     # visualizer = ParallelVisualizer()
@@ -50,7 +50,6 @@ if __name__ == '__main__':
     # )
     state0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
     u0 = np.array([0, 0, 0])
-    setpoint = np.array([0, 0, 10, 0, 0, 0])
     # plot_process.start()
     prev_stop_time = deltaT
         #     #print(i)
@@ -65,7 +64,7 @@ if __name__ == '__main__':
         #print(prev_stop_time)
         #print(time.time() - t1)
     # send(None)
-    t, x = simulator.run(20, deltaT, state0[0:12], u0, setpoint)
+    t, x = simulator.run(50, deltaT, state0[0:12], u0, trajectory)
     #control_conf.thrust_compensator.plot_signals(t)
     plotTrajectory3d(x, spiral_trajectory.generated_trajectory)
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
