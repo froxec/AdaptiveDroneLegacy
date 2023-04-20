@@ -16,7 +16,7 @@ MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(15)
-trajectory = np.array([0, 50, 10])
+trajectory = np.array([100, 50, 10])
 #trajectory = spiral_trajectory
 if __name__ == '__main__':
     deltaT = 1 / INNER_LOOP_FREQ
