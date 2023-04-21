@@ -38,7 +38,7 @@ class ModelPredictiveController(PositionController):
         self.x_num, self.u_num = self.Bc.shape
         self.Ad = sparse.csc_matrix(np.eye(self.x_num) + self.Ac*self.Ts)
         self.Bd = sparse.csc_matrix(self.Bc*Ts)
-        self.epsilon = 1e-2
+        self.epsilon = 100
         #reference values
         self.uminus1 = np.array([0.0, 0.0, 0.0])
 
@@ -57,8 +57,9 @@ class ModelPredictiveController(PositionController):
         self.Dumax = np.array([np.inf, np.pi*Ts/6, np.pi*Ts/6])
 
         #cost parameters
-        self.Qx = sparse.diags([1/(np.abs(self.xref[0]) + self.epsilon), 1/(np.abs(self.xref[1]) + self.epsilon), 1/(np.abs(self.xref[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
-        self.QxN = sparse.diags([1/(np.abs(self.xref[0]) + self.epsilon), 1/(np.abs(self.xref[1]) + self.epsilon),1/(np.abs(self.xref[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for xN
+        self.q_coef = 1
+        self.Qx = sparse.diags([self.q_coef/(np.abs(self.xref[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1]) + self.epsilon), self.q_coef/(np.abs(self.xref[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
+        self.QxN = sparse.diags([self.q_coef/(np.abs(self.xref[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1]) + self.epsilon),self.q_coef/(np.abs(self.xref[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for xN
         self.Qu = sparse.diags([1, 1000, 1000])  # Quadratic cost for u0, u1, ...., u_N-1
         self.QDu = sparse.diags([0, 1000, 1000])  # Quadratic cost for Du0, Du1, ...., Du_N-1
 
@@ -66,7 +67,7 @@ class ModelPredictiveController(PositionController):
         self.x = x0
         self.u_prev = self.uminus1
         self.Np = 100
-        self.Nc = 10
+        self.Nc = 20
         self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, Nc =self.Nc, x0=self.x0, xref=self.xref, uminus1=self.uminus1,
                                  Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,
                                  xmin=self.xmin, xmax=self.xmax, umin=self.umin, umax=self.umax, Dumin=self.Dumin,
@@ -88,7 +89,8 @@ class ModelPredictiveController(PositionController):
         return u
     def set_reference(self, ref):
         self.xref = ref
-        self.Qx = sparse.diags([5/(self.xref[0] + self.epsilon), 5/(self.xref[1] + self.epsilon), 5/(self.xref[2] + self.epsilon), 100, 100, 100])  # Quadratic cost for states x0, x1, ..., x_N-1
+        self.Qx = sparse.diags([self.q_coef/(np.abs(self.xref[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1]) + self.epsilon), self.q_coef/(np.abs(self.xref[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
+        self.QxN = sparse.diags([self.q_coef/(np.abs(self.xref[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1]) + self.epsilon),self.q_coef/(np.abs(self.xref[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for xN
         self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, Nc=self.Nc, x0=self.x0, xref=self.xref,
                                  uminus1=self.uminus1,
                                  Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,

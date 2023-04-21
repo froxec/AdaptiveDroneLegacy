@@ -16,7 +16,7 @@ MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(15)
-trajectory = np.array([100, 50, 10])
+trajectory = np.array([100, 0, 10])
 #trajectory = spiral_trajectory
 if __name__ == '__main__':
     deltaT = 1 / INNER_LOOP_FREQ
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         #print(prev_stop_time)
         #print(time.time() - t1)
     # send(None)
-    t, x = simulator.run(50, deltaT, state0[0:12], u0, trajectory)
+    t, x = simulator.run(250, deltaT, state0[0:12], u0, trajectory)
     #control_conf.thrust_compensator.plot_signals(t)
     plotTrajectory3d(x, spiral_trajectory.generated_trajectory)
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
