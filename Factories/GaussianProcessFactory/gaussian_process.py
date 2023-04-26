@@ -44,7 +44,7 @@ class GaussianProcess():
         best_action = x[best_action_idx[1]]
         predicted_reward = y[best_action_idx]
         return {'best_action': best_action, 'predicted_reward': predicted_reward}
-    def plot(self):
+    def plot(self, img_path):
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=self.X.flatten(), y=self.mean, name='mean', line=dict(width=4)))
         fig.add_trace(go.Scatter(x=self.memory['obs_x'], y=self.memory['obs_y'], name="Obserwacja", mode='markers',
@@ -66,7 +66,7 @@ class GaussianProcess():
                 size=28,
                 color="RebeccaPurple"
             ))
-        fig.write_image("../../images/gp/gp_plot{}.jpg".format(self.plots))
+        fig.write_image(img_path + "gp_plot{}.jpg".format(self.plots))
         self.plots += 1
 
     def plot_with_sample(self):

@@ -62,7 +62,8 @@ def RungeKutta4(deltaT, model_object, u=np.array([None])):
 
 class quadcopterModel():
     def __init__(self, state0, quad_parameters):
-        self.mass = quad_parameters['m']
+        self.nominal_mass = quad_parameters['m']
+        self.mass = self.nominal_mass
         self.g = quad_parameters['g'] ## move to Environment class
         self.inertia = quad_parameters['I']
         self.arm_length = quad_parameters['l']

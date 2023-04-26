@@ -1,5 +1,4 @@
 from pyMPC.mpc import MPCController
-from Factories.ModelsFactory.model_parameters import *
 import scipy.sparse as sparse
 from Factories.ModelsFactory.linear_models import LinearizedQuad
 from Factories.ToolsFactory.Converters import AngularVelocityToThrust
@@ -22,6 +21,8 @@ class PositionController():
 class ModelPredictiveController(PositionController):
     def __init__(self, quad_parameters, x0, trajectory, Ts,  angular_velocity_range, linear_model=LinearizedQuad, save_history=False):
         self.Ts = Ts
+        self.x0 = x0
+        self.x = x0
         self.position_trajectory = trajectory
         if isinstance(trajectory, Trajectory):
             self.current_waypoint_id = 0
@@ -38,36 +39,23 @@ class ModelPredictiveController(PositionController):
         self.x_num, self.u_num = self.Bc.shape
         self.Ad = sparse.csc_matrix(np.eye(self.x_num) + self.Ac*self.Ts)
         self.Bd = sparse.csc_matrix(self.Bc*Ts)
-        self.epsilon = 100
+        self.epsilon = 1e-3
         #reference values
         self.uminus1 = np.array([0.0, 0.0, 0.0])
 
         #constraints
-        thrust_min = self.angular_velocity_converter(self.angular_velocity_range[0])
-        thrust_max = self.angular_velocity_converter(self.angular_velocity_range[1])
-        delta_thrust_min = thrust_min - self.thrust_ss
-        delta_thrust_max = thrust_max - self.thrust_ss
-        self.xmin = np.array([-np.inf, -np.inf, -np.inf, -2.5, -2.5, -2.5])
-        self.xmax = np.array([np.inf, np.inf, np.inf, 2.5, 2.5, 2.5])
-
-        self.umin = np.array([delta_thrust_min, -np.pi / 6, -np.pi / 6])
-        self.umax = np.array([delta_thrust_max, np.pi / 6, np.pi / 6])
-
-        self.Dumin = np.array([-np.inf, -np.pi*Ts/6 , -np.pi*Ts/6])
-        self.Dumax = np.array([np.inf, np.pi*Ts/6, np.pi*Ts/6])
+        self._set_constraints()
 
         #cost parameters
         self.q_coef = 1
-        self.Qx = sparse.diags([self.q_coef/(np.abs(self.xref[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1]) + self.epsilon), self.q_coef/(np.abs(self.xref[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
-        self.QxN = sparse.diags([self.q_coef/(np.abs(self.xref[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1]) + self.epsilon),self.q_coef/(np.abs(self.xref[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for xN
+        self.Qx = sparse.diags([self.q_coef/(np.abs(self.xref[0] - self.x0[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1] - self.x0[1]) + self.epsilon), self.q_coef/(np.abs(self.xref[2] - self.x0[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
+        self.QxN = sparse.diags([self.q_coef/(np.abs(self.xref[0] - self.x0[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1] - self.x0[1]) + self.epsilon),self.q_coef/(np.abs(self.xref[2] - self.x0[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for xN
         self.Qu = sparse.diags([1, 1000, 1000])  # Quadratic cost for u0, u1, ...., u_N-1
         self.QDu = sparse.diags([0, 1000, 1000])  # Quadratic cost for Du0, Du1, ...., Du_N-1
 
-        self.x0 = x0
-        self.x = x0
         self.u_prev = self.uminus1
-        self.Np = 100
-        self.Nc = 20
+        self.Np = 200
+        self.Nc = 10
         self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, Nc =self.Nc, x0=self.x0, xref=self.xref, uminus1=self.uminus1,
                                  Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,
                                  xmin=self.xmin, xmax=self.xmax, umin=self.umin, umax=self.umax, Dumin=self.Dumin,
@@ -76,6 +64,7 @@ class ModelPredictiveController(PositionController):
         self.history = []
     def predict(self, x0, u0, setpoint):
         self.x = x0
+        self.x0 = x0
         wp_reached = self.check_if_reached_waypoint(x0)
         if wp_reached and self.current_waypoint_id is not None:
             self.current_waypoint_id = self.current_waypoint_id + 1 if self.current_waypoint_id < self.position_trajectory.generated_trajectory.shape[0] - 1 else None
@@ -89,18 +78,49 @@ class ModelPredictiveController(PositionController):
         return u
     def set_reference(self, ref):
         self.xref = ref
-        self.Qx = sparse.diags([self.q_coef/(np.abs(self.xref[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1]) + self.epsilon), self.q_coef/(np.abs(self.xref[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
-        self.QxN = sparse.diags([self.q_coef/(np.abs(self.xref[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1]) + self.epsilon),self.q_coef/(np.abs(self.xref[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for xN
+        self.Qx = sparse.diags([self.q_coef/(np.abs(self.xref[0] - self.x0[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1] - self.x0[1]) + self.epsilon), self.q_coef/(np.abs(self.xref[2] - self.x0[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
+        self.QxN = sparse.diags([self.q_coef/(np.abs(self.xref[0] - self.x0[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1] - self.x0[1]) + self.epsilon),self.q_coef/(np.abs(self.xref[2] - self.x0[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for xN
         self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, Nc=self.Nc, x0=self.x0, xref=self.xref,
                                  uminus1=self.uminus1,
                                  Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,
                                  xmin=self.xmin, xmax=self.xmax, umin=self.umin, umax=self.umax, Dumin=self.Dumin,
                                  Dumax=self.Dumax)
         self.MPC.setup()
+    def update_model_parameters(self, parameters):
+        self.angular_velocity_converter = AngularVelocityToThrust(parameters['Kt'])
+        self.linear_model.update_parameters(parameters)
+        self.thrust_ss = parameters['m'] * parameters['g']
 
+        self.Ac = sparse.csc_matrix(self.linear_model.A)
+        self.Bc = sparse.csc_matrix(self.linear_model.B)
+
+        self.Ad = sparse.csc_matrix(np.eye(self.x_num) + self.Ac * self.Ts)
+        self.Bd = sparse.csc_matrix(self.Bc * self.Ts)
+
+        self._set_constraints()
+
+        self.MPC = MPCController(self.Ad, self.Bd, Np=self.Np, Nc=self.Nc, x0=self.x0, xref=self.xref,
+                                 uminus1=self.uminus1,
+                                 Qx=self.Qx, QxN=self.QxN, Qu=self.Qu, QDu=self.QDu,
+                                 xmin=self.xmin, xmax=self.xmax, umin=self.umin, umax=self.umax, Dumin=self.Dumin,
+                                 Dumax=self.Dumax)
+        self.MPC.setup()
+    def _set_constraints(self):
+        thrust_min = self.angular_velocity_converter(self.angular_velocity_range[0])
+        thrust_max = self.angular_velocity_converter(self.angular_velocity_range[1])
+        delta_thrust_min = thrust_min - self.thrust_ss
+        delta_thrust_max = thrust_max - self.thrust_ss
+        self.xmin = np.array([-np.inf, -np.inf, -np.inf, -2.5, -2.5, -2.5])
+        self.xmax = np.array([np.inf, np.inf, np.inf, 2.5, 2.5, 2.5])
+
+        self.umin = np.array([delta_thrust_min, -np.pi / 6, -np.pi / 6])
+        self.umax = np.array([delta_thrust_max, np.pi / 6, np.pi / 6])
+
+        self.Dumin = np.array([-np.inf, -np.pi * self.Ts / 6, -np.pi * self.Ts / 6])
+        self.Dumax = np.array([np.inf, np.pi * self.Ts / 6, np.pi * self.Ts / 6])
     def check_if_reached_waypoint(self, x):
         distance = euclidean_distance(self.xref, x)
-        if distance < 0.1:
+        if distance < 0.3:
             return True
         else:
             return False

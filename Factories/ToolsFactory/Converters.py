@@ -17,16 +17,23 @@ class MPC_output_converter():
         #u[3] = 0
         return u
 
-
+    def update(self, u_ss, Kt):
+        self.u_ss = u_ss
+        self.thrust_converter = ThrustToAngularVelocity(Kt)
 class MPC_input_converter():
     def __init__(self, x_ss, u_ss):
         self.x_ss = x_ss
         self.u_ss = u_ss
 
     def __call__(self, x0, u0):
+        if u0 is None:
+            u0 = np.array([0, 0, 0])
         delta_x0 = x0 - self.x_ss
         delta_u0 = u0 - self.u_ss
         return delta_x0, delta_u0
+
+    def update(self, u_ss):
+        self.u_ss = u_ss
 
 def convert_trajectory(velocity_trajectory, input_trajectory, deltaT):
     ## pitch, roll, yaw are ommited (not required)

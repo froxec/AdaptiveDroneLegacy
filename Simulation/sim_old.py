@@ -5,7 +5,7 @@ import numpy as np
 from plots import plotTrajectory, plotTrajectory3d
 import time
 from Factories.ToolsFactory.AnalysisTools import ParametersPerturber
-from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SpiralTrajectory
+from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SpiralTrajectory, RectangularTrajectory
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
 
 FPS = 30
@@ -16,8 +16,10 @@ MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(15)
-trajectory = np.array([100, 0, 10])
+rectangular_trajectory = RectangularTrajectory()
+#trajectory = np.array([100, 0, 10])
 #trajectory = spiral_trajectory
+trajectory = rectangular_trajectory
 if __name__ == '__main__':
     deltaT = 1 / INNER_LOOP_FREQ
 
@@ -29,18 +31,20 @@ if __name__ == '__main__':
 
     controller_compensator_conf = ControllerWithCompensatorConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                                            trajectory=trajectory,
-                                           u_ss=[perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0.0, 0.0], prediction_model=LinearizedQuadNoYaw,
+                                           u_ss=[perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0.0, 0.0],
+                                           x_ss = np.array([0, 0, 0, 0, 0, 0]),
+                                           prediction_model=LinearizedQuadNoYaw,
                                            INNER_LOOP_FREQ=INNER_LOOP_FREQ, OUTER_LOOP_FREQ=OUTER_LOOP_FREQ,
                                            ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE)
-    gekko_controller_conf = GekkoConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                                           trajectory=trajectory,
-                                            x_ss = np.array([0, 0, 0, 0, 0, 0]),
-                                           u_ss=np.array([perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0.0, 0.0]), prediction_model=LinearizedQuadNoYaw,
-                                           INNER_LOOP_FREQ=INNER_LOOP_FREQ, OUTER_LOOP_FREQ=OUTER_LOOP_FREQ,
-                                           ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE, control_horizon=5)
+    # gekko_controller_conf = GekkoConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+    #                                        trajectory=trajectory,
+    #                                         x_ss = np.array([0, 0, 0, 0, 0, 0]),
+    #                                        u_ss=np.array([perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0.0, 0.0]), prediction_model=LinearizedQuadNoYaw,
+    #                                        INNER_LOOP_FREQ=INNER_LOOP_FREQ, OUTER_LOOP_FREQ=OUTER_LOOP_FREQ,
+    #                                        ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE, control_horizon=5)
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_compensator_conf.position_controller, controller_compensator_conf.attitude_controller,
-                                  [gekko_controller_conf.position_controller_input_converter, gekko_controller_conf.position_controller_output_converter]
-                                  , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
+                                  [controller_compensator_conf.position_controller_input_converter, controller_compensator_conf.position_controller_output_converter]
+                                  , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, thrust_compensator=controller_compensator_conf.thrust_compensator)
     # visualizer = ParallelVisualizer()
     # plot_pipe, remote_end = mp.Pipe()
     # plot_process = mp.Process(
@@ -66,7 +70,7 @@ if __name__ == '__main__':
     # send(None)
     t, x = simulator.run(250, deltaT, state0[0:12], u0, trajectory)
     #control_conf.thrust_compensator.plot_signals(t)
-    plotTrajectory3d(x, spiral_trajectory.generated_trajectory)
+    plotTrajectory3d(x, trajectory.generated_trajectory)
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     #plotDataPID(t, controler, 'roll')
     #plotTrajectory(t[1::MODULO_FACTOR], np.vstack(control_conf.position_controller.history).transpose(), 3, 1)

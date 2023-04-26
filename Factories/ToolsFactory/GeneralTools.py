@@ -3,8 +3,11 @@ import plotly.graph_objects as go
 def manhattan_distance(a, b):
     return np.abs(a - b).sum()
 
-def euclidean_distance(a, b):
-    return np.linalg.norm(a - b)
+def euclidean_distance(a, b, axis=None):
+    if axis is None:
+        return np.linalg.norm(a - b)
+    else:
+        return np.linalg.norm(a - b, axis=axis)
 
 def plot_signal(signals):
     """

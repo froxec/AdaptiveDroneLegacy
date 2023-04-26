@@ -2,18 +2,35 @@ import numpy as np
 from Simulation.model import system
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+
+from Simulation.model import quadcopterModel, loadPendulum
+from Factories.RLFactory.Agents import BanditEstimatorAgent
+from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
+from Factories.ToolsFactory.GeneralTools import euclidean_distance
+from typing import Type
 class SoftwareInTheLoop:
-    def __init__(self, quad, load, trajectory, position_controller, attitude_controler, mpc_converters, esc, inner_loop_freq, outer_loop_freq, thrust_compensator=None):
+    # TODO pass controllers as configuration
+    def __init__(self, quad: Type[quadcopterModel],
+                 load: Type[loadPendulum],
+                 trajectory,
+                 position_controller,
+                 attitude_controller,
+                 mpc_converters, esc,
+                 inner_loop_freq: int,
+                 outer_loop_freq: int,
+                 thrust_compensator=None,
+                 estimator=None):
         self.INNER_LOOP_FREQ = inner_loop_freq
         self.OUTER_LOOP_FREQ = outer_loop_freq
         self.MODULO_FACTOR = self.INNER_LOOP_FREQ / self.OUTER_LOOP_FREQ
         self.quad = quad
         self.load = load
         self.position_controller = position_controller
-        self.attitude_controller = attitude_controler
+        self.attitude_controller = attitude_controller
         self.mpc_input_converter = mpc_converters[0]
         self.mpc_output_converter = mpc_converters[1]
         self.thrust_compensator = thrust_compensator
+        self.estimator = estimator
         self.trajectory = trajectory
         self.esc = esc
     def run(self, stop_time, deltaT, x0, u0, setpoint):
@@ -31,10 +48,16 @@ class SoftwareInTheLoop:
                 ref_converted = self.mpc_output_converter(ref)
                 attitude_setpoint = np.concatenate([ref_converted[1:], np.array([0.0])])
                 throttle = ref_converted[0]
-                ref_prev = self.mpc_output_converter.nominal_u
+                ref_prev = ref + self.mpc_output_converter.u_ss
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12], throttle)
             motors = self.esc(ESC_PWMs)
             x[i + 1] = system(np.array(motors), deltaT, self.quad, self.load)[:12]
+            if self.estimator is not None:
+                self.estimator(x[i + 1, :6], ref_prev)
+            if isinstance(self.trajectory, type(TrajectoryWithTerminals())):
+                terminal_ind = self.check_if_reached_terminal(x[i+1, :6])
+                if terminal_ind is not None:
+                    self.quad.mass = self.quad.nominal_mass + self.trajectory.terminals_payload[terminal_ind]
             ##TODO move animation into different module
             # if (i % int(1/(deltaT*FPS))) == 0:
             #     #print(i)
@@ -49,6 +72,16 @@ class SoftwareInTheLoop:
             # print(prev_stop_time)
             # print(time.time() - t1)
         return t, x
+
+    def check_if_reached_terminal(self, x):
+        x = x[None, :]
+        terminals = self.trajectory.terminals
+        terminals = np.concatenate([terminals, np.zeros((3, 3))], axis=1)
+        distances = euclidean_distance(x, terminals, axis=1)
+        terminal_ind = None
+        if distances.any() < 0.3:
+            terminal_ind = np.argmin(distances)
+        return terminal_ind
 
 class InnerLoopSITL(SoftwareInTheLoop):
     def __init__(self, quad, load, attitude_controler, esc, inner_loop_freq):

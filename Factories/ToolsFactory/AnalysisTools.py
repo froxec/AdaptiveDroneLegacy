@@ -2,10 +2,11 @@ from typing import Dict
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from copy import deepcopy
 class ParametersPerturber():
     def __init__(self, nominal_parameters: Dict):
         self.nominal_parameters = nominal_parameters
-        self.perturbed_parameters = nominal_parameters
+        self.perturbed_parameters = deepcopy(nominal_parameters)
         self.keys = nominal_parameters.keys()
     def __call__(self, perturbation):
         for key in perturbation.keys():
