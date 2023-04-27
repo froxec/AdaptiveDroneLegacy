@@ -1,8 +1,10 @@
+import numpy as np
+
 from Factories.ConfigurationsFactory.configurations import *
 from Factories.ModelsFactory.linear_models import *
 from Factories.GaussianProcessFactory.gaussian_process import *
 from Factories.ToolsFactory.GeneralTools import RollBuffers
-from Factories.ToolsFactory.GeneralTools import manhattan_distance
+from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function
 from typing import Type
 class BanditEstimatorAgent():
     def __init__(self,
@@ -20,6 +22,8 @@ class BanditEstimatorAgent():
                                          [(states_num,), (states_num,), (controls_num,)],
                                          buffer_size=atomic_traj_samples_num)
         self.actions_buffer = RollBuffers(['actions'], [(1,)], buffer_size=3)
+        self.penalties_buffer = RollBuffers(['penalties'], [(1,)], buffer_size=3)
+        self.penalty_min = None
         self.estimated_parameters = self.predictive_model.parameters
         self.deltaT = deltaT
         self.u_prev = None
@@ -30,7 +34,10 @@ class BanditEstimatorAgent():
             self.prediction_prev = x
         if self.trajectory_buffer.full['state'] == True:
             # equivalent to environment.step()
+            self.prediction_prev = x[:6]
             penalty = self.calculate_penalty()
+            penalty = self.postprocess_penalty(penalty)
+            self.penalties_buffer.add_sample(['penalties'], [penalty])
             if not self.converged:
                 self.update_gp(self.estimated_parameters['m'], penalty)
                 self.gp.plot('../images/gp/')
@@ -39,15 +46,22 @@ class BanditEstimatorAgent():
                 self.actions_buffer.add_sample(['actions'], [action])
                 self.estimated_parameters['m'] = action
                 self.predictive_model.update_parameters(self.estimated_parameters)
-            self.prediction_prev = x[:6]
+            else:
+                conditions_changed = self.check_for_conditions_changes()
+                if conditions_changed:
+                    self.converged = False
+                    self.penalty_min = np.mean(self.penalties_buffer['penalties'])
+                    self.gp.reset()
             self.trajectory_buffer.flush()
         if self.u_prev is not None:
             x_predicted = self.predictive_model.discrete_prediction(self.prediction_prev, self.u_prev, self.deltaT)
             self.add_sample_to_buffer(x[:6], x_predicted, self.u_prev)
             self.prediction_prev = x_predicted
-        if self.check_for_convergence():
+        if self.check_for_convergence() and not self.converged:
             self.update_parameters()
             self.converged = True
+            self.penalty_min = np.mean(self.penalties_buffer['penalties'])
+            self.actions_buffer.flush()
         self.u_prev = u
     def update_gp(self, action, reward):
         self.gp(np.array(action).reshape(-1, 1), [reward])
@@ -85,10 +99,22 @@ class BanditEstimatorAgent():
         for i in range(len(self.trajectory_buffer)):
             reward += manhattan_distance(state[i], state_prediction[i])*self.deltaT
         return reward
-
+    def postprocess_penalty(self, penalty):
+        return sigmoid_function(50*penalty, 1)
     def check_for_convergence(self):
         if len(set(self.actions_buffer['actions'].flatten())) == 1 and self.actions_buffer.full['actions']:
             #print("Estimator converged. Mass equal {}".format(self.actions_buffer['actions'][0]))
+            return True
+        else:
+            return False
+
+    def check_for_conditions_changes(self):
+        if not self.penalties_buffer.full['penalties']:
+            return False
+        penalties = self.penalties_buffer['penalties']
+        mean_penalty = np.mean(penalties)
+        #print(penalties)
+        if mean_penalty > 2*self.penalty_min:
             return True
         else:
             return False

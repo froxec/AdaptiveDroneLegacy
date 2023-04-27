@@ -9,6 +9,8 @@ def euclidean_distance(a, b, axis=None):
     else:
         return np.linalg.norm(a - b, axis=axis)
 
+def sigmoid_function(x, L):
+    return L/(1 + np.exp(-x))
 def plot_signal(signals):
     """
     Function for plotting signals.

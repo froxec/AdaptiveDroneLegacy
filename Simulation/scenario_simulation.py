@@ -36,7 +36,7 @@ if __name__ == '__main__':
                                   ANGULAR_VELOCITY_RANGE)
 
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 1.5})
+    perturber({'m': 0.0})
     print(perturber.perturbed_parameters)
     controller_compensator_conf = ControllerWithCompensatorConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                                            trajectory=trajectory,
@@ -48,8 +48,8 @@ if __name__ == '__main__':
 
     position_controller_conf = positionControllerWrapper(controller_compensator_conf)
     prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters)
-    rbf_kernel = RBF_Kernel(length=0.5)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
+    rbf_kernel = RBF_Kernel(length=0.8)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.1)
     mass_estimator = BanditEstimatorAgent(position_controller_conf, prediction_model, gp, ATOMIC_TRAJ_SAMPLES_NUM, deltaT=1/INNER_LOOP_FREQ)
 
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_compensator_conf.position_controller, controller_compensator_conf.attitude_controller,

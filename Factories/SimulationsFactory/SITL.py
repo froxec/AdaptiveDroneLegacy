@@ -34,6 +34,7 @@ class SoftwareInTheLoop:
         self.trajectory = trajectory
         self.esc = esc
     def run(self, stop_time, deltaT, x0, u0, setpoint):
+        import time
         t = np.arange(0, stop_time, deltaT)
         x = np.zeros((t.size, 12))
         x[0] = x0
@@ -79,8 +80,9 @@ class SoftwareInTheLoop:
         terminals = np.concatenate([terminals, np.zeros((3, 3))], axis=1)
         distances = euclidean_distance(x, terminals, axis=1)
         terminal_ind = None
-        if distances.any() < 0.3:
+        if True in [dist < 1 for dist in distances]:
             terminal_ind = np.argmin(distances)
+            print(terminal_ind)
         return terminal_ind
 
 class InnerLoopSITL(SoftwareInTheLoop):

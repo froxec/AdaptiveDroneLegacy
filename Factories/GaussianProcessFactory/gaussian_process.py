@@ -29,6 +29,13 @@ class GaussianProcess():
         self.std = np.sqrt(np.diag(self.cov))
 
         return self.mean, self.cov
+    def reset(self):
+        self.cov22 = self.kernel_function(self.X, self.X)
+        self.sample = None
+        self.best_action_idx = None
+        self.plots = 0
+        self.memory = {'obs_x': [],
+                       'obs_y': []}
     def sample_functions(self, number_of_functions=1):
         self.sample = np.random.multivariate_normal(self.mean, self.cov, size=number_of_functions)
         return {'x':self.X.flatten(), 'y': self.sample, 'name': 'GaussianProcessRealization'}
