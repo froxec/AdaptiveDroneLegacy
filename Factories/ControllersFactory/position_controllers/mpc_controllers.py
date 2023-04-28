@@ -47,7 +47,7 @@ class ModelPredictiveController(PositionController):
         self._set_constraints()
 
         #cost parameters
-        self.q_coef = 1
+        self.q_coef = 1.0
         self.Qx = sparse.diags([self.q_coef/(np.abs(self.xref[0] - self.x0[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1] - self.x0[1]) + self.epsilon), self.q_coef/(np.abs(self.xref[2] - self.x0[2]) + self.epsilon), 0, 0, 0])  # Quadratic cost for states x0, x1, ..., x_N-1
         self.QxN = sparse.diags([self.q_coef/(np.abs(self.xref[0] - self.x0[0]) + self.epsilon), self.q_coef/(np.abs(self.xref[1] - self.x0[1]) + self.epsilon),self.q_coef/(np.abs(self.xref[2] - self.x0[2]) + self.epsilon), 1, 1, 1])  # Quadratic cost for xN
         self.Qu = sparse.diags([1, 1000, 1000])  # Quadratic cost for u0, u1, ...., u_N-1
@@ -110,8 +110,8 @@ class ModelPredictiveController(PositionController):
         thrust_max = self.angular_velocity_converter(self.angular_velocity_range[1])
         delta_thrust_min = thrust_min - self.thrust_ss
         delta_thrust_max = thrust_max - self.thrust_ss
-        self.xmin = np.array([-np.inf, -np.inf, -np.inf, -2.5, -2.5, -2.5])
-        self.xmax = np.array([np.inf, np.inf, np.inf, 2.5, 2.5, 2.5])
+        self.xmin = np.array([-np.inf, -np.inf, -np.inf, -10, -10, -10])
+        self.xmax = np.array([np.inf, np.inf, np.inf, 10, 10, 10])
 
         self.umin = np.array([delta_thrust_min, -np.pi / 6, -np.pi / 6])
         self.umax = np.array([delta_thrust_max, np.pi / 6, np.pi / 6])

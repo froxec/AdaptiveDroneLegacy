@@ -1,5 +1,6 @@
 import numpy as np
 import plotly.graph_objects as go
+from scipy.linalg import toeplitz
 def manhattan_distance(a, b):
     return np.abs(a - b).sum()
 
@@ -11,6 +12,54 @@ def euclidean_distance(a, b, axis=None):
 
 def sigmoid_function(x, L):
     return L/(1 + np.exp(-x))
+
+def construct_ext_obs_mat(A, C, horizon):
+    """
+    Constructs extended observability matrix
+
+    :param A: State matrix (nxn)
+    :param C: Output matrix (qxn)
+    :param horizon: prediction_horizon (int)
+    """
+    #kolejne elementy macierzy to macierze (qxn)
+    #wykorzystanie mnożenia jest 2 razy szybsze niż potęgowanie
+    assert C.shape[1] == A.shape[0]
+    n = A.shape[0]
+    q = C.shape[0]
+    O_horizon = np.zeros((horizon, q, n))
+    A_pow = np.identity(A.shape[0])
+    for i in range(horizon):
+        #A_pow = np.linalg.matrix_power(A, i)
+        if i > 0:
+            A_pow = A_pow @ A
+        O_horizon[i, :, :] = C @ A_pow
+    return O_horizon
+
+def construct_low_tril_Toeplitz(A, B, C, D=None, horizon=10):
+    """
+    Constructs extended observability matrix
+
+    :param A: State matrix (nxn)
+    :param B: Input matrix (nxm)
+    :param C: Output matrix (qxn)
+    :param D: Direct input to output matrix (qxm)
+    :param horizon: prediction_horizon (int)
+    """
+    n = A.shape[0]
+    m = B.shape[1]
+    q = C.shape[0]
+    if D is None:
+        col = np.zeros((q, m, horizon))
+        A_pow = np.identity(A.shape[0])
+        for i in range(1, horizon):
+            if i > 1:
+                A_pow = A_pow @ A
+            col[:, :, i] = C @ A_pow @ B
+    first_col_idx = np.arange(horizon, dtype=int)
+    first_row_idx = np.zeros(horizon-1, dtype=int)
+    indices_matrix = toeplitz(first_col_idx, first_row_idx)
+    toeplitz_matrix = col[:, :, indices_matrix]
+    return toeplitz_matrix
 def plot_signal(signals):
     """
     Function for plotting signals.

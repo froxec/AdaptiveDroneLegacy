@@ -6,6 +6,7 @@ from Factories.GaussianProcessFactory.gaussian_process import *
 from Factories.ToolsFactory.GeneralTools import RollBuffers
 from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function
 from typing import Type
+import plotly.graph_objects as go
 class BanditEstimatorAgent():
     def __init__(self,
                  position_controller_conf: Type[PositionControllerConfiguration],
@@ -29,6 +30,7 @@ class BanditEstimatorAgent():
         self.u_prev = None
         self.prediction_prev = None
         self.converged = False
+        self.penalty_history = []
     def __call__(self, x, u):
         if self.prediction_prev is None:
             self.prediction_prev = x
@@ -38,6 +40,7 @@ class BanditEstimatorAgent():
             penalty = self.calculate_penalty()
             penalty = self.postprocess_penalty(penalty)
             self.penalties_buffer.add_sample(['penalties'], [penalty])
+            self.penalty_history.append(penalty)
             if not self.converged:
                 self.update_gp(self.estimated_parameters['m'], penalty)
                 self.gp.plot('../images/gp/')
@@ -100,7 +103,7 @@ class BanditEstimatorAgent():
             reward += manhattan_distance(state[i], state_prediction[i])*self.deltaT
         return reward
     def postprocess_penalty(self, penalty):
-        return sigmoid_function(50*penalty, 1)
+        return (sigmoid_function(50*penalty , 10))
     def check_for_convergence(self):
         if len(set(self.actions_buffer['actions'].flatten())) == 1 and self.actions_buffer.full['actions']:
             #print("Estimator converged. Mass equal {}".format(self.actions_buffer['actions'][0]))
@@ -114,7 +117,12 @@ class BanditEstimatorAgent():
         penalties = self.penalties_buffer['penalties']
         mean_penalty = np.mean(penalties)
         #print(penalties)
-        if mean_penalty > 2*self.penalty_min:
+        if mean_penalty > 1.2*self.penalty_min:
             return True
         else:
             return False
+
+    def plot(self):
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(x=list(range(len(self.penalty_history))), y=self.penalty_history, name='penalty_history'))

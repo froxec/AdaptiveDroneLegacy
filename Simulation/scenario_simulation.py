@@ -48,8 +48,8 @@ if __name__ == '__main__':
 
     position_controller_conf = positionControllerWrapper(controller_compensator_conf)
     prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters)
-    rbf_kernel = RBF_Kernel(length=0.8)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.1)
+    rbf_kernel = RBF_Kernel(length=2)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
     mass_estimator = BanditEstimatorAgent(position_controller_conf, prediction_model, gp, ATOMIC_TRAJ_SAMPLES_NUM, deltaT=1/INNER_LOOP_FREQ)
 
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_compensator_conf.position_controller, controller_compensator_conf.attitude_controller,
@@ -60,4 +60,5 @@ if __name__ == '__main__':
 
     t, x = simulator.run(250, 1/INNER_LOOP_FREQ, state0[0:12], u0, trajectory)
     plotTrajectory3d(x, trajectory.generated_trajectory)
+    mass_estimator.plot()
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
