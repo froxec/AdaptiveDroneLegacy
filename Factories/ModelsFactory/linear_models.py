@@ -77,7 +77,9 @@ class LinearizedQuadNoYaw(LinearizedQuad):
     def discretize_model(self, Ts):
         self.Ad = np.eye(self.A.shape[0]) + self.A * Ts
         self.Bd = self.B * Ts
-        return self.Ad, self.Bd
+        self.Cd = self.C
+        self.Dd = self.D
+        return self.Ad, self.Bd, self.Cd, self.Dd
     def discrete_prediction(self, x, u, Ts):
         delta_x = x - self.X_OP
         delta_u = u - self.U_OP[:-1]

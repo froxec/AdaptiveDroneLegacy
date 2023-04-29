@@ -58,7 +58,7 @@ def construct_low_tril_Toeplitz(A, B, C, D=None, horizon=10):
     first_col_idx = np.arange(horizon, dtype=int)
     first_row_idx = np.zeros(horizon-1, dtype=int)
     indices_matrix = toeplitz(first_col_idx, first_row_idx)
-    toeplitz_matrix = col[:, :, indices_matrix]
+    toeplitz_matrix = col[:, :, indices_matrix].transpose(2, 3, 0, 1)
     return toeplitz_matrix
 def plot_signal(signals):
     """
