@@ -22,7 +22,7 @@ class ModelPredictiveControl():
     def calculate_feedback(self, x_k):
         # calculate pl
         temp = self.model.Ad @ x_k
-        pl = np.dot(self.Ol, temp)
+        pl = np.dot(self.Ol, temp)[:, :, None]
 
         #calculate Fl
         temp = np.dot(self.Ol, self.model.Bd)
@@ -37,21 +37,28 @@ class ModelPredictiveControl():
         temp2 = Fl_transposed @ temp1
         H = temp2 + self.P
         #calculate f
-        temp1 = pl - ref
-        temp2 = self.Q @  temp1.transpose()
-        f = Fl_transposed @ temp2
+        temp1 = (pl - ref)
+        temp2 = self.Q @  temp1
+        f = np.tensordot(Fl_transposed, temp2, axes=((1, 3), (0, 1)))
         #calculate J0
-        J0 = temp1 @ temp2
+        J0 = np.tensordot(temp1.transpose(0, 2, 1), temp2, axes=((0, 2), (0, 1)))
         return H, f, J0
 
+    def calculate_cost(self, H, f, J0, u):
+        temp = np.tensordot(H, u, axes=((1, 3), (0, 1)))
+        term1 = np.tensordot(u.transpose(0, 2, 1), temp, axes=((0, 2), (0, 1)))
+        term2 = 2*np.tensordot(f.transpose(0, 2, 1), u, axes=((0, 2), (0, 1)))
+        return term1 + term2 + J0
 if __name__ == "__main__":
     freq = 10
     horizon = 10
     ref = np.array([0, 0, 10, 0, 0, 0]).reshape(-1, 1)
-    extended_ref = np.repeat(ref, horizon, axis=1).transpose(1, 0)
+    extended_ref = np.repeat(ref, horizon, axis=1).transpose(1, 0)[:, :, None]
     prediction_model = LinearizedQuadNoYaw(Z550_parameters)
     prediction_model.discretize_model(freq)
     mpc = ModelPredictiveControl(prediction_model, freq, 10)
     pl, Fl = mpc.calculate_feedback(np.array([1, 1, 1, 1, 1, 1]))
     H, f, J0 = mpc.calculate_cost_matrices(pl, Fl, extended_ref)
-    print(H)
+    u = np.tensordot(-np.linalg.inv(H), f, axes=((1, 3), (0, 1)))
+    cost = mpc.calculate_cost(H, f, J0, u)
+    print(cost)
