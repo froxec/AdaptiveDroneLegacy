@@ -7,6 +7,7 @@ from Factories.ControllersFactory.position_controllers.thrust_compensator import
 from Factories.ControllersFactory.position_controllers.position_controller_parameters import thrust_compensator_parameters
 import numpy as np
 from Factories.ControllersFactory.position_controllers.mpc_controllers import gekkoMPC
+from Factories.ControllersFactory.position_controllers.mpc import ModelPredictiveControl
 from typing import Type
 
 class Configuration():
@@ -44,6 +45,19 @@ class QuadConfiguration(Configuration):
         self.esc = ElectronicSpeedControler(pwm_range=pwm_range, angular_velocity_range=angular_velocity_range)
 
 
+class CustomMPCConfig(ControllerConfigurationBase):
+    def __init__(self, prediction_model, INNER_LOOP_FREQ,
+                 OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10):
+        self.position_controller = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, horizon)
+        u_ss = np.array([prediction_model.parameters['m']*prediction_model.parameters['g'], 0, 0])
+        x_ss = np.zeros(prediction_model.A.shape[0])
+        self.position_controller_output_converter = MPC_output_converter(u_ss, prediction_model.parameters['Kt'],
+                                                                         ANGULAR_VELOCITY_RANGE)
+        self.position_controller_input_converter = MPC_input_converter(x_ss, u_ss)
+        PWM0 = PWM_RANGE[0]
+        self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ, PWM_RANGE, PWM0)
+        self.inner_loop_freq = INNER_LOOP_FREQ
+        self.outer_loop_freq = OUTER_LOOP_FREQ
 
 class ControllerConfiguration(ControllerConfigurationBase):
     def __init__(self, model_parameters, position0, trajectory,x_ss, u_ss, prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE):

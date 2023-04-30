@@ -42,4 +42,6 @@ class RectangularTrajectoryWithTerminals(TrajectoryWithTerminals):
         self.terminals = np.array([[0, 20, 0], [20, 20, 0], [20, 0, 0]])
         self.terminals_payload = [0.1, 0.5, 0.2]
 
-
+class SinglePoint(Trajectory):
+    def __init__(self, ref):
+        self.generated_trajectory = np.array(ref).reshape(1, -1)
