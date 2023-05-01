@@ -47,7 +47,7 @@ class LinearizedQuad():
         self.U_OP = np.array([ self.m*self.g, 0, 0, u4_ss])
 
 class LinearizedQuadNoYaw(LinearizedQuad):
-    def __init__(self, parameters, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
+    def __init__(self, parameters, Ts, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
         super().__init__(parameters, u4_ss=yaw_ss, x_ref=x_ref, y_ref=y_ref, z_ref=z_ref)
         self.yaw_ss=yaw_ss
         self.B = np.array([[0.0, 0.0, 0.0],
@@ -63,6 +63,9 @@ class LinearizedQuadNoYaw(LinearizedQuad):
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0]])
         self.U_OP = np.array([self.m * self.g, 0.0, 0.0, 0.0])
+        if Ts is not None:
+            self.Ts = Ts
+            self.discretize_model(Ts)
     def update_parameters(self, parameters):
         self.parameters = deepcopy(parameters)
         self.g = parameters['g']
@@ -87,3 +90,14 @@ class LinearizedQuadNoYaw(LinearizedQuad):
         delta_x_next = self.Ad@delta_x + self.Bd@delta_u
         x_next = delta_x_next + self.X_OP
         return x_next
+
+class AugmentedLinearizedQuadNoYaw(LinearizedQuadNoYaw):
+    def __init__(self, parameters, Ts, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
+        super().__init__(parameters, Ts, yaw_ss, x_ref, y_ref, z_ref)
+        self.construct_augmented_system()
+    def construct_augmented_system(self):
+        temp1 = np.concatenate([self.Ad, np.zeros((self.C.shape[1], self.C.shape[0]))], axis=1)
+        temp2 = np.concatenate([self.Cd, np.eye(self.Cd.shape[0])], axis=1)
+        self.Ad = np.concatenate([temp1, temp2], axis=0)
+        self.Bd = np.concatenate([self.Bd, np.zeros((self.C.shape[0], self.Bd.shape[1]))], axis=0)
+        self.Cd = np.concatenate([self.Cd, np.eye(self.Cd.shape[0])], axis=1)
