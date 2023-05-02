@@ -17,7 +17,7 @@ ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(15)
 rectangular_trajectory = RectangularTrajectory()
-single_point_traj = SinglePoint(np.array([10, 50, 10]))
+single_point_traj = SinglePoint(np.array([0, 0, 10]))
 trajectory = single_point_traj
 #trajectory = spiral_trajectory
 #trajectory = rectangular_trajectory
@@ -39,8 +39,8 @@ if __name__ == '__main__':
     #                                        ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE)
     prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters, 1/OUTER_LOOP_FREQ)
     prediction_model2 = AugmentedLinearizedQuadNoYaw(perturber.perturbed_parameters, 1/OUTER_LOOP_FREQ)
-    controller_conf = CustomMPCConfig(prediction_model2, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
-    controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
+    controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
+    controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED_WITH_SOLVER)
     # gekko_controller_conf = GekkoConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     #                                        trajectory=trajectory,
     #                                         x_ss = np.array([0, 0, 0, 0, 0, 0]),

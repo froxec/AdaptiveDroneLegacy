@@ -17,11 +17,10 @@ class ModelPredictiveControl():
                  freq: int,
                  pred_horizon: int):
         self.model = model
-        #self.model.discretize_model(freq)
         self.freq = freq
         self.pred_horizon = pred_horizon
-        self.Q = np.diag([0.0001, 0.0001, 0.0001, 0.5, 0.5, 0.5]) + np.eye(6)*1e-6
-        self.P = np.diag([1, 1000, 1000])
+        self.Q = np.diag([2, 2, 2, 1, 1, 1]) + np.eye(6)*1e-5
+        self.P = np.diag([1, 1, 1]) + np.eye(3)*1e-5
         self.Ol = construct_ext_obs_mat(self.model.Ad, self.model.Cd, horizon=self.pred_horizon)
         self.Hl = construct_low_tril_Toeplitz(self.model.Ad, self.model.Bd, self.model.Cd,
                                               horizon=self.pred_horizon)
@@ -43,6 +42,7 @@ class ModelPredictiveControl():
             ref = np.concatenate([ref, np.zeros(3).reshape((-1, 1))], axis=0)
         extended_ref = np.repeat(ref, self.pred_horizon, axis=1).transpose(1, 0)[:, :, None]
         self.ref = extended_ref
+        self.setpoint = ref
 
     def calculate_feedback(self, x_k):
         # calculate pl
@@ -79,7 +79,7 @@ class ModelPredictiveControl():
         self.set_reference(setpoint)
         x = delta_x0 - self.prev_delta_x
         x = np.concatenate([x, self.prev_y])
-        pl, Fl = self.calculate_feedback(x.reshape(-1, 1))
+        pl, Fl = self.calculate_feedback(delta_x0.reshape(-1, 1))
         H, f, J0 = self.calculate_cost_matrices(pl, Fl, self.ref)
         H, f = self.flatten_problem(H, f)
         if self.mode == MPCModes.UNCONSTRAINED:
@@ -89,16 +89,16 @@ class ModelPredictiveControl():
             prediction = self.prediction(pl, Fl, u)
             u = u[0]
         elif self.mode == MPCModes.UNCONSTRAINED_WITH_SOLVER:
-            solution = solve_qp(H, -f, solver="quadprog")
+            solution = solve_qp(H, f, solver="osqp")
             u = solution.reshape((self.pred_horizon, -1))[0]
         elif self.mode == MPCModes.CONSTRAINED:
             lb, ub = self.bounds()
-            solution = solve_qp(H, -f, lb=lb, ub=ub, solver="quadprog")
+            solution = solve_qp(H, f, lb=lb, ub=ub, solver="quadprog")
             u = solution.reshape((self.pred_horizon, -1))[0]
-        u_k = u + self.prev_delta_u
+        u_k = u
         self.control_history.append(list(u_k))
-        self.prev_delta_x = delta_x0
-        self.prev_y = self.model.Cd @ x
+        # self.prev_delta_x = delta_x0
+        # self.prev_y = self.model.Cd @ x
         self.prev_delta_u = u_k
         return u_k
 
