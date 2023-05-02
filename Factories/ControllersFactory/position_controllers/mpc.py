@@ -19,8 +19,10 @@ class ModelPredictiveControl():
         self.model = model
         self.freq = freq
         self.pred_horizon = pred_horizon
-        self.Q = np.diag([2, 2, 2, 1, 1, 1]) + np.eye(6)*1e-5
-        self.P = np.diag([1, 1, 1]) + np.eye(3)*1e-5
+        self.Q_base = np.array([0.5, 0.5, 0.5, 1, 1, 1]) + np.ones(6)*1e-6
+        self.P_base = np.array([1, 1000, 1000])
+        self.Q = np.diag(np.tile(self.Q_base, pred_horizon))
+        self.P = np.diag(np.tile(self.P_base, pred_horizon))
         self.Ol = construct_ext_obs_mat(self.model.Ad, self.model.Cd, horizon=self.pred_horizon)
         self.Hl = construct_low_tril_Toeplitz(self.model.Ad, self.model.Bd, self.model.Cd,
                                               horizon=self.pred_horizon)
@@ -40,7 +42,7 @@ class ModelPredictiveControl():
             ref = np.array(ref).reshape(-1, 1)
         if ref.shape[0] == 3:
             ref = np.concatenate([ref, np.zeros(3).reshape((-1, 1))], axis=0)
-        extended_ref = np.repeat(ref, self.pred_horizon, axis=1).transpose(1, 0)[:, :, None]
+        extended_ref = np.repeat(ref, self.pred_horizon, axis=1).transpose(1, 0)
         self.ref = extended_ref
         self.setpoint = ref
 
@@ -51,22 +53,23 @@ class ModelPredictiveControl():
 
         #calculate Fl
         temp = self.Ol @ self.model.Bd
-        Fl = np.concatenate([temp[:, None, :, :], self.Hl], axis=1)
+        Fl = np.concatenate([temp, self.Hl], axis=1)
 
         return pl, Fl
 
     def calculate_cost_matrices(self, pl, Fl, ref):
+        ref = ref.reshape(ref.shape[0]*ref.shape[1], -1)
         #calculate H
-        Fl_transposed = Fl.transpose(0, 1, 3, 2)
+        Fl_transposed = Fl.transpose(1, 0)
         temp1 = self.Q @ Fl
         temp2 = Fl_transposed @ temp1
         H = temp2 + self.P
         #calculate f
         temp1 = (pl - ref)
         temp2 = self.Q @  temp1
-        f = np.tensordot(Fl_transposed, temp2, axes=((3, 1), (1, 0)))
+        f = Fl_transposed @ temp2
         #calculate J0
-        J0 = np.tensordot(temp1.transpose(0, 2, 1), temp2, axes=((2, 0), (1, 0)))
+        J0 = temp1.transpose(1, 0) @ temp2
         return H, f, J0
 
     def calculate_cost(self, H, f, J0, u):
@@ -77,28 +80,33 @@ class ModelPredictiveControl():
 
     def predict(self, delta_x0, delta_u0, setpoint):
         self.set_reference(setpoint)
-        x = delta_x0 - self.prev_delta_x
-        x = np.concatenate([x, self.prev_y])
-        pl, Fl = self.calculate_feedback(delta_x0.reshape(-1, 1))
+        if isinstance(self.model, AugmentedLinearizedQuadNoYaw):
+            x = delta_x0 - self.prev_delta_x
+            x = np.concatenate([x, self.prev_y])
+        else:
+            x = delta_x0
+        pl, Fl = self.calculate_feedback(x.reshape(-1, 1))
         H, f, J0 = self.calculate_cost_matrices(pl, Fl, self.ref)
-        H, f = self.flatten_problem(H, f)
         if self.mode == MPCModes.UNCONSTRAINED:
-            # u = np.tensordot(-np.linalg.tensorinv(H, 4), f, axes=((3, 1), (1, 0)))
+            # u = np.tensordot(-np.linalg.inv(H), f, axes=((3, 1), (1, 0)))
             u = np.linalg.solve(H, -f)
             u = u.reshape((self.pred_horizon, -1))
-            prediction = self.prediction(pl, Fl, u)
+            # prediction = self.prediction(pl, Fl, u)
             u = u[0]
         elif self.mode == MPCModes.UNCONSTRAINED_WITH_SOLVER:
-            solution = solve_qp(H, f, solver="osqp")
+            solution = solve_qp(H, f, solver="quadprog")
             u = solution.reshape((self.pred_horizon, -1))[0]
         elif self.mode == MPCModes.CONSTRAINED:
             lb, ub = self.bounds()
             solution = solve_qp(H, f, lb=lb, ub=ub, solver="quadprog")
             u = solution.reshape((self.pred_horizon, -1))[0]
-        u_k = u
+        if isinstance(self.model, AugmentedLinearizedQuadNoYaw):
+            u_k = u + self.prev_delta_u
+        else:
+            u_k = u
         self.control_history.append(list(u_k))
-        # self.prev_delta_x = delta_x0
-        # self.prev_y = self.model.Cd @ x
+        self.prev_delta_x = delta_x0
+        self.prev_y = self.model.Cd @ x
         self.prev_delta_u = u_k
         return u_k
 

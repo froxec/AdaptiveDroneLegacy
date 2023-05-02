@@ -17,7 +17,7 @@ ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(15)
 rectangular_trajectory = RectangularTrajectory()
-single_point_traj = SinglePoint(np.array([0, 0, 10]))
+single_point_traj = SinglePoint(np.array([0, 10, 10]))
 trajectory = single_point_traj
 #trajectory = spiral_trajectory
 #trajectory = rectangular_trajectory
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     quad_conf = QuadConfiguration(Z550_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE, ANGULAR_VELOCITY_RANGE)
 
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': 1.0})
     print(perturber.perturbed_parameters)
 
     # controller_compensator_conf = ControllerWithCompensatorConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
@@ -39,8 +39,8 @@ if __name__ == '__main__':
     #                                        ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE)
     prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters, 1/OUTER_LOOP_FREQ)
     prediction_model2 = AugmentedLinearizedQuadNoYaw(perturber.perturbed_parameters, 1/OUTER_LOOP_FREQ)
-    controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
-    controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED_WITH_SOLVER)
+    controller_conf = CustomMPCConfig(prediction_model2, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
+    controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
     # gekko_controller_conf = GekkoConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     #                                        trajectory=trajectory,
     #                                         x_ss = np.array([0, 0, 0, 0, 0, 0]),

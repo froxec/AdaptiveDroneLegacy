@@ -33,6 +33,8 @@ def construct_ext_obs_mat(A, C, horizon):
         if i > 0:
             A_pow = A_pow @ A
         O_horizon[i, :, :] = C @ A_pow
+    O_horizon = O_horizon.reshape((O_horizon.shape[0]*O_horizon.shape[1],
+                                   O_horizon.shape[2]))
     return O_horizon
 
 def construct_low_tril_Toeplitz(A, B, C, D=None, horizon=10):
@@ -59,6 +61,8 @@ def construct_low_tril_Toeplitz(A, B, C, D=None, horizon=10):
     first_row_idx = np.zeros(horizon-1, dtype=int)
     indices_matrix = toeplitz(first_col_idx, first_row_idx)
     toeplitz_matrix = col[:, :, indices_matrix].transpose(2, 3, 0, 1)
+    toeplitz_matrix = toeplitz_matrix.transpose((0, 2, 1, 3)).reshape((toeplitz_matrix.shape[0]*toeplitz_matrix.shape[2],
+                                                             toeplitz_matrix.shape[1]*toeplitz_matrix.shape[3]))
     return toeplitz_matrix
 def plot_signal(signals):
     """
