@@ -5,7 +5,8 @@ import numpy as np
 from plots import plotTrajectory, plotTrajectory3d
 import time
 from Factories.ToolsFactory.AnalysisTools import ParametersPerturber
-from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SpiralTrajectory, RectangularTrajectory, SinglePoint
+from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SpiralTrajectory, RectangularTrajectory, SinglePoint, \
+    RectangularTrajectoryWithTerminals
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw, AugmentedLinearizedQuadNoYaw
 from Factories.ConfigurationsFactory.modes import MPCModes
 FPS = 30
@@ -17,17 +18,19 @@ ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(15)
 rectangular_trajectory = RectangularTrajectory()
+rectangular_trajectory_with_terminals = RectangularTrajectoryWithTerminals()
 single_point_traj = SinglePoint(np.array([0, 10, 10]))
-trajectory = single_point_traj
+#trajectory = single_point_traj
 #trajectory = spiral_trajectory
-#trajectory = rectangular_trajectory
+#trajectory = rectangular_trajectory_with_terminals
+trajectory = rectangular_trajectory
 if __name__ == '__main__':
     deltaT = 1 / INNER_LOOP_FREQ
 
     quad_conf = QuadConfiguration(Z550_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE, ANGULAR_VELOCITY_RANGE)
 
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 1.0})
+    perturber({'m': 0.0})
     print(perturber.perturbed_parameters)
 
     # controller_compensator_conf = ControllerWithCompensatorConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),

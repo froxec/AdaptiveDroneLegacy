@@ -1,6 +1,6 @@
 import numpy as np
 from qpsolvers import solve_qp
-from Factories.ToolsFactory.GeneralTools import construct_ext_obs_mat, construct_low_tril_Toeplitz
+from Factories.ToolsFactory.GeneralTools import construct_ext_obs_mat, construct_low_tril_Toeplitz, euclidean_distance
 from Factories.ModelsFactory.linear_models import LinearizedQuad, LinearizedQuadNoYaw, AugmentedLinearizedQuadNoYaw
 from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Trajectory
@@ -31,20 +31,25 @@ class ModelPredictiveControl():
         self.prev_delta_x = np.zeros(6)
         self.prev_y = np.zeros(6)
         self.prev_delta_u = np.zeros(3)
+        self.current_waypoint_id = 0
+        self.setpoint = None
 
-    def set_reference(self, ref):
+    def set_reference(self, ref, x):
+        if self.setpoint is not None and self.check_if_reached_waypoint(x) and self.current_waypoint_id < len(self.trajectory) - 1:
+            self.current_waypoint_id += 1
         if isinstance(ref, Trajectory):
             self.trajectory = ref
-            ref = self.trajectory.generated_trajectory
-        if isinstance(ref, np.ndarray):
-            ref = ref.reshape(-1, 1)
+            self.setpoint = self.trajectory.generated_trajectory[self.current_waypoint_id]
         else:
-            ref = np.array(ref).reshape(-1, 1)
-        if ref.shape[0] == 3:
-            ref = np.concatenate([ref, np.zeros(3).reshape((-1, 1))], axis=0)
-        extended_ref = np.repeat(ref, self.pred_horizon, axis=1).transpose(1, 0)
+            self.setpoint = ref
+        if isinstance(self.setpoint, np.ndarray):
+            self.setpoint = self.setpoint.reshape(-1, 1)
+        else:
+            self.setpoint = np.array(self.setpoint).reshape(-1, 1)
+        if self.setpoint.shape[0] == 3:
+            self.setpoint = np.concatenate([self.setpoint, np.zeros(3).reshape((-1, 1))], axis=0)
+        extended_ref = np.repeat(self.setpoint, self.pred_horizon, axis=1).transpose(1, 0)
         self.ref = extended_ref
-        self.setpoint = ref
 
     def calculate_feedback(self, x_k):
         # calculate pl
@@ -79,7 +84,7 @@ class ModelPredictiveControl():
         return term1 + term2 + J0
 
     def predict(self, delta_x0, delta_u0, setpoint):
-        self.set_reference(setpoint)
+        self.set_reference(setpoint, delta_x0)
         if isinstance(self.model, AugmentedLinearizedQuadNoYaw):
             x = delta_x0 - self.prev_delta_x
             x = np.concatenate([x, self.prev_y])
@@ -130,6 +135,16 @@ class ModelPredictiveControl():
     def switch_modes(self,
                      mode: Type[MPCModes]):
         self.mode = mode
+
+    def check_if_reached_waypoint(self, x):
+        if self.setpoint.shape != x.shape:
+            distance = euclidean_distance(self.setpoint.flatten(), x)
+        else:
+            euclidean_distance(self.setpoint, x)
+        if distance < 0.1:
+            return True
+        else:
+            return False
 
     def plot_history(self):
         fig = make_subplots(rows=3, cols=1, x_title='Czas [s]',

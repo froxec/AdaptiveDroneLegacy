@@ -12,6 +12,8 @@ class Trajectory():
                                            z=self.generated_trajectory[:, 2])])
         fig.show()
 
+    def __len__(self):
+        return self.generated_trajectory.shape[0]
 class TrajectoryWithTerminals(Trajectory):
     def __init__(self):
         super().__init__()
