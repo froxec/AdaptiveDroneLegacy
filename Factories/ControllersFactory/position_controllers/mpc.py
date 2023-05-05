@@ -6,7 +6,7 @@ from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_p
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Trajectory
 from Factories.ConfigurationsFactory.modes import MPCModes
 from plotly.subplots import make_subplots
-from typing import Type
+from typing import Any, Type
 import plotly.graph_objects as go
 
 
@@ -27,6 +27,7 @@ class ModelPredictiveControl():
         self.Hl = construct_low_tril_Toeplitz(self.model.Ad, self.model.Bd, self.model.Cd,
                                               horizon=self.pred_horizon)
         self.mode = MPCModes.UNCONSTRAINED
+        self.interface = interface
         self.control_history = []
         self.prev_delta_x = np.zeros(6)
         self.prev_y = np.zeros(6)
@@ -83,7 +84,7 @@ class ModelPredictiveControl():
         term2 = 2*np.tensordot(f.transpose(0, 2, 1), u, axes=((2, 0), (1, 0)))
         return term1 + term2 + J0
 
-    def predict(self, delta_x0, delta_u0, setpoint):
+    def predict(self, delta_x0, setpoint):
         self.set_reference(setpoint, delta_x0)
         if isinstance(self.model, AugmentedLinearizedQuadNoYaw):
             x = delta_x0 - self.prev_delta_x
@@ -136,6 +137,9 @@ class ModelPredictiveControl():
                      mode: Type[MPCModes]):
         self.mode = mode
 
+    def update_model_parameters(self, parameters):
+        ## TODO update converters
+        self.model.update_parameters(parameters)
     def check_if_reached_waypoint(self, x):
         if self.setpoint.shape != x.shape:
             distance = euclidean_distance(self.setpoint.flatten(), x)

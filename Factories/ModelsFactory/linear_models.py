@@ -66,6 +66,8 @@ class LinearizedQuadNoYaw(LinearizedQuad):
         if Ts is not None:
             self.Ts = Ts
             self.discretize_model(Ts)
+        else:
+            self.Ts = None
     def update_parameters(self, parameters):
         self.parameters = deepcopy(parameters)
         self.g = parameters['g']
@@ -77,6 +79,8 @@ class LinearizedQuadNoYaw(LinearizedQuad):
                            [0.0, -self.g * np.cos(self.yaw_ss), self.g * np.sin(self.yaw_ss)],
                            [1 / self.m, 0.0, 0.0]])
         self.U_OP = np.array([self.m*self.g, 0.0, 0.0, self.u4_ss])
+        if self.Ts is not None:
+            self.discretize_model(self.Ts)
     def discretize_model(self, Ts):
         self.Ad = np.eye(self.A.shape[0]) + self.A * Ts
         self.Bd = self.B * Ts
@@ -101,3 +105,7 @@ class AugmentedLinearizedQuadNoYaw(LinearizedQuadNoYaw):
         self.Ad = np.concatenate([temp1, temp2], axis=0)
         self.Bd = np.concatenate([self.Bd, np.zeros((self.C.shape[0], self.Bd.shape[1]))], axis=0)
         self.Cd = np.concatenate([self.Cd, np.eye(self.Cd.shape[0])], axis=1)
+
+    def update_parameters(self, parameters):
+        super().update_parameters(parameters)
+        self.construct_augmented_system()

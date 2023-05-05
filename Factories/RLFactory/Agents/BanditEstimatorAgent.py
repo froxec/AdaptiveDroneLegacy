@@ -17,8 +17,8 @@ class BanditEstimatorAgent():
         self.position_controller_conf = position_controller_conf
         self.predictive_model = predictive_model
         self.gp = gp
-        states_num = self.position_controller_conf.position_controller.x_num
-        controls_num = self.position_controller_conf.position_controller.u_num
+        states_num = self.predictive_model.Ad.shape[0]
+        controls_num = self.predictive_model.Bd.shape[1]
         self.trajectory_buffer = RollBuffers(['state', 'state_prediction', 'control_input'],
                                          [(states_num,), (states_num,), (controls_num,)],
                                          buffer_size=atomic_traj_samples_num)

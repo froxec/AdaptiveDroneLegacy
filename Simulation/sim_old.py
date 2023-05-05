@@ -16,21 +16,21 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-spiral_trajectory = SpiralTrajectory(15)
+spiral_trajectory = SpiralTrajectory(30)
 rectangular_trajectory = RectangularTrajectory()
 rectangular_trajectory_with_terminals = RectangularTrajectoryWithTerminals()
 single_point_traj = SinglePoint(np.array([0, 10, 10]))
 #trajectory = single_point_traj
-#trajectory = spiral_trajectory
+trajectory = spiral_trajectory
 #trajectory = rectangular_trajectory_with_terminals
-trajectory = rectangular_trajectory
+#trajectory = rectangular_trajectory
 if __name__ == '__main__':
     deltaT = 1 / INNER_LOOP_FREQ
 
     quad_conf = QuadConfiguration(Z550_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE, ANGULAR_VELOCITY_RANGE)
 
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': -0.9})
     print(perturber.perturbed_parameters)
 
     # controller_compensator_conf = ControllerWithCompensatorConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
