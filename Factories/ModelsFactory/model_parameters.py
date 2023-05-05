@@ -17,6 +17,15 @@ pendulum_parameters = {
     'Cd': 0.47,
     'ro': 1.23
 }
+Z550_parameters = {
+    'm': 0.940 + 0.182, #quad_mass + lipo_mass
+    'g': 9.81,
+    'Kt': 1.3550195446154272e-05,
+    'Kd': 2.4953940390301706e-07,
+    'I': np.array([0.072, 0.072, 0.1]),
+    'l': 0.28,
+    'arm_angle': deg2rad(45)
+}
 arducopter_parameters = {
     'm': 1.0,
     'g': 9.81,

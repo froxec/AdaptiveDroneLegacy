@@ -1,6 +1,5 @@
 import control
-import numpy as np
-from ModelsFactory.model_parameters import *
+from Factories.ModelsFactory.model_parameters import *
 import matplotlib.pyplot as plt
 import control.optimal as obc
 import time
@@ -38,6 +37,7 @@ class LinearizedQuad(control.StateSpace):
 
 if __name__ == "__main__":
     quad = LinearizedQuad()
+    poles = quad.poles()
     quadIO = control.LinearIOSystem(quad, name='quad', inputs=('f', 'phi', 'theta', 'psi'), states=('x', 'y', 'z', 'Vx', 'Vy', 'Vz'), outputs=('x', 'y', 'z', 'Vx', 'Vy', 'Vz'), )
 
     Q = np.diag([1, 1, 1, 10, 10, 10])

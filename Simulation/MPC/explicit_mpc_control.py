@@ -1,10 +1,9 @@
 from pyMPC.mpc import MPCController
-import numpy as np
-from ModelsFactory.model_parameters import *
+from Factories.ModelsFactory.model_parameters import *
 import scipy.sparse as sparse
 import time
 import matplotlib.pyplot as plt
-from ModelsFactory.linear_models import LinearizedQuad
+from Factories.ModelsFactory.linear_models import LinearizedQuad
 
 if __name__ == "__main__":
     #parameters

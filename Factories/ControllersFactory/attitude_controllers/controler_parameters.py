@@ -1,12 +1,12 @@
 roll_pid = {
     'angle': {
         'Kp': 5,
-        'Ki': 0.5,
+        'Ki': 0,
         'Kd': 0
     },
     'rate': {
-        'Kp': 5,
-        'Ki': 0.01,
+        'Kp': 1,
+        'Ki': 0.5,
         'Kd': 0
     },
     'acceleration': {
@@ -19,12 +19,12 @@ roll_pid = {
 pitch_pid = {
     'angle': {
         'Kp': 5,
-        'Ki': 0.5,
+        'Ki': 0,
         'Kd': 0
     },
     'rate': {
-        'Kp': 5,
-        'Ki': 0.01,
+        'Kp': 1,
+        'Ki': 0.5,
         'Kd': 0
     },
     'acceleration': {
@@ -36,13 +36,13 @@ pitch_pid = {
 
 yaw_pid = {
     'angle': {
-        'Kp': 10,
-        'Ki': 5,
-        'Kd': 5
+        'Kp': 1.2,
+        'Ki': 0,
+        'Kd': 0
     },
     'rate': {
         'Kp': 5,
-        'Ki': 0.01,
+        'Ki': 0,
         'Kd': 0
     },
     'acceleration': {

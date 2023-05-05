@@ -2,7 +2,6 @@ from math import sin, cos
 import numpy as np
 from numpy import deg2rad
 import copy
-
 #X-configuration
 #ccw is positive
 #   cw  4        2 ccw
@@ -45,7 +44,7 @@ def system(u, deltaT, quadcopter_object, load_pendulum_object=None, solver='RK')
         RungeKutta4(deltaT, load_pendulum_object)
         return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
 
-def RungeKutta4(deltaT, model_object, u=None):
+def RungeKutta4(deltaT, model_object, u=np.array([None])):
     model = copy.deepcopy(model_object) #might be bottleneck/make class
     state0 = model.state
     if u.any() == None:
@@ -63,7 +62,8 @@ def RungeKutta4(deltaT, model_object, u=None):
 
 class quadcopterModel():
     def __init__(self, state0, quad_parameters):
-        self.mass = quad_parameters['m']
+        self.nominal_mass = quad_parameters['m']
+        self.mass = self.nominal_mass
         self.g = quad_parameters['g'] ## move to Environment class
         self.inertia = quad_parameters['I']
         self.arm_length = quad_parameters['l']
@@ -167,7 +167,15 @@ class quadcopterModel():
         if (self.state[2] < 0):
             self.state[2] = 0
         return self.state
-
+    def update_parameters(self, parameters):
+        parameters = copy.deepcopy(parameters)
+        self.mass = parameters['m']
+        self.g = parameters['g']  ## move to Environment class
+        self.inertia = parameters['I']
+        self.arm_length = parameters['l']
+        self.arm_angle = parameters['arm_angle']
+        self.Kt = parameters['Kt']
+        self.Kd = parameters['Kd']
     def __call__(self, mode, ):
         pass
 
