@@ -3,6 +3,7 @@ from Factories.ToolsFactory.Converters import MPC_input_converter, MPC_output_co
 from Factories.CommunicationFactory.interfaces import ControllerInterface
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Trajectory
 from typing import Type
+import numpy as np
 
 class PositionController():
     '''
@@ -23,13 +24,15 @@ class PositionController():
     def __call__(self, x=None):
         if self.interface is not None:
             x = self.interface('recv')
-        delta_x, _ = self.input_converter(x, None)
-        delta_u_next = self.controller(delta_x, self.trajectory)
+        if x is not None:
+            self.x = np.array(x)
+        delta_x, _ = self.input_converter(self.x, None)
+        delta_u_next = self.controller.predict(delta_x, self.trajectory)
         u_next = self.output_converter(delta_u_next)
         if self.interface is not None:
             self.interface('send', u_next)
         return u_next
 
     def change_setpoint(self, trajectory):
-        self.trajcetory = trajectory
+        self.trajectory = trajectory
         

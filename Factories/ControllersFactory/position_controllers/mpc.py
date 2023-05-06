@@ -27,7 +27,6 @@ class ModelPredictiveControl():
         self.Hl = construct_low_tril_Toeplitz(self.model.Ad, self.model.Bd, self.model.Cd,
                                               horizon=self.pred_horizon)
         self.mode = MPCModes.UNCONSTRAINED
-        self.interface = interface
         self.control_history = []
         self.prev_delta_x = np.zeros(6)
         self.prev_y = np.zeros(6)

@@ -1,6 +1,6 @@
 import socket
 import struct
-
+import select
 class Interface:
     def __init__(self) -> None:
         self.IP = None
@@ -27,23 +27,34 @@ class ControllerInterface(Interface):
 
     def __call__(self, mode, *args):
         if mode == 'recv':
-            x = self.READ_MESSAGE()
-            return x
+            message = self.READ_MESSAGE()
+            if message is not None:
+                x = self.decode_message(message)
+                return x
+            else:
+                return None
         if mode == 'send':
-            u = args
+            u = args[0]
             message = self.construct_message(u)
             self.SEND_MESSAGE(message)
         
     def READ_MESSAGE(self):
+        print("Waiting for message...")
         data, addr = self.socket.recvfrom(1024)
+        print("Data {} received from {}".format(data, addr))
         return data
     
     def SEND_MESSAGE(self, MESSAGE):
+        print("Sending message...")
         self.socket.sendto(MESSAGE, (self.REMOTE_IP, self.REMOTE_PORT))
+        print("Message {} sent".format(MESSAGE))
     
     def construct_message(self, u):
         u_struct = struct.pack('fff', u[0], u[1], u[2])
         return u_struct
+    def decode_message(self, message):
+        unpacked = struct.unpack('ffffff', message)
+        return unpacked
     
 class PCInterface(Interface):
     def __init__(self, IP, PORT, REMOTE_IP, REMOTE_PORT) -> None:
@@ -55,23 +66,39 @@ class PCInterface(Interface):
         self.socket = socket.socket(socket.AF_INET,
                                     socket.SOCK_DGRAM)
         self.socket.bind((self.IP, self.PORT))
+        self.timeout_in_seconds = 1.0
 
     def __call__(self, mode, *args):
         if mode == 'recv':
-            u = self.READ_MESSAGE()
-            return u
+            message = self.READ_MESSAGE()
+            if message is not None:
+                u = self.decode_message(message)
+                return u
+            else:
+                return None
         if mode == 'send':
-            x = args
+            x = args[0]
             message = self.construct_message(x)
             self.SEND_MESSAGE(message)
 
     def READ_MESSAGE(self):
-        data, addr = self.socket.recvfrom(1024)
-        return data
-    
+        print("Waiting for message...")
+        ready = select.select([self.socket], [], [], self.timeout_in_seconds)
+        if ready[0]:
+            data, addr = self.socket.recvfrom(1024)
+            print("Data {} received from {}".format(data, addr))
+            return data
+        else:
+            return None
     def SEND_MESSAGE(self, MESSAGE):
+        print("Sending message...")
         self.socket.sendto(MESSAGE, (self.REMOTE_IP, self.REMOTE_PORT))
+        print("Message {} sent".format(MESSAGE))
     
     def construct_message(self, x):
         u_struct = struct.pack('ffffff', x[0], x[1], x[2], x[3], x[4], x[5])
         return u_struct
+
+    def decode_message(self, message):
+        unpacked = struct.unpack('fff', message)
+        return unpacked

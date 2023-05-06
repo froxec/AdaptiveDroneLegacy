@@ -2,15 +2,12 @@ from Factories.ControllersFactory.position_controllers.mpc import ModelPredictiv
 from Factories.ModelsFactory.linear_models import AugmentedLinearizedQuadNoYaw
 from Factories.ModelsFactory.model_parameters import Z550_parameters
 from Factories.ToolsFactory.Converters import MPC_input_converter, MPC_output_converter
-from Factories.CommunicationFactory.interfaces import ControllerInterface
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint
-from Factories.CommunicationFactory.communication_parameters import *
+from QuadcopterIntegration.HIL.communication_parameters import *
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from Factories.CommunicationFactory.interfaces import ControllerInterface
-from Factories.ControllersFactory.position_controllers.position_controller_parameters import *
-
+from QuadcopterIntegration.HIL.simulation_parameters import *
 import numpy as np
-OUTER_LOOP_FREQ = 10
 trajectory = SinglePoint([0, 0, 10])
 parameters = Z550_parameters
 if __name__ == "__main__":
