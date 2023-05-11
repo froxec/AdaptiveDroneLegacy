@@ -3,9 +3,10 @@ from Simulation.model import quadcopterModel, loadPendulum
 from Simulation.attitude_control import attitudeControler
 from Factories.ModelsFactory.general_models import ElectronicSpeedControler
 from Factories.CommunicationFactory.interfaces import PCInterface
+from Factories.CommunicationFactory.redis_db_commands import redis_stream_add
 from Simulation.model import system
 import numpy as np
-
+import redis
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -18,7 +19,8 @@ class HILSimulator():
                  esc: Type[ElectronicSpeedControler],
                  INNER_LOOP_FREQ: int,
                  OUTER_LOOP_FREQ: int,
-                 interface: Type[PCInterface] == None):
+                 interface: Type[PCInterface] = None,
+                 db_parameters: dict = None):
         self.quad = quad
         self.load = load
         self.attitude_controller = attitude_controller
@@ -32,6 +34,9 @@ class HILSimulator():
                         'u': []}
         self.i = 1
         self.u = np.array([0, 0, 0, 0])
+        self.db_parameters = db_parameters
+        if db_parameters is not None:
+            self.database = redis.Redis(host=db_parameters['ip'], port=db_parameters['port'], decode_responses=db_parameters['decode_responses'])
 
     def __call__(self, u=None):
         if self.interface is not None and self.i == 1:
@@ -49,8 +54,11 @@ class HILSimulator():
         self.calculate_iterator()
         return x[:6]
     def save_history(self, x, u):
-        self.history['x'].append(x)
-        self.history['u'].append(u)
+        self.history['x'].append(list(x))
+        self.history['u'].append(list(u))
+        if self.db_parameters is not None:
+            redis_stream_add(self.database, 'x', list(x))
+            redis_stream_add(self.database, 'u', list(u))
 
     def calculate_iterator(self):
         self.i = (self.i % self.modulo_freq) + 1
