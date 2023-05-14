@@ -42,7 +42,7 @@ class SoftwareInTheLoop:
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:
                 delta_x0, delta_u0 = self.mpc_input_converter(x[i, :6], ref_prev)
-                ref = self.position_controller.predict(delta_x0, delta_u0, setpoint)
+                ref = self.position_controller.predict(delta_x0, setpoint)
                 #self.position_controller.plot()
                 if self.thrust_compensator is not None:
                     ref = self.thrust_compensator(x[i, :6], ref)

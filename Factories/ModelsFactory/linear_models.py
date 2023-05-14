@@ -87,10 +87,9 @@ class LinearizedQuadNoYaw(LinearizedQuad):
         self.Cd = self.C
         self.Dd = self.D
         return self.Ad, self.Bd, self.Cd, self.Dd
-    def discrete_prediction(self, x, u, Ts):
+    def discrete_prediction(self, x, u):
         delta_x = x - self.X_OP
         delta_u = u - self.U_OP[:-1]
-        self.discretize_model(Ts)
         delta_x_next = self.Ad@delta_x + self.Bd@delta_u
         x_next = delta_x_next + self.X_OP
         return x_next

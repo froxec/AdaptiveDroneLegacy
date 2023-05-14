@@ -14,7 +14,7 @@ class PositionController():
                  input_converter: Type[MPC_input_converter],
                  output_converter: Type[MPC_output_converter], 
                  trajectory: Type[Trajectory], 
-                 interface: Type[ControllerInterface] == None) -> None:
+                 interface: Type[ControllerInterface]=None) -> None:
         self.input_converter = input_converter
         self.controller = controller
         self.output_converter = output_converter

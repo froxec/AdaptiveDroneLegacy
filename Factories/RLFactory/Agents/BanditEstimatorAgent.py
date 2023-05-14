@@ -27,6 +27,7 @@ class BanditEstimatorAgent():
         self.penalty_min = None
         self.estimated_parameters = self.predictive_model.parameters
         self.deltaT = deltaT
+        self.samples_num = atomic_traj_samples_num
         self.u_prev = None
         self.prediction_prev = None
         self.converged = False
@@ -50,14 +51,15 @@ class BanditEstimatorAgent():
                 self.estimated_parameters['m'] = action
                 self.predictive_model.update_parameters(self.estimated_parameters)
             else:
-                conditions_changed = self.check_for_conditions_changes()
+                # conditions_changed = self.check_for_conditions_changes()
+                conditions_changed=False
                 if conditions_changed:
                     self.converged = False
                     self.penalty_min = np.mean(self.penalties_buffer['penalties'])
                     self.gp.reset()
             self.trajectory_buffer.flush()
         if self.u_prev is not None:
-            x_predicted = self.predictive_model.discrete_prediction(self.prediction_prev, self.u_prev, self.deltaT)
+            x_predicted = self.predictive_model.discrete_prediction(self.prediction_prev, self.u_prev)
             self.add_sample_to_buffer(x[:6], x_predicted, self.u_prev)
             self.prediction_prev = x_predicted
         if self.check_for_convergence() and not self.converged:
@@ -103,7 +105,12 @@ class BanditEstimatorAgent():
             reward += manhattan_distance(state[i], state_prediction[i])*self.deltaT
         return reward
     def postprocess_penalty(self, penalty):
-        return (sigmoid_function(50*penalty , 10))
+        penalty = self.normalize_penalty(penalty)
+        return (sigmoid_function(0.2*penalty**2 , 10, 0))
+
+    def normalize_penalty(self, penalty):
+        return penalty/(self.samples_num*self.deltaT)
+
     def check_for_convergence(self):
         if len(set(self.actions_buffer['actions'].flatten())) == 1 and self.actions_buffer.full['actions']:
             #print("Estimator converged. Mass equal {}".format(self.actions_buffer['actions'][0]))

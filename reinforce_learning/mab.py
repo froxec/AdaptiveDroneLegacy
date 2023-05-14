@@ -2,11 +2,11 @@ from Factories.GaussianProcessFactory.kernels import  RBF_Kernel
 from Factories.GaussianProcessFactory.gaussian_process import GaussianProcess, EfficientGaussianProcess
 from Factories.ToolsFactory.GeneralTools import plot_signal, RollBuffers
 from Factories.ToolsFactory.Converters import convert_trajectory
-
+from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from Factories.RLFactory.Environments.base_env import ControlLoopEnvironment
 from Factories.ConfigurationsFactory.configurations import *
 from Factories.ModelsFactory.model_parameters import Z550_parameters, pendulum_parameters
-from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
+from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw, AugmentedLinearizedQuadNoYaw
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
 from Factories.ToolsFactory.AnalysisTools import ParametersPerturber
 from Simulation.plots import plotTrajectory, plotTrajectory3d
@@ -17,7 +17,7 @@ IMAGES_PATH = "../images/gp/"
 
 INNER_LOOP_FREQ = 100
 OUTER_LOOP_FREQ = 10
-SAMPLING_FREQ = OUTER_LOOP_FREQ#Hz
+SAMPLING_FREQ = OUTER_LOOP_FREQ #Hz
 STEP_TIME = 1 #s
 CONTROLS_NUM = 3
 STATES_NUM = 6
@@ -33,40 +33,47 @@ MASS_MAX = 2
 
 spiral_trajectory = SpiralTrajectory(15)
 rectangular_trajectory = RectangularTrajectory()
-#trajectory = np.array([100, 0, 10])
-trajectory = spiral_trajectory
-#trajectory = rectangular_trajectory
+trajectory = SinglePoint([0, 0, 10])
+
 if __name__ == "__main__":
+    #Estimation domain
     deltaT = STEP_TIME/OUTER_LOOP_FREQ
     samples_num = 100
     domain = (0.2, 4)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
 
+    #Parameters perturbation
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 2.0})
+    perturber({'m': 1.5})
     print(perturber.perturbed_parameters)
 
+    #Configurations
     quad_conf = QuadConfiguration(perturber.nominal_parameters, pendulum_parameters, QUAD_STATE0, LOAD_STATE0, PWM_RANGE,
                                   ANGULAR_VELOCITY_RANGE)
-    position0 = QUAD_STATE0[:6]
-    position_ref = np.array([0, 0, 10, 0, 0, 0])
-    nominal_control_conf = ControllerWithCompensatorConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                                           trajectory=trajectory,
-                                           u_ss=[perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0.0, 0.0], x_ss = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), prediction_model=LinearizedQuadNoYaw,
-                                           INNER_LOOP_FREQ=INNER_LOOP_FREQ, OUTER_LOOP_FREQ=OUTER_LOOP_FREQ,
-                                           ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE)
-    position_controller_conf = positionControllerWrapper(nominal_control_conf)
-    prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters)
+    attitude_controller_conf = AttitudeControllerConfiguration(INNER_LOOP_FREQ, PWM_RANGE, PWM0=PWM_RANGE[0])
+    prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters, Ts=1 / OUTER_LOOP_FREQ)
+    mpc = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, pred_horizon=10)
+    input_converter = MPC_input_converter(np.zeros(6), np.array([perturber.perturbed_parameters['m'] * perturber.perturbed_parameters['g'], 0, 0]))
+    output_converter = MPC_output_converter(np.array([perturber.perturbed_parameters['m'] * perturber.perturbed_parameters['g'], 0, 0]),
+                                            perturber.perturbed_parameters['Kt'],
+                                            ANGULAR_VELOCITY_RANGE)
+    position_controller = PositionController(mpc,
+                                             input_converter,
+                                             output_converter,
+                                             trajectory)
+
     step_trajectory_buffer = RollBuffers(['state', 'state_prediction', 'control_input'],
                                          [(STATES_NUM,), (STATES_NUM,), (CONTROLS_NUM,)],
                                          buffer_size=ATOMIC_TRAJ_SAMPLES_NUM)
-    environment = ControlLoopEnvironment(quad_conf.quadcopter, quad_conf.load, nominal_control_conf.position_controller,
-                                         nominal_control_conf.attitude_controller,
-                                         [nominal_control_conf.position_controller_input_converter, nominal_control_conf.position_controller_output_converter],
-                                         quad_conf.esc,
-                                         STEP_TIME, MAX_STEPS_NUM, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, prediction_model,
-                                         step_trajectory_buffer)
 
+    environment = ControlLoopEnvironment(quad_conf.quadcopter,
+                                         quad_conf.load,
+                                         position_controller,
+                                         attitude_controller_conf.attitude_controller,
+                                         quad_conf.esc,
+                                         prediction_model,
+                                         step_trajectory_buffer,
+                                         STEP_TIME, MAX_STEPS_NUM, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
     # observations
     action = np.random.uniform(domain[0], domain[1], size=(1,))
 

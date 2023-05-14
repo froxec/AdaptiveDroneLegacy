@@ -5,47 +5,65 @@ from Factories.CommunicationFactory.redis_db_commands import redis_stream_read_l
 import pickle
 import plotly.express as px
 from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 import numpy as np
 import redis
 
-database = redis.Redis(host=DB_PARAMETERS['ip'], port=DB_PARAMETERS['port'], decode_responses=DB_PARAMETERS['decode_responses'])
-data_x = []
-data_u = []
-app = Dash(__name__)
+class Dashboard():
+    app = Dash(__name__)
+    app.layout = html.Div([
+        html.H3('Quadcopter dashboard'),
+        dcc.Dropdown(
+            id='my-dropdown',
+            options=[{'label': 'State', 'value': 'STATE'},
+                     {'label': 'Control', 'value': 'CONTROL'}],
+            value='STATE'
+        ),
+        dcc.Graph(id="state_graph"),
+        dcc.Graph(id='3d-view'),
+        dcc.Interval(
+            id='interval-component',
+            interval=1000,
+            n_intervals=0
+        ),
+        html.P(id='placeholder')
+    ])
+    def __init__(self):
+        self.database = redis.Redis(host=DB_PARAMETERS['ip'], port=DB_PARAMETERS['port'],
+                               decode_responses=DB_PARAMETERS['decode_responses'])
+        self.data_x = []
+        self.data_u = []
 
-app.layout = html.Div([
-    html.H3('Quadcopter dashboard'),
-    dcc.Dropdown(
-        id='my-dropdown',
-        options=[{'label': 'quad_data', 'value': '0'},
-                 {'label': 'Tesla', 'value': 'TSLA'}],
-        value='0'
-    ),
-    dcc.Graph(id="graph"),
-    dcc.Interval(
-        id='interval-component',
-        interval=500,
-        n_intervals=0
+    @app.callback(
+        dash.dependencies.Output("placeholder", "title"),
+        [dash.dependencies.Input("interval-component", "n_intervals")],
     )
-])
+    def get_data(self):
+        x = redis_stream_read_last(redis_db=self.database, stream='x')
+        u = redis_stream_read_last(redis_db=self.database, stream='u')
+        self.data_x.append(x)
+        self.data_u.append(u)
 
-@app.callback(
-    dash.dependencies.Output("graph", "figure"),
-    [dash.dependencies.Input("interval-component", "n_intervals")],
-)
-def update_graph(file):
-    x = redis_stream_read_last(redis_db=database, stream='x')
-    u = redis_stream_read_last(redis_db=database, stream='u')
-    data_x.append(x)
-    data_u.append(u)
+        return None
+    @app.callback(
+        dash.dependencies.Output("state_graph", "figure"),
+        [dash.dependencies.Input("interval-component", "n_intervals")],
+    )
+    def update_graph(self):
+        fig = self.draw_subplots(self.data_x, 4, 3)
 
-#     return fig
-#
-# def draw_subplots(data, rows, cols):
-#     fig = make_subplots(4, 3)
-#
-#     for i in range(rows):
-#         for j in range (cols):
+        return fig
+
+    def draw_subplots(self, data, rows, cols):
+        fig = make_subplots(rows, cols)
+        data = np.array(data).reshape((-1, 4, 3))
+
+        for i in range(rows):
+            for j in range(cols):
+                fig.add_trace(go.Scatter(x=list(range(data.shape[0])), y=data[:, i, j]),row=i+1, col=j+1)
+
+        return fig
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    dashboard = Dashboard()
+    dashboard.app.run_server(debug=True)

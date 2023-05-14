@@ -19,7 +19,7 @@ PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(30)
 rectangular_trajectory = RectangularTrajectory()
 rectangular_trajectory_with_terminals = RectangularTrajectoryWithTerminals()
-single_point_traj = SinglePoint(np.array([0, 10, 10]))
+single_point_traj = SinglePoint(np.array([0, 0, 10]))
 #trajectory = single_point_traj
 trajectory = spiral_trajectory
 #trajectory = rectangular_trajectory_with_terminals
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     quad_conf = QuadConfiguration(Z550_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE, ANGULAR_VELOCITY_RANGE)
 
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': -0.9})
+    perturber({'m': 0.0})
     print(perturber.perturbed_parameters)
 
     # controller_compensator_conf = ControllerWithCompensatorConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     #                                        ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE)
     prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters, 1/OUTER_LOOP_FREQ)
     prediction_model2 = AugmentedLinearizedQuadNoYaw(perturber.perturbed_parameters, 1/OUTER_LOOP_FREQ)
-    controller_conf = CustomMPCConfig(prediction_model2, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
+    controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
     controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
     # gekko_controller_conf = GekkoConfiguration(perturber.perturbed_parameters, position0=np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     #                                        trajectory=trajectory,
@@ -80,6 +80,6 @@ if __name__ == '__main__':
     #control_conf.thrust_compensator.plot_signals(t)
     controller_conf.position_controller.plot_history()
     plotTrajectory3d(x, trajectory.generated_trajectory)
-    plotTrajectory(t, x.transpose()[0:12], 4, 3)
+    plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])
     #plotDataPID(t, controler, 'roll')
     #plotTrajectory(t[1::MODULO_FACTOR], np.vstack(control_conf.position_controller.history).transpose(), 3, 1)

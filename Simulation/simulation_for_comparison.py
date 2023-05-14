@@ -22,17 +22,23 @@ PWM_RANGE = [1120, 1920]
 spiral_trajectory = SpiralTrajectory(15)
 rectangular_trajectory = RectangularTrajectory()
 rectangular_trajectory_with_terminals = RectangularTrajectoryWithTerminals()
-single_point_traj = SinglePoint(np.array([0, 10, 10]))
-trajectory = single_point_traj
+single_point_traj = SinglePoint(np.array([0, 0, 10]))
+trajectory = spiral_trajectory
 #trajectory = spiral_trajectory
 #trajectory = rectangular_trajectory_with_terminals
 #trajectory = rectangular_trajectory
 mass_to_test = [-0.8,-0.5, 0.0, 0.5, 1.0]
-fig = make_subplots(4, 3)
+colors = ['blue', 'red', 'orange', 'green', 'purple']
+titles = ['x [m]', 'y[m]', 'z[m]', 'Vx [m/s]', 'Vy[m/s]', 'Vz[m/s]',
+          'phi [rad]', 'theta [rad]', 'psi [rad]',
+          'omega_x [rad/s]', 'omega_y [rad/s]', 'omega_z [rad/s]']
+rows = 4
+cols = 3
+fig = make_subplots(rows, cols)
 if __name__ == '__main__':
     deltaT = 1 / INNER_LOOP_FREQ
 
-    for perturbation in mass_to_test:
+    for i, perturbation in enumerate(mass_to_test):
         quad_conf = QuadConfiguration(Z550_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE,
                                       ANGULAR_VELOCITY_RANGE)
         perturber = ParametersPerturber(Z550_parameters)
@@ -51,20 +57,28 @@ if __name__ == '__main__':
         state0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
         u0 = np.array([0, 0, 0])
 
-        t, x = simulator.run(20, deltaT, state0[0:12], u0, trajectory)
+        t, x = simulator.run(250, deltaT, state0[0:12], u0, trajectory)
 
-        fig.add_trace(go.Scatter(x=t, y=x[:, 0], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=1), row=1, col=1)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 1], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=2), row=1, col=2)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 2], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=3), row=1, col=3)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 3], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=4), row=2, col=1)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 4], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=5), row=2, col=2)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 5], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=6), row=2, col=3)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 6], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=7), row=3, col=1)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 7], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=8), row=3, col=2)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 8], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=9), row=3, col=3)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 9], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=10), row=4, col=1)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 10], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=11), row=4, col=2)
-        fig.add_trace(go.Scatter(x=t, y=x[:, 11], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=12), row=4, col=3)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 0], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=True), row=1, col=1)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 1], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=1, col=2)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 2], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=1, col=3)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 3], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=2, col=1)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 4], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=2, col=2)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 5], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=2, col=3)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 6], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 7], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=3, col=2)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 8], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=3, col=3)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 9], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=4, col=1)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 10], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=4, col=2)
+        fig.add_trace(go.Scatter(x=t, y=x[:, 11], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=4, col=3)
+
+        plotTrajectory3d(x, trajectory.generated_trajectory)
+    titles = np.array(titles).reshape((rows, cols))
+    for i in range(rows):
+        for j in range(cols):
+            fig.update_xaxes(title_text='czas [s]', row=i+1, col=j+1)
+            fig.update_yaxes(title_text=titles[i, j], row=i+1, col=j+1)
+    fig.update_layout(font=dict(size=20))
     fig.show()
     # controller_conf.position_controller.plot_history()
     # plotTrajectory3d(x, trajectory.generated_trajectory)

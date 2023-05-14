@@ -10,8 +10,8 @@ def euclidean_distance(a, b, axis=None):
     else:
         return np.linalg.norm(a - b, axis=axis)
 
-def sigmoid_function(x, L):
-    return L/(1 + np.exp(-x))
+def sigmoid_function(x, L, a):
+    return L/(1 + np.exp(-(x - a)))
 
 def construct_ext_obs_mat(A, C, horizon):
     """

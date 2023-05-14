@@ -1,8 +1,29 @@
 import numpy as np
 from Simulation.model import system
-from Factories.ToolsFactory.GeneralTools import manhattan_distance
+from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function
+from typing import Type
+
+from Simulation.model import quadcopterModel, loadPendulum
+from Factories.ControllersFactory.position_controllers.position_controller import PositionController
+from Simulation.attitude_control import attitudeControler
+from Factories.ModelsFactory.general_models import ElectronicSpeedControler
+from Factories.ModelsFactory.linear_models import LinearizedQuad
+from Factories.ToolsFactory.GeneralTools import RollBuffers
 class ControlLoopEnvironment():
-    def __init__(self, quad, load, position_controller, attitude_controller, mpc_converters, esc, step_time, MAX_STEPS_NUM, inner_loop_freq, outer_loop_freq, prediction_model, step_buffer, x0 = np.zeros(6), u0 = np.zeros(3), thrust_compensator=None):
+    def __init__(self,
+                 quad: Type[quadcopterModel],
+                 load: Type[loadPendulum],
+                 position_controller: Type[PositionController],
+                 attitude_controller: Type[attitudeControler],
+                 esc: Type[ElectronicSpeedControler],
+                 prediction_model: Type[LinearizedQuad],
+                 step_buffer: Type[RollBuffers],
+                 step_time: int,
+                 MAX_STEPS_NUM: int,
+                 inner_loop_freq: int,
+                 outer_loop_freq: int,
+                 x0=np.zeros(6),
+                 u0=np.zeros(3)):
         self.quad = quad
         self.load = load
         self.step_time = step_time
@@ -22,9 +43,6 @@ class ControlLoopEnvironment():
         self.trajectory_buffer = step_buffer
         self.position_controller = position_controller
         self.attitude_controller = attitude_controller
-        self.mpc_input_converter = mpc_converters[0]
-        self.mpc_output_converter = mpc_converters[1]
-        self.thrust_compensator = thrust_compensator
         self.esc = esc
         self.MAX_STEPS_NUM = MAX_STEPS_NUM
         self.done = False
@@ -36,17 +54,16 @@ class ControlLoopEnvironment():
         self.prediction_model_parameters['m'] = mass
         self.prediction_model.update_parameters(self.prediction_model_parameters)
         for i in range(int(self.inner_loop_freq*self.step_time)+1):
+            #TODO - kod zakłada, że MAB jest aktualizowany z częstotliwością równą częstotliwości OUTER_LOOP - potencjalne bugi
             if (i % self.MODULO_FACTOR) == 0:
-                delta_x0, delta_u0 = self.mpc_input_converter(self.x, self.u_prev)
-                ref = self.position_controller.predict(delta_x0, delta_u0, None)
-                ref_converted = self.mpc_output_converter(ref)
+                ref_converted = self.position_controller(self.x)
                 attitude_setpoint = np.concatenate([ref_converted[1:], np.array([0])])
                 throttle = ref_converted[0]
                 if self.u_prev is not None:
-                    prediction = self.prediction_model.discrete_prediction(prediction_prev, self.u_prev, self.prediction_deltaT)
+                    prediction = self.prediction_model.discrete_prediction(prediction_prev, self.u_prev)
                     self.add_sample_to_buffer(self.x[:6], prediction, self.u_prev)
                     prediction_prev = prediction
-                self.u_prev = ref + self.mpc_output_converter.u_ss
+                self.u_prev = self.position_controller.output_converter.nominal_u
                 self.x_prev = self.x
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12],
                                                 throttle)
@@ -55,7 +72,10 @@ class ControlLoopEnvironment():
             self.history['x'].append(list(self.x))
             self.history['u'].append(list(self.u_prev))
         penalty = self.calculate_penalty()
-        reward = np.log10(penalty**3 + 1)
+        penalty = self.normalize_penalty(penalty)
+        #reward = np.log10(penalty**3 + 1)
+        #reward = sigmoid_function(0.2*penalty**2, 10, 0)
+        reward = penalty
         env_state = np.concatenate((self.trajectory_buffer['state'], self.trajectory_buffer['control_input']), axis=1)
         self.update_done()
         return env_state, reward, self.done
@@ -79,6 +99,9 @@ class ControlLoopEnvironment():
         for i in range(self.samples_per_step):
             reward += manhattan_distance(state[i], state_prediction[i])*self.prediction_deltaT
         return reward
+
+    def normalize_penalty(self, penalty):
+        return penalty/self.step_time
     def normalize_trajectory(self, trajectory):
         max_values = np.max(trajectory, axis=0)
         min_values = np.min(trajectory, axis=0)
