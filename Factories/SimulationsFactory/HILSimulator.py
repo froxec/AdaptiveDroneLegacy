@@ -33,7 +33,7 @@ class HILSimulator():
         self.history = {'x': [],
                         'u': []}
         self.i = 1
-        self.u = np.array([0, 0, 0, 0])
+        self.u = np.array([0, 0, 0])
         self.db_parameters = db_parameters
         if db_parameters is not None:
             self.database = redis.Redis(host=db_parameters['ip'], port=db_parameters['port'], decode_responses=db_parameters['decode_responses'])

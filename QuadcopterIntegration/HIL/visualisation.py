@@ -22,6 +22,7 @@ app.layout = html.Div([
         value='STATE'
     ),
     dcc.Graph(id="state_graph"),
+    dcc.Graph(id="control_graph"),
     dcc.Graph(id='3d-view'),
     dcc.Interval(
         id='interval-component',
@@ -44,8 +45,17 @@ def get_data(value):
     [dash.dependencies.Input("interval-component", "n_intervals")],
 )
 def update_graph(value):
-    fig = dashboard.update_graph()
+    fig = dashboard.update_graph('state')
     return fig
+
+@app.callback(
+    dash.dependencies.Output("control_graph", "figure"),
+    [dash.dependencies.Input("interval-component", "n_intervals")],
+)
+def update_graph(value):
+    fig = dashboard.update_graph('control')
+    return fig
+
 
 class Dashboard():
     def __init__(self):
@@ -67,14 +77,18 @@ class Dashboard():
         u = redis_stream_read_last(redis_db=self.database, stream='u')
         self.data_x.append(x)
         self.data_u.append(u)
+        print(u)
         return None
-    def update_graph(self):
-        fig = self.draw_subplots(self.data_x, 4, 3)
+    def update_graph(self, mode):
+        if mode == 'state':
+            fig = self.draw_subplots(self.data_x, 4, 3)
+        elif mode == 'control':
+            fig = self.draw_subplots(self.data_u, 4, 1)
         return fig
 
     def draw_subplots(self, data, rows, cols):
         fig = make_subplots(rows, cols)
-        data = np.array(data).reshape((-1, 4, 3))
+        data = np.array(data).reshape((-1, rows, cols))
 
         for i in range(rows):
             for j in range(cols):

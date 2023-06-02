@@ -154,5 +154,4 @@ def time_control(func):
         finish = time.perf_counter()
         while finish - start < time_rate:
             finish = time.perf_counter()
-        print(time.perf_counter() - start)
     return wrapper
