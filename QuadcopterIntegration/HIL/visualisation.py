@@ -9,49 +9,67 @@ import plotly.graph_objects as go
 import numpy as np
 import redis
 
+dashboard : object = None
+
+## dash app instantiation
+app = Dash(__name__)
+app.layout = html.Div([
+    html.H3('Quadcopter dashboard'),
+    dcc.Dropdown(
+        id='my-dropdown',
+        options=[{'label': 'State', 'value': 'STATE'},
+                 {'label': 'Control', 'value': 'CONTROL'}],
+        value='STATE'
+    ),
+    dcc.Graph(id="state_graph"),
+    dcc.Graph(id='3d-view'),
+    dcc.Interval(
+        id='interval-component',
+        interval=1000,
+        n_intervals=0
+    ),
+    html.P(id='placeholder')
+])
+
+
+@app.callback(
+    dash.dependencies.Output("placeholder", "title"),
+    [dash.dependencies.Input("interval-component", "n_intervals")],
+)
+def get_data(value):
+    dashboard.get_data()
+
+@app.callback(
+    dash.dependencies.Output("state_graph", "figure"),
+    [dash.dependencies.Input("interval-component", "n_intervals")],
+)
+def update_graph(value):
+    fig = dashboard.update_graph()
+    return fig
+
 class Dashboard():
-    app = Dash(__name__)
-    app.layout = html.Div([
-        html.H3('Quadcopter dashboard'),
-        dcc.Dropdown(
-            id='my-dropdown',
-            options=[{'label': 'State', 'value': 'STATE'},
-                     {'label': 'Control', 'value': 'CONTROL'}],
-            value='STATE'
-        ),
-        dcc.Graph(id="state_graph"),
-        dcc.Graph(id='3d-view'),
-        dcc.Interval(
-            id='interval-component',
-            interval=1000,
-            n_intervals=0
-        ),
-        html.P(id='placeholder')
-    ])
     def __init__(self):
         self.database = redis.Redis(host=DB_PARAMETERS['ip'], port=DB_PARAMETERS['port'],
                                decode_responses=DB_PARAMETERS['decode_responses'])
         self.data_x = []
         self.data_u = []
 
-    @app.callback(
-        dash.dependencies.Output("placeholder", "title"),
-        [dash.dependencies.Input("interval-component", "n_intervals")],
-    )
+    def run(self, debug=True):
+        # set global module as the Dashboard instance
+        global dashboard
+        assert dashboard is None, "Cannot instantiate more than one dashboard."
+        dashboard = self
+
+        app.run_server(debug=debug)
+
     def get_data(self):
         x = redis_stream_read_last(redis_db=self.database, stream='x')
         u = redis_stream_read_last(redis_db=self.database, stream='u')
         self.data_x.append(x)
         self.data_u.append(u)
-
         return None
-    @app.callback(
-        dash.dependencies.Output("state_graph", "figure"),
-        [dash.dependencies.Input("interval-component", "n_intervals")],
-    )
     def update_graph(self):
         fig = self.draw_subplots(self.data_x, 4, 3)
-
         return fig
 
     def draw_subplots(self, data, rows, cols):
@@ -65,5 +83,5 @@ class Dashboard():
         return fig
 
 if __name__ == '__main__':
-    dashboard = Dashboard()
-    dashboard.app.run_server(debug=True)
+    dashboard_primitive = Dashboard()
+    dashboard_primitive.run()

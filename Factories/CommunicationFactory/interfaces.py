@@ -66,7 +66,7 @@ class PCInterface(Interface):
         self.socket = socket.socket(socket.AF_INET,
                                     socket.SOCK_DGRAM)
         self.socket.bind((self.IP, self.PORT))
-        self.timeout_in_seconds = 1.0
+        self.timeout_in_seconds = 0.0
 
     def __call__(self, mode, *args):
         if mode == 'recv':
