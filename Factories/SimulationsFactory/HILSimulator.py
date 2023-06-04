@@ -3,7 +3,7 @@ from Simulation.model import quadcopterModel, loadPendulum
 from Simulation.attitude_control import attitudeControler
 from Factories.ModelsFactory.general_models import ElectronicSpeedControler
 from Factories.CommunicationFactory.interfaces import PCInterface
-from Factories.CommunicationFactory.redis_db_commands import redis_stream_add
+from Factories.CommunicationFactory.redis_db_commands import redis_stream_add, redis_stream_read_last
 from Simulation.model import system
 import numpy as np
 import redis
@@ -33,7 +33,8 @@ class HILSimulator():
         self.history = {'x': [],
                         'u': []}
         self.i = 1
-        self.u = np.array([0, 0, 0, 0])
+        self.u = np.array([0, 0, 0])
+        self.ref = [0, 0, 0]
         self.db_parameters = db_parameters
         if db_parameters is not None:
             self.database = redis.Redis(host=db_parameters['ip'], port=db_parameters['port'], decode_responses=db_parameters['decode_responses'])
@@ -49,7 +50,8 @@ class HILSimulator():
         motors = self.esc(ESC_PWMs)
         x = system(np.array(motors), self.dT, self.quad, self.load)[:12]
         if self.interface is not None and self.i == 1:
-            self.interface('send', x[:6])
+            self.update_reference()
+            self.interface('send', x[:6], self.ref)
         self.save_history(x, self.u)
         self.calculate_iterator()
         return x[:6]
@@ -59,6 +61,12 @@ class HILSimulator():
         if self.db_parameters is not None:
             redis_stream_add(self.database, 'x', list(x))
             redis_stream_add(self.database, 'u', list(u))
+    def update_reference(self):
+        if self.db_parameters is not None:
+            ref = redis_stream_read_last(redis_db=self.database, stream='ref')
+            if ref is not None:
+                self.ref = ref
+
 
     def calculate_iterator(self):
         self.i = (self.i % self.modulo_freq) + 1
