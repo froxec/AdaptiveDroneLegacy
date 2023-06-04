@@ -23,7 +23,7 @@ spiral_trajectory = SpiralTrajectory(15)
 rectangular_trajectory = RectangularTrajectory()
 rectangular_trajectory_with_terminals = RectangularTrajectoryWithTerminals()
 single_point_traj = SinglePoint(np.array([0, 0, 10]))
-trajectory = spiral_trajectory
+trajectory = single_point_traj
 #trajectory = spiral_trajectory
 #trajectory = rectangular_trajectory_with_terminals
 #trajectory = rectangular_trajectory
@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
         prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters, 1 / OUTER_LOOP_FREQ)
         prediction_model2 = AugmentedLinearizedQuadNoYaw(perturber.perturbed_parameters, 1/OUTER_LOOP_FREQ)
-        controller_conf = CustomMPCConfig(prediction_model2, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
+        controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
         controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
 
         simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller, controller_conf.attitude_controller,
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         state0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
         u0 = np.array([0, 0, 0])
 
-        t, x = simulator.run(250, deltaT, state0[0:12], u0, trajectory)
+        t, x = simulator.run(20, deltaT, state0[0:12], u0, trajectory)
 
         fig.add_trace(go.Scatter(x=t, y=x[:, 0], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=True), row=1, col=1)
         fig.add_trace(go.Scatter(x=t, y=x[:, 1], name="m:{:.2f}".format(perturber.perturbed_parameters['m']), legendgroup=i, line=dict(color=colors[i]), showlegend=False), row=1, col=2)
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         for j in range(cols):
             fig.update_xaxes(title_text='czas [s]', row=i+1, col=j+1)
             fig.update_yaxes(title_text=titles[i, j], row=i+1, col=j+1)
-    fig.update_layout(font=dict(size=20))
+    fig.update_layout(font=dict(size=36))
     fig.show()
     # controller_conf.position_controller.plot_history()
     # plotTrajectory3d(x, trajectory.generated_trajectory)

@@ -8,7 +8,11 @@ from Factories.ControllersFactory.position_controllers.position_controller impor
 from Factories.CommunicationFactory.interfaces import ControllerInterface
 from QuadcopterIntegration.HIL.simulation_parameters import *
 import numpy as np
-trajectory = SinglePoint([0, 0, 10])
+import time
+
+
+
+trajectory = SinglePoint([0, 0, 20])
 #trajectory = SpiralTrajectory(15)
 parameters = Z550_parameters
 if __name__ == "__main__":

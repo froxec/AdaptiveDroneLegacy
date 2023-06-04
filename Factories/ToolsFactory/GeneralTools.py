@@ -1,6 +1,7 @@
 import numpy as np
 import plotly.graph_objects as go
 from scipy.linalg import toeplitz
+import time
 def manhattan_distance(a, b):
     return np.abs(a - b).sum()
 
@@ -145,3 +146,13 @@ class ReplayBuffer(RollBuffers):
         indices = np.random.choice(range(buffer_size - basic_samples_to_fulfil), size=batch_size, replace=False)
         batches = {name: torch.from_numpy(self.buffers[name][indices].astype(np.float32)) for name in self.names}
         return batches
+
+def time_control(func):
+    def wrapper(simulation, time_rate):
+        start = time.perf_counter()
+        func(simulation)
+        finish = time.perf_counter()
+        while finish - start < time_rate:
+            finish = time.perf_counter()
+        print(time.perf_counter() - start)
+    return wrapper

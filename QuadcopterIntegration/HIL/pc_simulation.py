@@ -5,7 +5,13 @@ from QuadcopterIntegration.HIL.simulation_parameters import *
 from Factories.ModelsFactory.model_parameters import Z550_parameters, pendulum_parameters
 from Factories.CommunicationFactory.interfaces import PCInterface
 from QuadcopterIntegration.HIL.communication_parameters import *
+from Factories.ToolsFactory.GeneralTools import time_control
 import numpy as np
+import time
+
+@time_control
+def run_simulation(simulation):
+    simulation()
 
 def main():
     print("Initialisation started...")
@@ -17,7 +23,6 @@ def main():
                                   quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, interface=interface, db_parameters=DB_PARAMETERS)
     print("Initialisation finished.")
     while True:
-        hil_simulation()
-
+        run_simulation(hil_simulation, 1/INNER_LOOP_FREQ)
 if __name__ == "__main__":
     main()
