@@ -29,8 +29,8 @@ class ControllerInterface(Interface):
         if mode == 'recv':
             message = self.READ_MESSAGE()
             if message is not None:
-                x = self.decode_message(message)
-                return x
+                decoded_message = self.decode_message(message)
+                return decoded_message
             else:
                 return None
         if mode == 'send':
@@ -53,7 +53,7 @@ class ControllerInterface(Interface):
         u_struct = struct.pack('fff', u[0], u[1], u[2])
         return u_struct
     def decode_message(self, message):
-        unpacked = struct.unpack('ffffff', message)
+        unpacked = struct.unpack('fffffffff', message)
         return unpacked
     
 class PCInterface(Interface):
