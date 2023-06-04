@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import numpy as np
 import redis
 
-input_names = {'xref', 'yref', 'zref'}
+input_names = ['xref', 'yref', 'zref']
 
 dashboard : object = None
 
@@ -18,12 +18,29 @@ app = Dash(__name__)
 app.layout = html.Div([
     html.H3('Quadcopter dashboard'),
     html.Div([
+        html.P("x"),
         dcc.Input(
-            id="{}".format(input_name),
+            id="{}".format(input_names[0]),
             type="number",
             value=0.0,
-            placeholder="{}".format(input_name)
-        ) for input_name in input_names]),
+            placeholder="{}".format(input_names[0]))
+    ]),
+    html.Div([
+        html.P("y"),
+        dcc.Input(
+            id="{}".format(input_names[1]),
+            type="number",
+            value=0.0,
+            placeholder="{}".format(input_names[1]))
+        ]),
+    html.Div([
+        html.P("z"),
+        dcc.Input(
+            id="{}".format(input_names[2]),
+            type="number",
+            value=0.0,
+            placeholder="{}".format(input_names[2]))]
+        ),
     html.Button('Update reference', id='submit-val', n_clicks=0),
     html.Div([html.H3('Current setpoint'), html.P(id="ref_holder")]),
     # dcc.Dropdown(
