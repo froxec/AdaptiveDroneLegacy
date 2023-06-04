@@ -30,6 +30,7 @@ class LinearizedQuad():
                       [0, 0, 0, 0],
                       [0, 0, 0, 0],
                       [0, 0, 0, 0]])
+        self.x_num = self.A.shape[0]
         self.X_OP = np.array([x_ref, y_ref, z_ref, 0, 0, 0])
         self.Y_OP = self.C @ self.X_OP
         self.U_OP = np.array([self.m*self.g, 0, 0, u4_ss])
