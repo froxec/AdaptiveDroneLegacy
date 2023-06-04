@@ -78,7 +78,8 @@ class PCInterface(Interface):
                 return None
         if mode == 'send':
             x = args[0]
-            message = self.construct_message(x)
+            ref = args[1]
+            message = self.construct_message(x, ref)
             self.SEND_MESSAGE(message)
 
     def READ_MESSAGE(self):
@@ -95,8 +96,8 @@ class PCInterface(Interface):
         self.socket.sendto(MESSAGE, (self.REMOTE_IP, self.REMOTE_PORT))
         print("Message {} sent".format(MESSAGE))
     
-    def construct_message(self, x):
-        u_struct = struct.pack('ffffff', x[0], x[1], x[2], x[3], x[4], x[5])
+    def construct_message(self, x, ref):
+        u_struct = struct.pack('fffffffff', x[0], x[1], x[2], x[3], x[4], x[5], ref[0], ref[1], ref[2])
         return u_struct
 
     def decode_message(self, message):
