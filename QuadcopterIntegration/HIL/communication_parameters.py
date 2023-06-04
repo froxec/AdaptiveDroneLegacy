@@ -1,5 +1,5 @@
-PC_IP = "localhost"
+PC_IP = "192.168.0.12"
 PC_PORT = 5006
 
-RASP_IP = "localhost"
+RASP_IP = "192.168.0.23"
 RASP_PORT = 5005

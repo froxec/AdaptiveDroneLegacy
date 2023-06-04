@@ -8,8 +8,8 @@ from Factories.ControllersFactory.position_controllers.position_controller impor
 from Factories.CommunicationFactory.interfaces import ControllerInterface
 from QuadcopterIntegration.HIL.simulation_parameters import *
 import numpy as np
-#trajectory = SinglePoint([0, 0, 10])
-trajectory = SpiralTrajectory(15)
+trajectory = SinglePoint([0, 0, 10])
+#trajectory = SpiralTrajectory(15)
 parameters = Z550_parameters
 if __name__ == "__main__":
     print("Initialisation started...")
@@ -24,6 +24,8 @@ if __name__ == "__main__":
                                              trajectory, 
                                              interface)
     print("Initialisation finished.")
-
+    import time
     while True:
+        start = time.time()
         position_controller()
+        print(time.time()-start)
