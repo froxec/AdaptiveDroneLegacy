@@ -25,7 +25,7 @@ if __name__ == "__main__":
     prediction_model = LinearizedQuadNoYaw(parameters, Ts=1/OUTER_LOOP_FREQ)
     mpc = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, pred_horizon=10)
     input_converter = MPC_input_converter(np.zeros(6), np.array([parameters['m']*parameters['g'], 0, 0]))
-    output_converter = MPC_output_converter( np.array([parameters['m']*parameters['g'], 0, 0]), parameters['Kt'], ANGULAR_VELOCITY_RANGE)
+    output_converter = MPC_output_converter( np.array([parameters['m']*parameters['g'], 0, 0]), parameters['Kt'], ANGULAR_VELOCITY_RANGE, mode='proprietary')
     interface = ControllerInterface(RASP_IP, RASP_PORT, PC_IP, PC_PORT)
     position_controller = PositionController(mpc,
                                              input_converter,

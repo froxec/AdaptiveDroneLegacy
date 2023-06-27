@@ -24,13 +24,15 @@ class PositionController():
     def __call__(self, x=None):
         if self.interface is not None:
             data = self.interface('recv')
-        if data is not None:
-            xnum = self.controller.model.x_num
-            self.x = np.array(data[:xnum])
-            self.xref = np.array(data[xnum:])
-            print(self.xref)
-            trajectory = SinglePoint(self.xref)
-            self.change_setpoint(trajectory)
+            if data is not None:
+                xnum = self.controller.model.x_num
+                self.x = np.array(data[:xnum])
+                self.xref = np.array(data[xnum:])
+                print(self.xref)
+                trajectory = SinglePoint(self.xref)
+                self.change_setpoint(trajectory)
+        else:
+            self.x = x
         delta_x, _ = self.input_converter(self.x, None)
         delta_u_next = self.controller.predict(delta_x, self.trajectory)
         u_next = self.output_converter(delta_u_next)

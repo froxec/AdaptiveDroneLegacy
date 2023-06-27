@@ -6,7 +6,7 @@ import numpy as np
 class MPC_configurator():
     def __init__(self, quad_parameters, x0, xref, sample_time=2, linear_model=LinearizedQuad):
         self.Ts = sample_time
-        self.quad = linear_model(x_ref=xref[0], y_ref=xref[1], z_ref=xref[2])
+        self.quad = linear_model(quad_parameters, x_ref=xref[0], y_ref=xref[1], z_ref=xref[2])
 
         Ac = self.quad.A
         Bc = self.quad.B

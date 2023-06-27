@@ -1,13 +1,16 @@
 import numpy as np
 from copy import deepcopy
 class MPC_output_converter():
-    def __init__(self, u_ss, Kt, angular_velocity_range):
+    def __init__(self, u_ss, Kt, angular_velocity_range, mode='proprietary'):
         self.angular_vel_min = angular_velocity_range[0]
         self.angular_vel_max = angular_velocity_range[1]
         self.u_ss = u_ss
         self.thrust_converter = ThrustToAngularVelocity(Kt)
         self.angular_vel_normalizer = Normalizer(min=self.angular_vel_min, max=self.angular_vel_max)
         self.nominal_u = None
+        self.valid_modes = {'proprietary', 'ardupilot'}
+        if mode not in self.valid_modes:
+            raise ValueError("mode must be one of %r." % self.valid_modes)
     def __call__(self, delta_u):
         u = delta_u + self.u_ss
         self.nominal_u = deepcopy(u)
@@ -16,6 +19,10 @@ class MPC_output_converter():
         u[0] = throttle
         #u[3] = 0
         return u
+
+    def convert(self):
+        ## TODO x
+        pass
 
     def update(self, u_ss, Kt):
         self.u_ss = u_ss

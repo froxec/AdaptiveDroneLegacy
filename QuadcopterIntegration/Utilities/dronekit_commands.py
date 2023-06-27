@@ -5,8 +5,29 @@ import time
 
 def set_attitude(vehicle, roll, pitch, yaw, thrust):
     quaternion = euler_to_quaternion(roll, pitch, yaw)
-    msg = vehicle.send_mavlink(mavutil.mavlink.MAVLink_set_attitude_target_message(1, 0, 0, 7, quaternion, 0, 0, 0, thrust))
-    
+    msg = vehicle.message_factory.set_attitude_target_encode(
+        0,
+        0, 0,
+        7,
+        quaternion,
+        0, 0, 0,
+        thrust
+    )
+    # msg = mavutil.mavlink.MAVLink_set_attitude_target_message(1, 0, 0, 7, quaternion, 0, 0, 0, thrust)
+    vehicle.send_mavlink(msg)
+
+def set_position_local(vehicle, x, y, z):
+    msg = vehicle.message_factory.set_position_target_local_ned_encode(
+        0,
+        0, 0,
+        1,
+        3576,
+        x, y, z,
+        0, 0, 0,
+        0, 0, 0,
+        0, 0
+    )
+    vehicle.send_mavlink(msg)
 def get_state(vehicle):
     position = vehicle.location.local_frame
     velocity = vehicle.velocity
