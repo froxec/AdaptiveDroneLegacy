@@ -5,6 +5,6 @@ class RadialBasisFunction:
         self.bandwidth = bandwidth
 
     def __call__(self, x):
-        diff = x - self.center
+        diff = x.flatten() - self.center
         dist = np.transpose(diff) @ diff
         return np.exp(-dist/self.bandwidth)
