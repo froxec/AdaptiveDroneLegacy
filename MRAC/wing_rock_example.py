@@ -72,7 +72,7 @@ class RBFUncertaintyEstimator:
         self.bandwidth = bandwidth
         self.rbfs = []
         self.generate_rbfs()
-        self.weights = np.ones((len(self.rbfs) + m, m))
+        self.weights = np.zeros((len(self.rbfs) + m, m))
         self.current_features = np.zeros(len(self.rbfs) + m)
     def __call__(self, x, un):
         feat = []
@@ -102,11 +102,10 @@ class EstimatorUpdater:
         update = self.est.current_features.reshape(-1, 1) @ update
         update = self.gamma * update
         self.est.weights = self.est.weights + update
-        print(self.est.weights)
 
 class AdaptiveControl:
     def __init__(self, ref_model, unc_estimator):
-        self.gamma = 0.0
+        self.gamma = 0.01
         self.Q = -np.identity(ref_model.A.shape[0])
         self.P = solve_continuous_lyapunov(ref_model.A, self.Q)
         self.ref_model = ref_model
@@ -115,7 +114,7 @@ class AdaptiveControl:
 
     def __call__(self, x, un, ref):
         ad = self.est(x, un)
-        return un + ad
+        return un - ad
     def update_estimator(self, x, x_prev, ref):
         x_hat = self.ref_model.predict(x_prev, ref)
         self.updater(x, x_hat)
@@ -136,7 +135,8 @@ def simulate(start, stop, dT, model, ff_controller, ada_controller=None, ext_dis
             u = u + delta
         RungeKutta4(dT, model, u.reshape(-1, 1))
         x[i] = model.state.flatten()
-        ada_controller.update_estimator(model.state.flatten(), x[i-1], ref)
+        if ada_controller is not None:
+            ada_controller.update_estimator(model.state.flatten(), x[i-1], ref)
     return t, x, u_history
 
 def plot_trajectories(t, x, u):
@@ -156,5 +156,5 @@ if __name__ == "__main__":
     ff_controller = FeedbackFeedforwardController()
     estimator = RBFUncertaintyEstimator(10, -2, 2, 25, ref_model.B.shape[1])
     ada_controller = AdaptiveControl(ref_model, estimator)
-    t, x, u = simulate(0, 10, dT, plant, ff_controller, ada_controller, ext_disturbance)
+    t, x, u = simulate(0, 10, dT, plant, ff_controller, ada_controller=ada_controller, ext_distb=ext_disturbance)
     plot_trajectories(t, x, u)
