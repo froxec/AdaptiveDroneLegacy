@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     while True:
         x = np.array(get_state(vehicle))
-        u = run_controller(position_controller, 1/OUTER_LOOP_FREQ, x)
+        u = run_controller(position_controller, 1/OUTER_LOOP_FREQ, x=x)
         print("MPC control", u)
         u = mpc_command_convert(u, 0, 2*parameters['m']*parameters['g'])
         print("Current state:", x)

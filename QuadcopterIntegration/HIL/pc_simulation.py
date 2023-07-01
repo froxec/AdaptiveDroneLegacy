@@ -1,7 +1,6 @@
 from Factories.SimulationsFactory.HILSimulator import HILSimulator
 from QuadcopterIntegration.HIL.simulation_parameters import *
 from Factories.ConfigurationsFactory.configurations import QuadConfiguration, AttitudeControllerConfiguration
-from QuadcopterIntegration.HIL.simulation_parameters import *
 from Factories.ModelsFactory.model_parameters import Z550_parameters, pendulum_parameters
 from Factories.CommunicationFactory.interfaces import PCInterface
 from QuadcopterIntegration.HIL.communication_parameters import *

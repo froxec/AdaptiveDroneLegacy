@@ -148,9 +148,13 @@ class ReplayBuffer(RollBuffers):
         return batches
 
 def time_control(func):
-    def wrapper(simulation, time_rate, x=None):
+    def wrapper(simulation, time_rate, **args):
         start = time.perf_counter()
-        u = func(simulation, x)
+        if 'x' in args.keys():
+            x = args['x']
+            u = func(simulation, x)
+        else:
+            u = func(simulation)
         finish = time.perf_counter()
         while finish - start < time_rate:
             finish = time.perf_counter()

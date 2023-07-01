@@ -1,0 +1,3 @@
+!!!
+
+script for control on raspberry pi must be run with pythonpath -> it is required for vsc to detect local modules.

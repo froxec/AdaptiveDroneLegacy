@@ -13,6 +13,17 @@ skrypt automatycznie uruchomi server mavproxy z dodatkowymi parametrami zapisany
 LOKALIZACJE DRONA ZAPISYWANE SĄ W PLIKU Tools/autotest/locations.txt (w folderze repo ardupilot)
 ewentualnie: --custom-location=54.25084,18.66943,0,180
 
+
+
+
+
+
+
+
+
+
+
+
 ## !LEGACY! Uruchomienie symulacji SITL !LEGACY
 1. Uruchom dronekit-sitl copter --home=54.25084,18.66943,0,180 (zmiana trybu lotu nie działa)
 2. Wprowadź komendę, aby przekierować komunikację na odpowiedni port: mavproxy.py --out 127.0.0.1:14550 --out 127.0.0.1:14551 --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out udp:192.168.0.12:8000
