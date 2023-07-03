@@ -1,9 +1,9 @@
 from Factories.SimulationsFactory.HILSimulator import HILSimulator
-from QuadcopterIntegration.HIL.simulation_parameters import *
+from QuadcopterIntegration.HIL_PREP_SIM.simulation_parameters import *
 from Factories.ConfigurationsFactory.configurations import QuadConfiguration, AttitudeControllerConfiguration
 from Factories.ModelsFactory.model_parameters import Z550_parameters, pendulum_parameters
 from Factories.CommunicationFactory.interfaces import PCInterface
-from QuadcopterIntegration.HIL.communication_parameters import *
+from QuadcopterIntegration.HIL_PREP_SIM.communication_parameters import *
 from Factories.ToolsFactory.GeneralTools import time_control
 import numpy as np
 import time
