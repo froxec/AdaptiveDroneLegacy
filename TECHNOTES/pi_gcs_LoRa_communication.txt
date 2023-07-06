@@ -1,0 +1,4 @@
+picocom -b 9600 -r -r /dev/ttyS0 - command to setup communication terminal on PI
+
+picocom -b 9600 -r -l /dev/ttyUSB1 - PC
+

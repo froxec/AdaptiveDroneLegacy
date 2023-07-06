@@ -1,0 +1,11 @@
+To start UART on UBUNTU PI use technique described by Zanna in:
+https://askubuntu.com/questions/1254376/enable-uart-communication-on-pi4-ubuntu-20-04
+
+### UWAGA ###
+ttyS0 (GPIO 14/15) is used by LoRa module, therefore for fc communication other port should be used
+Activation of additional ports:
+- add dtoverlay=uart3 into /boot/config.txt
+
+Potencjalnie można uruchomić flow control. GPIO 0 and 1 (UART2) are used to control HATs. Therefore UART3 (GPIO 4 and 5)
+should be used.
+GPIO4 (PIN7 - P7) - TX, GPIO5-RX (PIN29 - marked P21 on LoRa HAT)
