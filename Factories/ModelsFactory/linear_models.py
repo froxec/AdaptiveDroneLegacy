@@ -109,3 +109,41 @@ class AugmentedLinearizedQuadNoYaw(LinearizedQuadNoYaw):
     def update_parameters(self, parameters):
         super().update_parameters(parameters)
         self.construct_augmented_system()
+        
+class LinearizedQuadNoYawWithUncertainty(LinearizedQuad):
+    def __init__(self, parameters, Ts, weight_matrix, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
+        super().__init__(parameters, None, yaw_ss, x_ref, y_ref, z_ref)
+        self.Ts = Ts
+        self.weight_matrix = weight_matrix
+        self.construct_augmented_system()
+        self.discretize_model(Ts)
+
+    def construct_augmented_system(self):
+        temp1 = np.concatenate([self.A, self.weight_matrix], axis=1)
+        temp2 = np.concatenate([np.zeros((self.weight_matrix.shape[1], self.A.shape[0])), np.zeros((self.weight_matrix.shape[1], self.weight_matrix.shape[1]))], axis=1)
+        self.A_aug = np.concatenate([temp1, temp2], axis=0)
+        self.B_aug = np.concatenate([self.B, np.zeros((self.weight_matrix.shape[1], self.B.shape[1]))], axis=0)
+        self.C_aug = np.concatenate([self.C, np.zeros((self.C.shape[0], self.weight_matrix.shape[1]))], axis=1)
+        self.D_aug = np.zeros((self.C.shape[0], self.A.shape[0] + self.weight_matrix.shape[1]))
+
+    def update_parameters(self, parameters):
+        self.parameters = deepcopy(parameters)
+        self.g = parameters['g']
+        self.m = parameters['m']
+        self.B = np.array([[0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0],
+                           [0.0, self.g * np.sin(self.yaw_ss), self.g * np.cos(self.yaw_ss)],
+                           [0.0, -self.g * np.cos(self.yaw_ss), self.g * np.sin(self.yaw_ss)],
+                           [1 / self.m, 0.0, 0.0]])
+        self.U_OP = np.array([self.m * self.g, 0.0, 0.0, self.u4_ss])
+        self.construct_augmented_system()
+        if self.Ts is not None:
+            self.discretize_model(self.Ts)
+            
+    def discretize_model(self, Ts):
+        self.Ad = np.eye(self.A_aug.shape[0]) + self.A_aug * Ts
+        self.Bd = self.B_aug * Ts
+        self.Cd = self.C_aug
+        self.Dd = self.D_aug
+        return self.Ad, self.Bd, self.Cd, self.Dd

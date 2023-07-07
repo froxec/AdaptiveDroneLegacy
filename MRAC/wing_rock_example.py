@@ -118,7 +118,7 @@ class GPUncertaintyEstimator:
 
 class AdaptiveControl:
     def __init__(self, ref_model, unc_estimator):
-        self.gamma = 0.1
+        self.gamma = 0.01
         self.Q = -np.identity(ref_model.A.shape[0])
         self.P = solve_continuous_lyapunov(ref_model.A, self.Q)
         self.ref_model = ref_model
@@ -138,7 +138,7 @@ def simulate(start, stop, dT, model, ff_controller, ada_controller=None, ext_dis
     t = np.arange(start, stop, dT)
     x = np.zeros((t.shape[0], model.A.shape[0]))
     u_history = np.zeros(t.shape[0]-1)
-    ref = np.array([10.0])
+    ref = np.array([1.0])
     x[0] = model.x0.flatten()
     for i in range(1, t.shape[0]):
         u = ff_controller(model.state, ref)
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     dT = 0.01
     ref_model = ReferenceModel(dT)
     plant = WingRockSystem()
-    ext_disturbance = ExternalDisturbance(weights=[10, 1, 1, 1, 1])
+    ext_disturbance = ExternalDisturbance(weights=[1, 1, 1, 1, 1])
     ff_controller = FeedbackFeedforwardController()
     estimator = RBFUncertaintyEstimator(10, -2, 2, 25, ref_model.B.shape[1])
     ada_controller = AdaptiveControl(ref_model, estimator)
