@@ -31,9 +31,18 @@ def set_position_local(vehicle, x, y, z):
 def get_state(vehicle):
     position = vehicle.location.local_frame
     velocity = vehicle.velocity
-    state = [position.north, position.east, -position.down]
+    state = [position.north, position.east, position.down]
+    if None not in state:
+       state[2] = -state[2]
     state.extend(velocity)
     return state
+
+def update_telemetry(telemetry, vehicle):
+   state = get_state(vehicle)
+   telemetry['position_local'] = state[:2]
+   telemetry['velocity'] = state[2:]
+   telemetry['armed'] = vehicle.armed
+   
 
 # Function to arm and then takeoff to a user specified altitude
 def arm_and_takeoff(vehicle, aTargetAltitude):
