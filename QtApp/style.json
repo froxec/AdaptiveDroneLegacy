@@ -1,0 +1,67 @@
+{
+	"QCustomSlideMenu": [
+		{
+		"name": "leftMenuSubContainer",
+		"defaultSize": [{
+			"width": 40,
+			"height": "parent"
+		}],
+		"collapsedSize": [{
+			"width": 40,
+			"height": "parent"
+		}],
+		"expandedSize": [{
+			"width": 105,
+			"height": "parent"
+		}],
+		"toggleButton": [{
+			"buttonName": "menuButton",
+			"icons": [{
+				"whenMenuIsCollapsed": ":/icons/feather/align-justify.svg",
+				"whenMenuIsExpanded": ":/icons/feather/chevron-left.svg"
+			}]
+		}],
+		"menuTransitionAnimation": [{
+			"animationDuration": 200,
+			"animationEasingCurve": "Linear"
+		}]
+	},
+		{
+		"name": "centralMenuContainer",
+		"defaultSize": [{
+			"width": 0,
+			"height": "parent"
+		}],
+		"collapsedSize": [{
+			"width": 0,
+			"height": "parent"
+		}],
+		"expandedSize": [{
+			"width": 200,
+			"height": "parent"
+		}],
+		"menuTransitionAnimation": [{
+			"animationDuration": 200,
+			"animationEasingCurve": "Linear"
+		}]
+	}
+	],
+	"QStackedWidget":[
+		{
+			"name":"mainPages",
+			"navigation":[
+				{
+					"navigationButtons":[
+						{
+							"ConnectionButton": "ConnectionPage",
+							"SettingsButton": "SettingsPage",
+							"HomeButton": "HomePage",
+							"ControlsButton": "ControlsPage"
+						}
+					]
+				}
+			]
+
+		}
+	]
+}
