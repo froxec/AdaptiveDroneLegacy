@@ -1,4 +1,28 @@
 {
+	"QMainWindow":[
+		{
+			"tittle":"Ground Control Station",
+			"icon":":/icons/feather/sun.svg",
+			"frameless": true,
+			"transluscentBg": true,
+			"sizeGrip": "size_grip",
+			"navigation":[
+				{
+					"minimize":"minimizeButton",
+					"close": "exitButton",
+					"restore":[
+						{
+							"buttonName": "restoreButton",
+							"normalIcon": ":/icons/feather/maximize-2.svg",
+							"maximizedIcon": ":/icons/feather/minimize-2.svg"
+						}
+					],
+					"moveWindow": "frame_7",
+					"tittleBar": "frame_7"
+				}
+			]
+		}
+	],
 	"QCustomSlideMenu": [
 		{
 		"name": "leftMenuSubContainer",
@@ -63,5 +87,20 @@
 			]
 
 		}
-	]
+	],
+	"QPushButtonGroup": [{
+		"Buttons": [
+			"ConnectionButton",
+			"ControlsButton",
+			"HomeButton",
+			"moveButton",
+			"menuButton",
+			"AlarmsButton",
+			"SettingsButton"
+		],
+		"Style":[{
+			"Active": "background-color: #015371;",
+			"NotActive": ""
+		}]
+	}]
 }
