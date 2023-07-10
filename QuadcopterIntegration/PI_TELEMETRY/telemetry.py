@@ -5,6 +5,7 @@ from QuadcopterIntegration.Utilities.
 import time
 import serial
 import pickle
+from QuadcopterIntegration.Utilities.comm_definitions import telemetry
 import threading
 from threading import Thread
 import os
