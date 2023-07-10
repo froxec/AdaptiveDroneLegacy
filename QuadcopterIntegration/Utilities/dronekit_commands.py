@@ -39,11 +39,24 @@ def get_state(vehicle):
 
 def update_telemetry(telemetry, vehicle):
    state = get_state(vehicle)
-   telemetry['position_local'] = state[:2]
-   telemetry['velocity'] = state[2:]
+   telemetry['position_local'] = state[:3]
+   telemetry['velocity'] = state[3:]
    telemetry['armed'] = vehicle.armed
-   
+   telemetry['attitude'] = [vehicle.attitude.pitch, 
+                            vehicle.attitude.roll,
+                            vehicle.attitude.yaw]
+  
 
+class GCSCommInterpreter:
+   
+   def __init__(self, vehicle):
+      self.vehicle = vehicle
+      self.commands_map = {
+         'arm': self.vehicle.arm
+      }
+   def __call__(self, command):
+      func = self.commands_map[command]
+      return func()
 # Function to arm and then takeoff to a user specified altitude
 def arm_and_takeoff(vehicle, aTargetAltitude):
 
