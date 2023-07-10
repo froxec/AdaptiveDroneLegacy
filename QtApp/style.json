@@ -35,7 +35,7 @@
 			"height": "parent"
 		}],
 		"expandedSize": [{
-			"width": 105,
+			"width": 108,
 			"height": "parent"
 		}],
 		"toggleButton": [{
@@ -61,7 +61,7 @@
 			"height": "parent"
 		}],
 		"expandedSize": [{
-			"width": 200,
+			"width": 250,
 			"height": "parent"
 		}],
 		"menuTransitionAnimation": [{
@@ -99,7 +99,7 @@
 			"SettingsButton"
 		],
 		"Style":[{
-			"Active": "background-color: #B4C5E4;",
+			"Active": "background-color: #2E3642; border: none; border-radius: 2px;",
 			"NotActive": ""
 		}]
 	},
@@ -110,7 +110,7 @@
 		],
 		"theme": 2,
 		"Style":[{
-			"Active": "background-color: #fff; border-style: solid; border-radius: 2 px;",
+			"Active": "background-color: #2E3642; border-style: solid; border-radius: 2 px;",
 			"NotActive": "border-style: solid; border-radius: 2 px;"
 		}]
 	}]

@@ -22,8 +22,12 @@ class readThread(Thread):
             msg = self.serial_port.readline()
             command = msg.decode()
             command, _ = command.split('\n')
+            command = command.split(':')
+            if len(command) > 1:
+                value = command[1]
+                command = command[0]
             print(command)
-            self.interpreter(command)
+            self.interpreter(command, value)
             if command == "arm":
                 break
             

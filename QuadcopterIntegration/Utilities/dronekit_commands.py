@@ -52,11 +52,18 @@ class GCSCommInterpreter:
    def __init__(self, vehicle):
       self.vehicle = vehicle
       self.commands_map = {
-         'arm': self.vehicle.arm
+          'arm': self.vehicle.arm,
+          'disarm': self.vehicle.disarm,
+          'change_mode': lambda name: self.change_flight_mode(name)
       }
-   def __call__(self, command):
+   def __call__(self, command, value=None):
       func = self.commands_map[command]
-      return func()
+      if value == None:
+          return func()
+      else:
+          return func(value)
+   def change_flight_mode(self, mode_name):
+       self.vehicle.mode = VehicleMode(mode_name)
 # Function to arm and then takeoff to a user specified altitude
 def arm_and_takeoff(vehicle, aTargetAltitude):
 

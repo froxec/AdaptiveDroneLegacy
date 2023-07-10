@@ -29,19 +29,19 @@
 	background: transparent;
 	padding: 0;
 	margin: 0;
-	color: #000	
+	color: #fff;	
 
 }
 
 #MainWindow {
-	background-color: #484041;
+	background-color: #465366;
 }
 #leftMenuSubContainer{
-	background-color:#434371;
+	background-color:#465366;
 }
 
 #leftMenuContainer{
-	background-color:#434371;
+	background-color:#465366;
 }
 
 QPushButton{
@@ -50,12 +50,16 @@ QPushButton{
 }
 
 #centralMenuSubContainer {
-	background-color: #B4C5E4;
+	background-color: #2E3642;
 }
 
 #frame_4 {
-	background-color:#B4C5E4;
+	background-color: #2E3642;
 	border-radius: 10px;
+}
+
+QPushButton {
+	padding: 8px;
 }</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
@@ -186,10 +190,7 @@ QPushButton{
            <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_3">
-            <property name="spacing">
-             <number>6</number>
-            </property>
+           <layout class="QGridLayout" name="gridLayout_3" rowstretch="0,0,0" rowminimumheight="0,0,0">
             <property name="leftMargin">
              <number>0</number>
             </property>
@@ -202,10 +203,16 @@ QPushButton{
             <property name="bottomMargin">
              <number>0</number>
             </property>
-            <item>
+            <property name="spacing">
+             <number>6</number>
+            </property>
+            <item row="0" column="0">
              <widget class="QPushButton" name="HomeButton">
               <property name="toolTip">
                <string>Home page</string>
+              </property>
+              <property name="autoFillBackground">
+               <bool>false</bool>
               </property>
               <property name="text">
                <string>Home</string>
@@ -222,7 +229,7 @@ QPushButton{
               </property>
              </widget>
             </item>
-            <item>
+            <item row="1" column="0">
              <widget class="QPushButton" name="ConnectionButton">
               <property name="toolTip">
                <string>Connection settings</string>
@@ -242,7 +249,7 @@ QPushButton{
               </property>
              </widget>
             </item>
-            <item>
+            <item row="2" column="0">
              <widget class="QPushButton" name="ControlsButton">
               <property name="toolTip">
                <string>Advanced controls</string>
@@ -487,7 +494,7 @@ QPushButton{
          <item>
           <widget class="QCustomStackedWidget" name="mainPages">
            <property name="currentIndex">
-            <number>3</number>
+            <number>4</number>
            </property>
            <widget class="QWidget" name="SettingsPage">
             <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -614,15 +621,15 @@ QPushButton{
             </layout>
            </widget>
            <widget class="QWidget" name="ControlsPage">
-            <layout class="QGridLayout" name="gridLayout">
-             <item row="0" column="0">
-              <widget class="QPushButton" name="armBtn">
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <widget class="QPushButton" name="stabilizeButton">
                <property name="text">
-                <string>ARM Throttle</string>
+                <string>Stabilize Mode</string>
                </property>
                <property name="icon">
                 <iconset resource="resources.qrc">
-                 <normaloff>:/icons/feather/zap.svg</normaloff>:/icons/feather/zap.svg</iconset>
+                 <normaloff>:/icons/feather/circle.svg</normaloff>:/icons/feather/circle.svg</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -632,7 +639,41 @@ QPushButton{
                </property>
               </widget>
              </item>
-             <item row="0" column="1">
+             <item>
+              <widget class="QPushButton" name="guidedButton">
+               <property name="text">
+                <string>Guided Mode</string>
+               </property>
+               <property name="icon">
+                <iconset resource="resources.qrc">
+                 <normaloff>:/icons/feather/circle.svg</normaloff>:/icons/feather/circle.svg</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="acroButton">
+               <property name="text">
+                <string>Acro Mode</string>
+               </property>
+               <property name="icon">
+                <iconset resource="resources.qrc">
+                 <normaloff>:/icons/feather/circle.svg</normaloff>:/icons/feather/circle.svg</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QPushButton" name="disarmBtn">
                <property name="text">
                 <string>DISARM</string>
@@ -640,6 +681,23 @@ QPushButton{
                <property name="icon">
                 <iconset resource="resources.qrc">
                  <normaloff>:/icons/feather/zap-off.svg</normaloff>:/icons/feather/zap-off.svg</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="armBtn">
+               <property name="text">
+                <string>ARM Throttle</string>
+               </property>
+               <property name="icon">
+                <iconset resource="resources.qrc">
+                 <normaloff>:/icons/feather/zap.svg</normaloff>:/icons/feather/zap.svg</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -732,12 +790,22 @@ QPushButton{
              <number>0</number>
             </property>
             <item>
-             <widget class="QLabel" name="label_4">
+             <widget class="QLabel" name="batteryStatus">
               <property name="text">
                <string/>
               </property>
               <property name="pixmap">
                <pixmap resource="resources.qrc">:/icons/feather/battery.svg</pixmap>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="flightModeStatus">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="pixmap">
+               <pixmap resource="resources.qrc">:/icons/feather/menu.svg</pixmap>
               </property>
              </widget>
             </item>
@@ -963,7 +1031,6 @@ QPushButton{
  </customwidgets>
  <resources>
   <include location="resources.qrc"/>
-  <include location="qfi/qfi.qrc"/>
  </resources>
  <connections/>
 </ui>

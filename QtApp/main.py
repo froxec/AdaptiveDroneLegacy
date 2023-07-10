@@ -7,6 +7,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtUiTools import QUiLoader
 from Custom_Widgets.Widgets import *
 from PySide6.QtCore import Slot, QTimer
+from QuadcopterIntegration.Utilities.comm_definitions import commands
 from QuadcopterIntegration.Utilities.gcs_comm_functions import readThread
 import folium
 from folium import plugins
@@ -41,8 +42,9 @@ class MainWindow(QMainWindow):
         # folium map
 
         #self.nav_icon = folium.DivIcon()
-        coordinate = (54.258978, 18.664669)
-        data = self.create_byte_map(zoom=60, coordinate=coordinate)
+        self.coordinate = (54.258978, 18.664669)
+        self.heading = 0.0
+        data = self.create_byte_map(zoom=60)
         self.webView = QWebEngineView()
         self.webView.setHtml(data.getvalue().decode())
         self.webView.setParent(self.window.map_frame)
@@ -59,16 +61,21 @@ class MainWindow(QMainWindow):
         self.window.armBtn.clicked.connect(lambda: self.arm_disarm_vehicle("arm"))
         self.window.disarmBtn.clicked.connect(lambda: self.arm_disarm_vehicle("disarm"))
 
+        #change mode
+        self.window.stabilizeButton.clicked.connect(lambda: self.change_flight_mode("STABILIZE"))
+        self.window.guidedButton.clicked.connect(lambda: self.change_flight_mode("GUIDED"))
+        self.window.acroButton.clicked.connect(lambda: self.change_flight_mode("ACRO"))
+
         #show
         self.show()
 
     @Slot()
     def arm_disarm_vehicle(self, mode):
         if mode == "arm":
-            self.serial_connection.write("arm\n".encode())
+            self.serial_connection.write(commands["ARM"])
             print("Arming command sent..")
         elif mode == "disarm":
-            self.serial_connection.write("disarm\n".encode())
+            self.serial_connection.write(commands["DISARM"])
             print("Disarming command sent..")
 
     @Slot()
@@ -84,27 +91,34 @@ class MainWindow(QMainWindow):
                 self.window.pitch.setText("No data")
                 self.window.roll.setText("No data")
                 self.window.yaw.setText("No data")
-            if self.read_telemetry.telemetry['position_global'] is not None:
-                (x, y, z) = self.read_telemetry.telemetry['position_global']
-                coordinate = (x, y)
-                data = self.create_byte_map(60, coordinate)
+            if self.read_telemetry.telemetry['position_global'] is not None or \
+                    self.read_telemetry.telemetry['heading'] is not None:
+                if self.read_telemetry.telemetry['position_global'] is not None:
+                    (lat, lon) = self.read_telemetry.telemetry['position_global']
+                    self.coordinate = (lat, lon)
+                if self.read_telemetry.telemetry['heading'] is not None:
+                    self.heading = self.read_telemetry.telemetry['heading']
+                data = self.create_byte_map(60)
                 self.webView.setHtml(data.getvalue().decode())
-
-    def create_byte_map(self, zoom, coordinate, icon_angle=0):
+            if self.read_telemetry.telemetry['flight_mode'] is not None:
+                self.window.flightModeStatus.setText(str(self.read_telemetry.telemetry['flight_mode']))
+    def change_flight_mode(self, mode):
+        self.serial_connection.write(commands[mode])
+    def create_byte_map(self, zoom):
         map = folium.Map(
             title='Quad Location',
             zoom_start=zoom,
-            location=coordinate
+            location=self.coordinate
         )
         folium.Marker(
-            location=coordinate,
+            location=self.coordinate,
             icon=folium.plugins.BeautifyIcon(icon='location-arrow',
                                       border_color='transparent',
                                       background_color='transparent',
                                       border_width=1,
                                       text_color='#003EFF',
                                       inner_icon_style='margin:0px;font-size:4em;transform: rotate({0}deg);'.format(
-                                          icon_angle))
+                                          self.heading))
         ).add_to(map)
         data = io.BytesIO()
         map.save(data, close_file=False)
