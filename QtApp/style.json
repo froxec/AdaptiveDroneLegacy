@@ -99,8 +99,19 @@
 			"SettingsButton"
 		],
 		"Style":[{
-			"Active": "background-color: #015371;",
+			"Active": "background-color: #B4C5E4;",
 			"NotActive": ""
+		}]
+	},
+	{
+		"Buttons": [
+			"armBtn",
+			"disarmBtn"
+		],
+		"theme": 2,
+		"Style":[{
+			"Active": "background-color: #fff; border-style: solid; border-radius: 2 px;",
+			"NotActive": "border-style: solid; border-radius: 2 px;"
 		}]
 	}]
 }

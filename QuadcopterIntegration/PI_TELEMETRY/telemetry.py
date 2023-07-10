@@ -4,15 +4,10 @@ from QuadcopterIntegration.Utilities.dronekit_commands import *
 import time
 import serial
 import pickle
+from QuadcopterIntegration.Utilities.comm_definitions import telemetry
 import threading
 from threading import Thread
 import os
-telemetry = {
-    'position_local': None,
-    'velocity': None,
-    'armed': None,
-    'attitude': None,
-}
 
 class readThread(Thread):
     def __init__(self, serial_port, vehicle):

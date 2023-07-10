@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>882</width>
-    <height>500</height>
+    <width>1100</width>
+    <height>703</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -34,9 +34,14 @@
 }
 
 #MainWindow {
-	background-color: #F0FCD4;
+	background-color: #484041;
 }
+#leftMenuSubContainer{
+	background-color:#434371;
+}
+
 #leftMenuContainer{
+	background-color:#434371;
 }
 
 QPushButton{
@@ -45,10 +50,11 @@ QPushButton{
 }
 
 #centralMenuSubContainer {
+	background-color: #B4C5E4;
 }
 
 #frame_4 {
-	background-color: #F0FCD4;
+	background-color:#B4C5E4;
 	border-radius: 10px;
 }</string>
   </property>
@@ -141,7 +147,7 @@ QPushButton{
              <number>0</number>
             </property>
             <property name="leftMargin">
-             <number>8</number>
+             <number>0</number>
             </property>
             <property name="topMargin">
              <number>0</number>
@@ -185,7 +191,7 @@ QPushButton{
              <number>6</number>
             </property>
             <property name="leftMargin">
-             <number>8</number>
+             <number>0</number>
             </property>
             <property name="topMargin">
              <number>0</number>
@@ -294,7 +300,7 @@ QPushButton{
              <number>6</number>
             </property>
             <property name="leftMargin">
-             <number>8</number>
+             <number>0</number>
             </property>
             <property name="topMargin">
              <number>0</number>
@@ -481,9 +487,9 @@ QPushButton{
          <item>
           <widget class="QCustomStackedWidget" name="mainPages">
            <property name="currentIndex">
-            <number>0</number>
+            <number>3</number>
            </property>
-           <widget class="QWidget" name="SettingsPage" native="true">
+           <widget class="QWidget" name="SettingsPage">
             <layout class="QVBoxLayout" name="verticalLayout_9">
              <property name="spacing">
               <number>0</number>
@@ -524,9 +530,9 @@ QPushButton{
             </layout>
            </widget>
            <widget class="QWidget" name="HomePage">
-            <layout class="QVBoxLayout" name="verticalLayout_13">
-             <item>
-              <widget class="QLabel" name="label_5">
+            <layout class="QGridLayout" name="gridLayout_2">
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_3">
                <property name="font">
                 <font>
                  <family>Sans Serif</family>
@@ -538,14 +544,46 @@ QPushButton{
                </property>
               </widget>
              </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="pitch">
+               <property name="text">
+                <string>TextLabel</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLabel" name="roll">
+               <property name="text">
+                <string>TextLabel</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="2">
+              <widget class="QLabel" name="yaw">
+               <property name="text">
+                <string>TextLabel</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>TextLabel</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2">
+              <widget class="QLabel" name="label_9">
+               <property name="text">
+                <string>TextLabel</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
            <widget class="QWidget" name="page_2"/>
-           <widget class="QWidget" name="ConnectionPage" native="true">
+           <widget class="QWidget" name="ConnectionPage">
             <layout class="QVBoxLayout" name="verticalLayout_10">
-             <property name="spacing">
-              <number>0</number>
-             </property>
              <property name="leftMargin">
               <number>0</number>
              </property>
@@ -575,20 +613,39 @@ QPushButton{
              </item>
             </layout>
            </widget>
-           <widget class="QWidget" name="ControlsPage" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_11">
-             <item>
-              <widget class="QLabel" name="label_3">
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
+           <widget class="QWidget" name="ControlsPage">
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="0">
+              <widget class="QPushButton" name="armBtn">
                <property name="text">
-                <string>Controls</string>
+                <string>ARM Throttle</string>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+               <property name="icon">
+                <iconset resource="resources.qrc">
+                 <normaloff>:/icons/feather/zap.svg</normaloff>:/icons/feather/zap.svg</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="disarmBtn">
+               <property name="text">
+                <string>DISARM</string>
+               </property>
+               <property name="icon">
+                <iconset resource="resources.qrc">
+                 <normaloff>:/icons/feather/zap-off.svg</normaloff>:/icons/feather/zap-off.svg</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>24</width>
+                 <height>24</height>
+                </size>
                </property>
               </widget>
              </item>
@@ -802,7 +859,26 @@ QPushButton{
        </widget>
       </item>
       <item>
-       <widget class="QWidget" name="mapContainer" native="true"/>
+       <widget class="QWidget" name="mapContainer" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout_11">
+         <item>
+          <widget class="QFrame" name="map_frame">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </item>
       <item>
        <widget class="QWidget" name="infoContainer" native="true">
@@ -823,15 +899,37 @@ QPushButton{
           <number>0</number>
          </property>
          <item>
-          <widget class="QWidget" name="gyroContainer" native="true">
-           <widget class="QWidget" name="numericalDataContainer" native="true">
+          <widget class="QFrame" name="frame_9">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="gyroContainer">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <widget class="qfi_EADI" name="graphicsEADI">
             <property name="geometry">
              <rect>
-              <x>-20</x>
-              <y>10</y>
-              <width>309</width>
-              <height>149</height>
+              <x>0</x>
+              <y>0</y>
+              <width>256</width>
+              <height>192</height>
              </rect>
+            </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
            </widget>
           </widget>
@@ -857,10 +955,15 @@ QPushButton{
    <header location="global">Custom_Widgets.Widgets.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>qfi_EADI</class>
+   <extends>QGraphicsView</extends>
+   <header location="global">qfi/qfi_EADI.h</header>
+  </customwidget>
  </customwidgets>
  <resources>
   <include location="resources.qrc"/>
-  <include location="../../../.designer/backup/resources.qrc"/>
+  <include location="qfi/qfi.qrc"/>
  </resources>
  <connections/>
 </ui>
