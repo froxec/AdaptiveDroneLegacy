@@ -6,3 +6,12 @@ telemetry = {
     'armed': None,
     'attitude': None,
 }
+
+commands = {
+    'ARM': 'arm\n'.encode(),
+    'DISARM': 'disarm\n'.encode(),
+    'STABILIZE': 'mode:STABILIZE\n'.encode(),
+    'GUIDED': 'mode:GUIDED\n'.encode(),
+    'ACRO': 'mode:ACRO\n'.encode()
+
+}
