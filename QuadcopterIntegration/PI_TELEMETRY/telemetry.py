@@ -1,18 +1,13 @@
 from dronekit import connect
 import argparse
 from QuadcopterIntegration.Utilities.dronekit_commands import *
+from QuadcopterIntegration.Utilities.
 import time
 import serial
 import pickle
 import threading
 from threading import Thread
 import os
-telemetry = {
-    'position_local': None,
-    'velocity': None,
-    'armed': None,
-    'attitude': None,
-}
 
 class readThread(Thread):
     def __init__(self, serial_port, vehicle):
@@ -29,8 +24,6 @@ class readThread(Thread):
             command, _ = command.split('\n')
             print(command)
             self.interpreter(command)
-            if command == "arm":
-                break
             
 
 class sendThread(Thread):
@@ -44,6 +37,7 @@ class sendThread(Thread):
     def run(self):
         while True:
             update_telemetry(telemetry,vehicle)
+            print(telemetry)
             serialized_telemetry = pickle.dumps(telemetry)
             gcs.write(serialized_telemetry)
             time.sleep(1/self.freq)

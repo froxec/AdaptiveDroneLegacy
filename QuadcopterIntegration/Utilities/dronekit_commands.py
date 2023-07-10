@@ -45,6 +45,7 @@ def update_telemetry(telemetry, vehicle):
    telemetry['attitude'] = [vehicle.attitude.pitch, 
                             vehicle.attitude.roll,
                             vehicle.attitude.yaw]
+   telemetry['position_global'] = vehicle.position.global_frame
   
 
 class GCSCommInterpreter:
@@ -52,7 +53,8 @@ class GCSCommInterpreter:
    def __init__(self, vehicle):
       self.vehicle = vehicle
       self.commands_map = {
-         'arm': self.vehicle.arm
+         'arm': self.vehicle.arm,
+         'disarm': self.vehicle.disarm
       }
    def __call__(self, command):
       func = self.commands_map[command]
