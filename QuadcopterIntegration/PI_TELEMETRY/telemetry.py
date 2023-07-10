@@ -1,7 +1,7 @@
 from dronekit import connect
 import argparse
 from QuadcopterIntegration.Utilities.dronekit_commands import *
-from QuadcopterIntegration.Utilities.
+from QuadcopterIntegration.Utilities.comm_definitions import telemetry
 import time
 import serial
 import pickle
