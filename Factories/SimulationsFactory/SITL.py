@@ -19,7 +19,8 @@ class SoftwareInTheLoop:
                  inner_loop_freq: int,
                  outer_loop_freq: int,
                  thrust_compensator=None,
-                 estimator=None):
+                 estimator=None,
+                 adaptive_controller=None):
         self.INNER_LOOP_FREQ = inner_loop_freq
         self.OUTER_LOOP_FREQ = outer_loop_freq
         self.MODULO_FACTOR = self.INNER_LOOP_FREQ / self.OUTER_LOOP_FREQ
@@ -33,6 +34,7 @@ class SoftwareInTheLoop:
         self.estimator = estimator
         self.trajectory = trajectory
         self.esc = esc
+        self.adaptive_controller = adaptive_controller
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time
         t = np.arange(0, stop_time, deltaT)
@@ -46,7 +48,17 @@ class SoftwareInTheLoop:
                 #self.position_controller.plot()
                 if self.thrust_compensator is not None:
                     ref = self.thrust_compensator(x[i, :6], ref)
-                ref_converted = self.mpc_output_converter(ref)
+                if self.adaptive_controller is not None:
+                    z = x[i, 3:6]
+                    z_prev = x[i-1, 3:6]
+                    u_prev = self.mpc_output_converter(ref_prev, throttle=False)
+                    u = self.mpc_output_converter(ref, throttle=False)
+                    u_prev = np.concatenate([u_prev, np.array([0])])
+                    u_l1 = self.adaptive_controller(z, z_prev, u_prev)
+                    u_composite = u + u_l1
+                    ref_converted = self.mpc_output_converter.convert_throttle(u_composite)
+                else:
+                    ref_converted = self.mpc_output_converter(ref)
                 attitude_setpoint = np.concatenate([ref_converted[1:], np.array([0.0])])
                 throttle = ref_converted[0]
                 ref_prev = ref + self.mpc_output_converter.u_ss

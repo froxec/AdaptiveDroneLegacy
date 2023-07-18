@@ -11,15 +11,22 @@ class MPC_output_converter():
         self.valid_modes = {'proprietary', 'ardupilot'}
         if mode not in self.valid_modes:
             raise ValueError("mode must be one of %r." % self.valid_modes)
-    def __call__(self, delta_u):
+    def __call__(self, delta_u, throttle=True):
         u = delta_u + self.u_ss
         self.nominal_u = deepcopy(u)
+        if throttle:
+            omega = self.thrust_converter(u[0])
+            throttle = self.angular_vel_normalizer(omega)
+            u[0] = throttle
+            #u[3] = 0
+        return u
+
+    def convert_throttle(self, u):
         omega = self.thrust_converter(u[0])
         throttle = self.angular_vel_normalizer(omega)
         u[0] = throttle
-        #u[3] = 0
+        # u[3] = 0
         return u
-
     def convert(self):
         ## TODO x
         pass
