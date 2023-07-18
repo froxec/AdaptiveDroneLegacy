@@ -7,13 +7,15 @@ class L1_Augmentation:
         self.lp_filter = lp_filter
         self.converter = converter
 
-    def __call__(self, z, z_prev, u_prev):
+    def __call__(self, z, z_prev, u, u_prev):
+        u = self.converter.convert_to_vector(u[0], u[1:])
         u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
         u_l1 = self.lp_filter(sigma_hat)
-        u_l1 = self.converter.convert_from_vector(u_l1)
-        return u_l1
+        u_composite = u + u_l1
+        u_composite = self.converter.convert_from_vector(u_composite)
+        return u_composite
 
 
 class L1_Predictor:

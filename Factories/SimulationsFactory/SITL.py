@@ -49,19 +49,24 @@ class SoftwareInTheLoop:
                 if self.thrust_compensator is not None:
                     ref = self.thrust_compensator(x[i, :6], ref)
                 if self.adaptive_controller is not None:
-                    z = x[i, 3:6]
-                    z_prev = x[i-1, 3:6]
-                    u_prev = self.mpc_output_converter(ref_prev, throttle=False)
-                    u = self.mpc_output_converter(ref, throttle=False)
-                    u_prev = np.concatenate([u_prev, np.array([0])])
-                    u_l1 = self.adaptive_controller(z, z_prev, u_prev)
-                    u_composite = u + u_l1
-                    ref_converted = self.mpc_output_converter.convert_throttle(u_composite)
+                    pass
                 else:
                     ref_converted = self.mpc_output_converter(ref)
+                    attitude_setpoint = np.concatenate([ref_converted[1:], np.array([0.0])])
+                    throttle = ref_converted[0]
+                    ref_prev = self.mpc_output_converter(ref, throttle=False)
+            if self.adaptive_controller is not None:
+                z = x[i, 3:6]
+                z_prev = x[i - 1, 3:6]
+                u_prev = ref_prev
+                u = self.mpc_output_converter(ref, throttle=False)
+                u = np.concatenate([u, np.array([0])])
+                u_prev = np.concatenate([u_prev, np.array([0])])
+                u_composite = self.adaptive_controller(z, z_prev, u, u_prev)
+                ref_converted = self.mpc_output_converter.convert_throttle(u_composite)
                 attitude_setpoint = np.concatenate([ref_converted[1:], np.array([0.0])])
                 throttle = ref_converted[0]
-                ref_prev = ref + self.mpc_output_converter.u_ss
+                ref_prev = self.mpc_output_converter(ref, throttle=False)
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12], throttle)
             motors = self.esc(ESC_PWMs)
             x[i + 1] = system(np.array(motors), deltaT, self.quad, self.load)[:12]
