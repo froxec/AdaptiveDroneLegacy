@@ -20,7 +20,7 @@ PWM_RANGE = [1120, 1920]
 trajectory = SinglePoint([0, 0, 10])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.1})
+    perturber({'m': 0.5})
 
     ## Model configuration
     quad_conf = QuadConfiguration(perturber.perturbed_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE,
@@ -36,11 +36,11 @@ if __name__ == "__main__":
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
-    As = np.diag([-1.0, -1.0, -1.0])
+    As = np.diag([-5, -5, -5])
     uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidth=0.004, fs= 1 / INNER_LOOP_FREQ, order=1, no_filtering=True)
+    l1_filter = L1_LowPass(bandwidth=30, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 

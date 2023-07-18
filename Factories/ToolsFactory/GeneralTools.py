@@ -2,6 +2,8 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.linalg import toeplitz
 import time
+from scipy.signal import iirfilter
+from collections import deque
 def manhattan_distance(a, b):
     return np.abs(a - b).sum()
 
@@ -160,3 +162,39 @@ def time_control(func):
             finish = time.perf_counter()
         return u
     return wrapper
+
+class LiveFilter:
+    #implementation based on https://www.samproell.io/posts/yarppg/yarppg-live-digital-filter/
+    def __call__(self, x):
+        y = self.process(x)
+        return y
+    def process(self, x):
+        if np.isnan(x).any():
+            return x
+
+        return self._process(x)
+
+    def _process(self, x):
+        return NotImplementedError("Function not implemented..")
+
+class LowPassLiveFilter(LiveFilter):
+    # implementation based on https://www.samproell.io/posts/yarppg/yarppg-live-digital-filter/
+    def __init__(self, bandwidth, fs, signals_num):
+        self.fs = fs
+        self.bandwidth = bandwidth
+        self.signals_num = signals_num
+        b, a = iirfilter(2, Wn=bandwidth, fs=fs, btype="low", ftype="butter")
+        self.a = a
+        self.b = b
+        self.x_que = [deque([0] * len(b), maxlen=len(b)) for _ in range(signals_num)]
+        self.y_que = [deque([0] * (len(a) -1), maxlen=len(a)-1) for _ in range(signals_num)]
+
+    def _process(self, x):
+        signals_processed = []
+        for i, element in enumerate(x):
+            self.x_que[i].appendleft(element)
+            y = np.dot(self.b, self.x_que[i]) - np.dot(self.a[1:], self.y_que[i])
+            y = y / self.a[0]
+            self.y_que[i].appendleft(y)
+            signals_processed.append(y)
+        return np.array(signals_processed)

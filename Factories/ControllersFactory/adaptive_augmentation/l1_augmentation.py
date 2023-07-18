@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.signal import butter, filtfilt
+from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 class L1_Augmentation:
     def __init__(self, predictor, adaptive_law, lp_filter, converter):
         self.predictor = predictor
@@ -39,10 +40,10 @@ class L1_AdaptiveLaw:
         self.Ts = Ts
         self.ref_model = ref_model
         self.As_Inv = np.linalg.inv(As)
-        self.PHI = self.As_Inv @ (np.exp(As*Ts) - np.identity(As.shape[0]))
+        self.exp_As_Ts = np.diag(np.exp(np.diag(self.As * self.Ts)))
+        self.PHI = self.As_Inv @ (self.exp_As_Ts - np.identity(As.shape[0]))
         self.PHI_Inv = np.linalg.inv(self.PHI)
-        self.g_inv = 1/self.ref_model.g
-        self.exp_As_Ts = np.exp(self.As * self.Ts)
+        self.g_inv = 1/self.ref_model.m
         self.sigma_hat = np.zeros(3)
 
     def __call__(self, z_hat, z):
@@ -51,25 +52,20 @@ class L1_AdaptiveLaw:
         self.sigma_hat = - self.g_inv * self.PHI_Inv @ miu
         return self.sigma_hat
 
-class L1_LowPass:
-    def __init__(self, bandwidth, fs, order, no_filtering=False):
-        self.bandwidth = bandwidth
-        self.order = order
-        self.fs = fs
+
+class L1_LowPass(LowPassLiveFilter):
+    
+    def __init__(self, bandwidth, fs, signals_num, no_filtering=False):
+        super().__init__(bandwidth, fs, signals_num)
+        self.u_l1 = np.zeros(self.signals_num)
         self.no_filtering = no_filtering
-        self.nyq = fs/2
-        b, a = butter(order, bandwidth, btype='low', analog=False, fs=self.fs)
-        self.a = a
-        self.b = b
-        self.u_l1 = np.zeros(3)
-
-    def __call__(self, sigma_hat):
+    def __call__(self, x):
         if self.no_filtering == False:
-            self.u_l1 = -filtfilt(self.b, self.a, sigma_hat)
+            u_l1 = -self.process(x)
+            self.u_l1 = u_l1
         else:
-            self.u_l1 = -sigma_hat
-        return self.u_l1
-
+            u_l1 = -x
+        return u_l1
 class L1_ControlConverter:
     def __init__(self):
         self.epsilon = 1e-15
