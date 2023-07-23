@@ -36,11 +36,11 @@ class PositionControllerConfiguration(ControllerConfigurationBase):
         self.freq = position_controller_freq
 
 class QuadConfiguration(Configuration):
-    def __init__(self, model_parameters, pendulum_parameters, quad0, load0, pwm_range, angular_velocity_range):
+    def __init__(self, model_parameters, pendulum_parameters, quad0, load0, pwm_range, angular_velocity_range, external_disturbance=None):
         self.quad0 = quad0
         self.load0 = load0
         self.model_parameters = model_parameters
-        self.quadcopter = quadcopterModel(self.quad0, model_parameters)
+        self.quadcopter = quadcopterModel(self.quad0, model_parameters, external_disturbance=external_disturbance)
         self.load = loadPendulum(self.load0, pendulum_parameters, self.quadcopter.translational_accelerations, self.quadcopter.state)
         self.esc = ElectronicSpeedControler(pwm_range=pwm_range, angular_velocity_range=angular_velocity_range)
 

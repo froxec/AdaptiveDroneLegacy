@@ -61,7 +61,7 @@ def RungeKutta4(deltaT, model_object, u=np.array([None])):
     return model_object.state
 
 class quadcopterModel():
-    def __init__(self, state0, quad_parameters):
+    def __init__(self, state0, quad_parameters, external_disturbance=None):
         self.nominal_mass = quad_parameters['m']
         self.mass = self.nominal_mass
         self.g = quad_parameters['g'] ## move to Environment class
@@ -81,7 +81,7 @@ class quadcopterModel():
         self.M = np.zeros((4), dtype=np.float32)
         self.translational_accelerations = np.zeros((3), dtype=np.float32)
         self.angular_accelerations = np.zeros((3), dtype=np.float32)
-
+        self.external_disturbance = external_disturbance
     def updateStateDict(self):
         #change - use existing structre
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, self.state)}
@@ -111,7 +111,10 @@ class quadcopterModel():
                                                                 [0],
                                                                 [-self.mass*self.g]], dtype=np.float32)
         referenceFrame = referenceFrame + self.tension_force.reshape((3, 1))
-        accelerations = referenceFrame/self.mass
+        if self.external_disturbance is not None:
+            accelerations = (referenceFrame + self.external_disturbance())/self.mass
+        else:
+            accelerations = referenceFrame / self.mass
         accelerations = np.reshape(accelerations, 3)
         self.translational_accelerations = accelerations
         return accelerations

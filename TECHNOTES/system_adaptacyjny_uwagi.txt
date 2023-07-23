@@ -1,0 +1,2 @@
+W sytuacji, w której zakłócenie jest wyższe niż autorytet drona (przykładowo pionowa siła większa niż ciąg - mg na najwyższych obrotach)
+to niepewność w systemie adaptacyjnym rośnie do nieskończoności.
