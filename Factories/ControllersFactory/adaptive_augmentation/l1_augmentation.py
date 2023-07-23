@@ -13,6 +13,7 @@ class L1_Augmentation:
         u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
+        print(sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
         u_composite = u + u_l1
         u_composite = self.converter.convert_from_vector(u_composite)
