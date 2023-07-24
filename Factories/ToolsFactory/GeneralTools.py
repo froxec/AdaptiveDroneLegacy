@@ -179,22 +179,31 @@ class LiveFilter:
 
 class LowPassLiveFilter(LiveFilter):
     # implementation based on https://www.samproell.io/posts/yarppg/yarppg-live-digital-filter/
-    def __init__(self, bandwidth, fs, signals_num):
+    def __init__(self, bandwidths, fs, signals_num):
+        if isinstance(bandwidths, (list, np.ndarray)) == False:
+            raise ValueError("bandwidths should be either list or np.ndarray")
+        if len(list(bandwidths)) != signals_num:
+            raise ValueError("bandwidths num should be equal to signals num (one BW value per signal)")
         self.fs = fs
-        self.bandwidth = bandwidth
+        self.bandwidth = bandwidths
         self.signals_num = signals_num
-        b, a = iirfilter(2, Wn=bandwidth, fs=fs, btype="low", ftype="butter")
-        self.a = a
-        self.b = b
-        self.x_que = [deque([0] * len(b), maxlen=len(b)) for _ in range(signals_num)]
-        self.y_que = [deque([0] * (len(a) -1), maxlen=len(a)-1) for _ in range(signals_num)]
+        a_list = []
+        b_list = []
+        for i in range(signals_num):
+            b, a = iirfilter(2, Wn=bandwidths[i], fs=fs, btype="low", ftype="butter")
+            a_list.append(a)
+            b_list.append(b)
+        self.a = a_list
+        self.b = b_list
+        self.x_que = [deque([0] * len(self.b[i]), maxlen=len(self.b[i])) for i in range(signals_num)]
+        self.y_que = [deque([0] * (len(self.a[i]) -1), maxlen=len(self.a[i])-1) for i in range(signals_num)]
 
     def _process(self, x):
         signals_processed = []
         for i, element in enumerate(x):
             self.x_que[i].appendleft(element)
-            y = np.dot(self.b, self.x_que[i]) - np.dot(self.a[1:], self.y_que[i])
-            y = y / self.a[0]
+            y = np.dot(self.b[i], self.x_que[i]) - np.dot(self.a[i][1:], self.y_que[i])
+            y = y / self.a[i][0]
             self.y_que[i].appendleft(y)
             signals_processed.append(y)
         return np.array(signals_processed)

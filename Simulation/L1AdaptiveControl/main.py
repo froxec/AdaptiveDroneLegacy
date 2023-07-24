@@ -18,13 +18,13 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 0, 20])
+trajectory = SinglePoint([50, 0, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': 0.5})
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[1, 1, 0], strength=1)
+    wind_force = WindModel(direction_vector=[1, 0, 1], strength=1)
 
     ## Model configuration
     quad_conf = QuadConfiguration(perturber.perturbed_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE,
@@ -40,16 +40,16 @@ if __name__ == "__main__":
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
-    As = np.diag([-5, -5, -5])
+    As = np.diag([-0.2, -0.2, -0.2])
     uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidth=0.1, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=[30, 0.1, 30], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 
     # Simulation
-    ramp_saturation_slope = np.array([np.Inf, 0.1, 0.1])
+    ramp_saturation_slope = np.array([np.Inf, 0.78, 0.78])
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller,
                                   controller_conf.attitude_controller,
                                   [controller_conf.position_controller_input_converter,

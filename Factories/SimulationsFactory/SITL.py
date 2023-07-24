@@ -38,7 +38,7 @@ class SoftwareInTheLoop:
         self.trajectory = trajectory
         self.esc = esc
         self.adaptive_controller = adaptive_controller
-        self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1/self.INNER_LOOP_FREQ)
+        self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1/self.OUTER_LOOP_FREQ)
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time
         t = np.arange(0, stop_time, deltaT)
@@ -56,22 +56,24 @@ class SoftwareInTheLoop:
                     ref = self.thrust_compensator(x[i, :6], ref)
                 ref_converted = self.mpc_output_converter(ref, throttle=False)
                 u_saturated = self.ramp_saturation(ref_converted, u_saturated_prev)
-                u_saturated_converted = self.mpc_output_converter.convert_throttle(u_saturated)
+                if self.adaptive_controller is not None:
+                    u_saturated_prev = u_saturated
+                else:
+                    u_saturated_converted = self.mpc_output_converter.convert_throttle(u_saturated)
+                    mpc_u = u_saturated_converted
             if self.adaptive_controller is not None:
                 z = x[i, 3:6]
                 z_prev = x[i - 1, 3:6]
-                u = self.mpc_output_converter(ref, throttle=False)
+                u = u_saturated
                 u_composite = self.adaptive_controller(z, z_prev,
                                                        np.concatenate([u, np.array([0])]),
                                                        np.concatenate([u_saturated_prev, np.array([0])]))
-                u_saturated = self.ramp_saturation(u_composite, u_saturated_prev)
-                u_saturated_converted = self.mpc_output_converter.convert_throttle(u_saturated)
-            attitude_setpoint = np.concatenate([u_saturated_converted[1:], np.array([0.0])])
-            throttle = u_saturated_converted[0]
+                mpc_u = self.mpc_output_converter.convert_throttle(u_composite)
+            attitude_setpoint = np.concatenate([mpc_u[1:], np.array([0.0])])
+            throttle = mpc_u[0]
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12], throttle)
             motors = self.esc(ESC_PWMs)
             x[i + 1] = system(np.array(motors), deltaT, self.quad, self.load)[:12]
-            u_saturated_prev = u_saturated
             if (i % self.MODULO_FACTOR) == 0:
                 ref_prev = self.mpc_output_converter(ref, throttle=False)
             if self.estimator is not None:

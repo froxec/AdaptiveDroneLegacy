@@ -56,8 +56,8 @@ class L1_AdaptiveLaw:
 
 class L1_LowPass(LowPassLiveFilter):
     
-    def __init__(self, bandwidth, fs, signals_num, no_filtering=False):
-        super().__init__(bandwidth, fs, signals_num)
+    def __init__(self, bandwidths, fs, signals_num, no_filtering=False):
+        super().__init__(bandwidths, fs, signals_num)
         self.u_l1 = np.zeros(self.signals_num)
         self.no_filtering = no_filtering
     def __call__(self, x):
