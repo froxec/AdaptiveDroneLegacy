@@ -18,13 +18,13 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([0, 0, 10])
+trajectory = SinglePoint([5, 0, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.0})
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[1, 0, 0], strength=-0.1)
+    wind_force = WindModel(direction_vector=[1, 1, 0], strength=1)
 
     ## Model configuration
     quad_conf = QuadConfiguration(perturber.perturbed_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE,
@@ -44,15 +44,17 @@ if __name__ == "__main__":
     uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidth=30, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidth=0.1, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 
     # Simulation
+    ramp_saturation_slope = np.array([np.Inf, 0.1, 0.1])
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller,
                                   controller_conf.attitude_controller,
                                   [controller_conf.position_controller_input_converter,
                                    controller_conf.position_controller_output_converter]
-                                  ,quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller)
-    t, x = simulator.run(20, deltaT, x0[0:12], u0, trajectory)
-    plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])
+                                  ,quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller, ramp_saturation_slope=ramp_saturation_slope)
+    t, x = simulator.run(50, deltaT, x0[0:12], u0, trajectory)
+    plotTrajectory(t, x.transpose()[0:12], 4, 3)
+    #plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])

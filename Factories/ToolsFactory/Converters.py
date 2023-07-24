@@ -22,6 +22,7 @@ class MPC_output_converter():
         return u
 
     def convert_throttle(self, u):
+        u = deepcopy(u)
         omega = self.thrust_converter(u[0])
         throttle = self.angular_vel_normalizer(omega)
         u[0] = throttle
@@ -135,3 +136,26 @@ class AngularVelocityToThrust():
             thrust = 0
         thrust = 4*self.Kt*angular_velocity**2
         return thrust
+
+
+class RampSaturation:
+    def __init__(self, slope_max, Ts):
+        if isinstance(slope_max, (list, np.ndarray)):
+            self.slope_max = slope_max
+        else:
+            self.slope_max = np.array([slope_max])
+        self.Ts = Ts
+    def __call__(self, curr, prev):
+        if (curr.flatten().shape[0] != self.slope_max.flatten().shape[0] or
+            prev.flatten().shape[0] != self.slope_max.flatten().shape[0]):
+            raise ValueError("Length of signal vector and slope limit vector should be equal.. {} != {}".format(curr.flatten().shape, self.slope_max.flatten().shape))
+        derivative = (curr - prev) / self.Ts
+        output = np.zeros_like(derivative)
+        for i in range(derivative.flatten().shape[0]):
+            if derivative[i] < -self.slope_max[i]:
+                output[i] = prev[i] - self.slope_max[i] * self.Ts
+            elif derivative[i] > self.slope_max[i]:
+                output[i] = prev[i] + self.slope_max[i] * self.Ts
+            else:
+                output[i] = curr[i]
+        return output

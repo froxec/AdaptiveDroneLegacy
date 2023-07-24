@@ -198,3 +198,4 @@ class LowPassLiveFilter(LiveFilter):
             self.y_que[i].appendleft(y)
             signals_processed.append(y)
         return np.array(signals_processed)
+
