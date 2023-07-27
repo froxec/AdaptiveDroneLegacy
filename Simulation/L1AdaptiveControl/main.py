@@ -9,7 +9,7 @@ from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Spi
     RectangularTrajectoryWithTerminals
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import *
 from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain
-from Factories.ModelsFactory.external_force_models import WindModel, RandomAdditiveNoiseWind, RandomWalkWind
+from Factories.ModelsFactory.external_force_models import WindModel, RandomAdditiveNoiseWind, RandomWalkWind, SinusoidalWind
 from Simulation.plots import plotTrajectory, plotTrajectory3d
 
 INNER_LOOP_FREQ = 100
@@ -21,12 +21,13 @@ PWM_RANGE = [1120, 1920]
 trajectory = SinglePoint([5, 20, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.9})
+    perturber({'m': 0.0})
 
     ##External Disturbances
-    #wind_force = WindModel(direction_vector=[1, 1, 1], strength=5)
+    #wind_force = WindModel(direction_vector=[0, 1, 0], strength=5)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
-    wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=1, dir_vec_scale=0.1, strength_scale=0.1)
+    wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=0.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
+    #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=5)
     ## Model configuration
     quad_conf = QuadConfiguration(perturber.perturbed_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE,
                                   ANGULAR_VELOCITY_RANGE, external_disturbance=wind_force)
@@ -41,11 +42,11 @@ if __name__ == "__main__":
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
-    As = np.diag([-0.2, -0.2, -0.2])
+    As = np.diag([-5, -5, -5])
     uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=[1, 1, 1], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=[0.2, 0.2, 0.2], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 
@@ -57,5 +58,8 @@ if __name__ == "__main__":
                                    controller_conf.position_controller_output_converter]
                                   ,quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller, ramp_saturation_slope=ramp_saturation_slope)
     t, x = simulator.run(30, deltaT, x0[0:12], u0, trajectory)
+    simulator.quad.external_disturbance.plot_history()
+    simulator.adaptive_controller.plot_history('sigma_hat')
+    simulator.adaptive_controller.plot_history('u_l1')
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     #plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])

@@ -1,23 +1,47 @@
 import numpy as np
 from scipy.signal import butter, filtfilt
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 class L1_Augmentation:
     def __init__(self, predictor, adaptive_law, lp_filter, converter):
         self.predictor = predictor
         self.adaptive_law = adaptive_law
         self.lp_filter = lp_filter
         self.converter = converter
+        self.adaptation_history = {'time': [],
+                                   'sigma_hat': [],
+                                   'u_l1': []}
+        self._time = 0.0
 
-    def __call__(self, z, z_prev, u, u_prev):
+    def __call__(self, z, z_prev, u, u_prev, time=None):
         u = self.converter.convert_to_vector(u[0], u[1:])
         u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
-        print(sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
         u_composite = u + u_l1
         u_composite = self.converter.convert_from_vector(u_composite)
+        self._time += self.predictor.Ts
+        self.adaptation_history['time'].append(time)
+        self.adaptation_history['sigma_hat'].append(list(sigma_hat.flatten()))
+        self.adaptation_history['u_l1'].append(list(u_l1.flatten()))
         return u_composite
+
+    def plot_history(self, signal_name):
+        if signal_name not in self.adaptation_history.keys():
+            raise ValueError("{} not tracked.. signal_name should be one of {}".format(signal_name,
+                                                                                       self.adaptation_history.keys()))
+        fig = make_subplots(rows=3, cols=1, x_title='Czas [s]',
+                            subplot_titles=('{} w osi x [N]'.format(signal_name), '{} w osi y [N]'.format(signal_name),
+                                            '{} w osi z [N]'.format(signal_name)))
+        time = self.adaptation_history['time']
+        data = np.array(self.adaptation_history[signal_name])
+
+        fig.add_trace(go.Scatter(x=time, y=data[:, 0]), row=1, col=1)
+        fig.add_trace(go.Scatter(x=time, y=data[:, 1]), row=2, col=1)
+        fig.add_trace(go.Scatter(x=time, y=data[:, 2]), row=3, col=1)
+        fig.show()
 
 
 class L1_Predictor:

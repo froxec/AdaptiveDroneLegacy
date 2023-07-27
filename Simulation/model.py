@@ -1,7 +1,10 @@
 from math import sin, cos
 import numpy as np
-from numpy import deg2rad
 import copy
+
+from Factories.SimulationsFactory.solvers import *
+
+
 #X-configuration
 #ccw is positive
 #   cw  4        2 ccw
@@ -45,7 +48,19 @@ def system(u, deltaT, quadcopter_object, load_pendulum_object=None, solver='RK')
         RungeKutta4(deltaT, load_pendulum_object)
         return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
 
-def RungeKutta4(deltaT, model_object, u=np.array([None])):
+class System:
+    def __init__(self, model_object, solver='RK'):
+        if solver not in solvers.keys():
+            raise ValueError("{} is not valid solver. Choose one of {}".format(solver, solvers.keys()))
+        self.solver = solvers[solver](model_object=model_object, parent=self)
+
+    def __call__(self, u, delta_t, model_object):
+        model_object.time += delta_t
+        state = self.solver(delta_t=delta_t, model_object=model_object, u=u)
+        return state
+
+
+def rungeKutta4(deltaT, model_object, u=np.array([None])):
     model = copy.deepcopy(model_object) #might be bottleneck/make class
     state0 = model.state
     if u.any() == None:
@@ -60,6 +75,7 @@ def RungeKutta4(deltaT, model_object, u=np.array([None])):
         k4 = deltaT * model.updateStateOde(state0 + k3, u)
     model_object.state = model_object.state + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
     return model_object.state
+
 
 class quadcopterModel():
     def __init__(self, state0, quad_parameters, t0=0.0, external_disturbance=None):
