@@ -28,6 +28,7 @@ def odeSystem(x, t, quadcopter_object, load_pendulum_object):
     return dstate
 
 def system(u, deltaT, quadcopter_object, load_pendulum_object=None, solver='RK'):
+    quadcopter_object.time += deltaT
     if load_pendulum_object==None:
         if solver == 'Euler':
             quadcopter_object.modelRT(u, deltaT)
@@ -61,7 +62,7 @@ def RungeKutta4(deltaT, model_object, u=np.array([None])):
     return model_object.state
 
 class quadcopterModel():
-    def __init__(self, state0, quad_parameters, external_disturbance=None):
+    def __init__(self, state0, quad_parameters, t0=0.0, external_disturbance=None):
         self.nominal_mass = quad_parameters['m']
         self.mass = self.nominal_mass
         self.g = quad_parameters['g'] ## move to Environment class
@@ -82,6 +83,7 @@ class quadcopterModel():
         self.translational_accelerations = np.zeros((3), dtype=np.float32)
         self.angular_accelerations = np.zeros((3), dtype=np.float32)
         self.external_disturbance = external_disturbance
+        self.time = t0
     def updateStateDict(self):
         #change - use existing structre
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, self.state)}
@@ -112,7 +114,7 @@ class quadcopterModel():
                                                                 [-self.mass*self.g]], dtype=np.float32)
         referenceFrame = referenceFrame + self.tension_force.reshape((3, 1))
         if self.external_disturbance is not None:
-            accelerations = (referenceFrame + self.external_disturbance())/self.mass
+            accelerations = (referenceFrame + self.external_disturbance(self.time))/self.mass
         else:
             accelerations = referenceFrame / self.mass
         accelerations = np.reshape(accelerations, 3)

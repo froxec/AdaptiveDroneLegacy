@@ -79,7 +79,7 @@ class L1_ControlConverter:
         psi = angles[2]
 
         fx = force_norm * (c(phi)*s(theta)*c(psi) + s(phi)*s(psi))
-        fy = force_norm * (c(phi)*s(psi)*s(theta) + c(psi)*s(phi))
+        fy = force_norm * (c(phi)*s(psi)*s(theta) - c(psi)*s(phi))
         fz = force_norm * (c(phi)*c(theta))
         return np.array([fx, fy, fz])
 
@@ -89,7 +89,7 @@ class L1_ControlConverter:
         fx = force[0]
         fy = force[1]
         force_norm = np.linalg.norm(force)
-        phi = np.arcsin(fy / (np.linalg.norm(f_yz) + self.epsilon))
+        phi = -np.arcsin(fy / (np.linalg.norm(f_yz) + self.epsilon))
         theta = np.arcsin(fx / (np.linalg.norm(f_xz) + self.epsilon))
         return np.array([force_norm, phi, theta])
 
