@@ -9,8 +9,12 @@ from Factories.ConfigurationsFactory.configurations import QuadConfiguration, Cu
 from Factories.ConfigurationsFactory.modes import MPCModes
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import *
 from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain
+from Factories.ControllersFactory.position_controllers.position_controller import PositionControllerThread
+from Factories.ControllersFactory.control_tools.ControlSupervisor import ControlSupervisor
 from QuadcopterIntegration.Utilities import dronekit_commands
 from Factories.ToolsFactory.GeneralTools import time_control
+from QuadcopterIntegration.PI_TELEMETRY.telemetry import *
+import serial
 import argparse
 import numpy as np
 
@@ -32,7 +36,7 @@ def run_controller(controller, x=None):
         u = controller(x)
         return u
 
-trajectory = SinglePoint([0, 100, 20])
+trajectory = SinglePoint([0, 50, 100])
 parameters = arducopter_parameters
 
 if __name__ == "__main__":
@@ -40,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument('--connect', default='localhost:8000')
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
-    vehicle = connect(args.connect, baud=57600, wait_ready=True)
+    vehicle = connect(args.connect, baud=921600, wait_ready=True)
 
 
     ## model predictive controller
@@ -49,6 +53,10 @@ if __name__ == "__main__":
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=10)
     controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
+    position_controller = PositionControllerThread(controller_conf.position_controller,
+                           controller_conf.position_controller_input_converter,
+                           controller_conf.position_controller_output_converter,
+                           trajectory)
 
     x0 = np.array(dronekit_commands.get_state(vehicle))
     ## adaptive controller
@@ -59,16 +67,19 @@ if __name__ == "__main__":
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
     l1_filter = L1_LowPass(bandwidths=[0.2, 0.2, 0.2], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
-    adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
+    adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
+
+    ## control supervisor
+    control_supervisor = ControlSupervisor(position_controller, adaptive_controller, vehicle)
+
+    ## ground control station connection
+    gcs = serial.Serial('/dev/pts/7', baudrate=115200, timeout=0.05) #
+    read = readThread(gcs, vehicle)
+    send = sendThread(gcs, vehicle)
 
     arm_and_takeoff(vehicle, 20)
     print("Take off complete")
 
+
     while True:
-        x = np.array(dronekit_commands.get_state(vehicle))
-        u = run_controller(position_controller, 1 / OUTER_LOOP_FREQ, x=x)
-        print("MPC control", u)
-        u = mpc_command_convert(u, 0, 2*parameters['m']*parameters['g'])
-        print("Current state:", x)
-        print("Control processed", u)
-        set_attitude(vehicle, u[1], u[2], 0, u[0])
+        control_supervisor.supervise()

@@ -5,6 +5,8 @@ telemetry = {
     'velocity': None,
     'armed': None,
     'attitude': None,
+    'heading': None,
+    'flight_mode': None,
 }
 
 commands = {
