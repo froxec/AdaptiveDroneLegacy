@@ -1,6 +1,8 @@
+import time
+
 from dronekit import connect
 from QuadcopterIntegration.Utilities.dronekit_commands import *
-from Factories.ModelsFactory.model_parameters import arducopter_parameters
+from Factories.ModelsFactory.model_parameters import arducopter_parameters, Z550_parameters
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint, SpiralTrajectory
 from Factories.ModelsFactory.linear_models import AugmentedLinearizedQuadNoYaw, LinearizedQuadNoYaw
 from QuadcopterIntegration.SILS.simulation_parameters import *
@@ -37,7 +39,7 @@ def run_controller(controller, x=None):
         return u
 
 trajectory = SinglePoint([0, 50, 100])
-parameters = arducopter_parameters
+parameters = Z550_parameters
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -73,13 +75,13 @@ if __name__ == "__main__":
     control_supervisor = ControlSupervisor(position_controller, adaptive_controller, vehicle)
 
     ## ground control station connection
-    gcs = serial.Serial('/dev/pts/7', baudrate=115200, timeout=0.05) #
+    gcs = serial.Serial('/dev/pts/6', baudrate=115200, timeout=0.05) #
     read = readThread(gcs, vehicle)
     send = sendThread(gcs, vehicle)
 
     arm_and_takeoff(vehicle, 20)
     print("Take off complete")
 
-
     while True:
         control_supervisor.supervise()
+        time.sleep(0.001) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT

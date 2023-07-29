@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import threading
 from threading import Thread
+import time
+from typing import Type
 import pdb
 class L1_Augmentation:
     def __init__(self, predictor, adaptive_law, lp_filter, converter):
@@ -19,7 +21,7 @@ class L1_Augmentation:
 
     def __call__(self, z, z_prev, u, u_prev, time=None):
         return self.adapt(z, z_prev, u, u_prev, time)
-    def adapt(self, z, z_prev, u, u_prev, time=None):
+    def adapt(self, z, z_prev, u, u_prev, t=None):
         u = self.converter.convert_to_vector(u[0], u[1:])
         u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
@@ -28,7 +30,7 @@ class L1_Augmentation:
         u_composite = u + u_l1
         u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
-        self.adaptation_history['time'].append(time)
+        self.adaptation_history['time'].append(t)
         self.adaptation_history['sigma_hat'].append(list(sigma_hat.flatten()))
         self.adaptation_history['u_l1'].append(list(u_l1.flatten()))
         return u_composite
@@ -54,46 +56,38 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         Thread.__init__(self)
         self.data = None
         self.u_composite = None
-        self.data_set = threading.Event()
         self.control_set = threading.Event()
-        self.ready_event = threading.Event()
-        self.ready_event.set()
-        self._watchdog_active = threading.Event()
-        self._watchdog = threading.Timer(self.predictor.Ts, self._watchdog_activation)
+        self.Ts = self.predictor.Ts
         self.start()
 
     def run(self):
+        start = time.monotonic_ns()
         while True:
-            self._restart_watchdog()
-            z, z_prev, u, u_prev, time = self._get_data()
-            #print("(z, z_prev, u, u_prev) ", (z, z_prev, u, u_prev))
+            if self.data is not None:
+                z, z_prev, u, u_prev, t = self.data
+            else:
+                continue
             self.u_composite = self.adapt(z, z_prev,
                                           np.concatenate([u, np.array([0])]),
-                                          np.concatenate([u_prev, np.array([0])]), time)
+                                          np.concatenate([u_prev, np.array([0])]), t)
             self.control_set.set()
-            self._control_execution()
+            self._control_execution(start)
 
-    def _control_execution(self):
-        self._watchdog_active.wait()
-        self.ready_event.set()
-        self._watchdog_active.clear()
-
-    def _watchdog_activation(self):
-        self._watchdog_active.set()
+    def adapt(self, z, z_prev, u, u_prev, t=None):
+        u = self.converter.convert_to_vector(u[0], u[1:])
+        u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
+        z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
+        sigma_hat = self.adaptive_law(z_hat, z)
+        u_l1 = self.lp_filter(sigma_hat)
+        u_composite = u + u_l1
+        u_composite = self.converter.convert_from_vector(u_composite)
+        self._time += self.predictor.Ts
+        return u_composite
+    def _control_execution(self, start):
+        time.sleep((self.Ts * 1e9 - ((time.monotonic_ns()-start) % (self.Ts * 1e9)))/1e9)
     def set_data(self, data):
         self.data = data
-        self.data_set.set()
 
-    def _restart_watchdog(self):
-        self._watchdog.cancel()
-        self._watchdog = threading.Timer(self.predictor.Ts, self._watchdog_activation)
-        self._watchdog.start()
-
-    def _get_data(self):
-        self.data_set.wait()
-        z, z_prev, u, u_prev, time = self.data
-        self.data_set.clear()
-        return z, z_prev, u, u_prev, time
 class L1_Predictor:
     def __init__(self, ref_model, z0, Ts, As):
         self.ref_model = ref_model

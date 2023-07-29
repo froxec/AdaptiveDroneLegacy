@@ -6,6 +6,7 @@ from Factories.CommunicationFactory.interfaces import ControllerInterface
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Trajectory, SinglePoint
 from typing import Type
 import numpy as np
+import time
 from threading import Thread
 
 class PositionController():
@@ -62,20 +63,21 @@ class PositionControllerThread(PositionController, Thread):
         Thread.__init__(self)
         self.x = None
         self.u_ref = None
-        self.data_set = threading.Event()
         self.control_set = threading.Event()
         self.ready_event = threading.Event()
-        self.ready_event.set()
-        self._watchdog_active = threading.Event()
-        self._watchdog = threading.Timer(1 / self.controller.freq, self._watchdog_activation)
+        self.Ts = 1 / self.controller.freq
         self.start()
+
     def run(self):
+        start = time.monotonic()
         while True:
-            self._restart_watchdog()
-            x = self._get_data()
+            if self.x is not None:
+                x = self.x
+            else:
+                continue
             self.u_ref = self.get_control(x)
             self.control_set.set()
-            self._control_execution()
+            self._control_execution(start)
 
     def get_control(self, x=None):
         if self.interface is not None:
@@ -96,24 +98,11 @@ class PositionControllerThread(PositionController, Thread):
             self.interface('send', u_next)
         return u_next
 
-    def _control_execution(self):
-        self._watchdog_active.wait()
-        self.ready_event.set()
-        self._watchdog_active.clear()
-    def _watchdog_activation(self):
-        self._watchdog_active.set()
+    def _control_execution(self, start):
+        time.sleep(self.Ts - ((time.monotonic() - start) % self.Ts))
 
-    def _restart_watchdog(self):
-        self._watchdog.cancel()
-        self._watchdog = threading.Timer(1 / self.controller.freq, self._watchdog_activation)
-        self._watchdog.start()
+
 
     def set_data(self, data):
         self.data = data
         self.data_set.set()
-
-    def _get_data(self):
-        self.data_set.wait()
-        x = self.x
-        self.data_set.clear()
-        return x
