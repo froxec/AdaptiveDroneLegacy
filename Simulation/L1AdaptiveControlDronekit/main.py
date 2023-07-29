@@ -38,7 +38,7 @@ def run_controller(controller, x=None):
         u = controller(x)
         return u
 
-trajectory = SinglePoint([0, 50, 100])
+trajectory = SinglePoint([500, 300, 60])
 parameters = Z550_parameters
 
 if __name__ == "__main__":
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     mpc = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, pred_horizon=10)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=10)
-    controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
+    controller_conf.position_controller.switch_modes(MPCModes.CONSTRAINED)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                            controller_conf.position_controller_input_converter,
                            controller_conf.position_controller_output_converter,
@@ -67,17 +67,19 @@ if __name__ == "__main__":
     uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=[0.2, 0.2, 0.2], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=[0.05, 0.05, 0.2], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 
     ## control supervisor
-    control_supervisor = ControlSupervisor(position_controller, adaptive_controller, vehicle)
+    control_supervisor = ControlSupervisor(vehicle, position_controller, adaptive_controller)
 
     ## ground control station connection
     gcs = serial.Serial('/dev/pts/6', baudrate=115200, timeout=0.05) #
     read = readThread(gcs, vehicle)
     send = sendThread(gcs, vehicle)
+
+    initialize_drone(vehicle)
 
     arm_and_takeoff(vehicle, 20)
     print("Take off complete")

@@ -2,6 +2,9 @@ from QuadcopterIntegration.Utilities.converters import euler_to_quaternion
 from dronekit import VehicleMode
 from pymavlink import mavutil
 import time
+def initialize_drone(vehicle):
+    vehicle.mode = VehicleMode("GUIDED")
+    vehicle.parameters['GUID_OPTIONS'] = int(8)
 
 def set_attitude(vehicle, roll, pitch, yaw, thrust):
     quaternion = euler_to_quaternion(roll, pitch, yaw)
@@ -31,6 +34,8 @@ def set_position_local(vehicle, x, y, z):
 def get_state(vehicle):
     position = vehicle.location.local_frame
     velocity = vehicle.velocity
+    if None not in velocity:
+        velocity[2] = -velocity[2]
     state = [position.north, position.east, position.down]
     if None not in state:
        state[2] = -state[2]

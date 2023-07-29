@@ -94,6 +94,18 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         z, z_prev, u, u_prev, time = self.data
         self.data_set.clear()
         return z, z_prev, u, u_prev, time
+
+    def adapt(self, z, z_prev, u, u_prev, time=None):
+        u = self.converter.convert_to_vector(u[0], u[1:])
+        u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
+        z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
+        sigma_hat = self.adaptive_law(z_hat, z)
+        print("Sigma hat", sigma_hat)
+        u_l1 = self.lp_filter(sigma_hat)
+        u_composite = u + u_l1
+        u_composite = self.converter.convert_from_vector(u_composite)
+        self._time += self.predictor.Ts
+        return u_composite
 class L1_Predictor:
     def __init__(self, ref_model, z0, Ts, As):
         self.ref_model = ref_model
