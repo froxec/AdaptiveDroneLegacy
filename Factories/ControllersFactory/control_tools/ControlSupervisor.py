@@ -23,6 +23,7 @@ class ControlSupervisor:
     def supervise(self):
         u_composite = None
         x = self.get_state()
+        #print("State", x)
         if self.position_controller.ready_event.is_set():
             self.position_controller.x = x
             self.position_controller.data_set.set()
@@ -47,6 +48,7 @@ class ControlSupervisor:
         if u_composite is not None:
             u_composite_converted = self.command_convert(u_composite, 0,
                                                          2*self.position_controller.controller.model.parameters['m']*self.position_controller.controller.model.parameters['g'])
+            #print("Control", u_composite_converted)
             self.set_attitude(u_composite_converted)
 
     def get_state(self):

@@ -1,7 +1,3 @@
-import time
-
-from dronekit import connect
-from QuadcopterIntegration.Utilities.dronekit_commands import *
 from Factories.ModelsFactory.model_parameters import arducopter_parameters, Z550_parameters
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint, SpiralTrajectory
 from Factories.ModelsFactory.linear_models import AugmentedLinearizedQuadNoYaw, LinearizedQuadNoYaw
@@ -38,7 +34,7 @@ def run_controller(controller, x=None):
         u = controller(x)
         return u
 
-trajectory = SinglePoint([500, 300, 60])
+trajectory = SinglePoint([0, 400, 60])
 parameters = Z550_parameters
 
 if __name__ == "__main__":
@@ -46,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--connect', default='localhost:8000')
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
-    vehicle = connect(args.connect, baud=921600, wait_ready=True)
+    vehicle = connect(args.connect, baud=921600, wait_ready=True, rate=100)
 
 
     ## model predictive controller
@@ -67,7 +63,7 @@ if __name__ == "__main__":
     uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=[0.05, 0.05, 0.2], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=[0.05, 0.05, 0.05], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 
@@ -75,7 +71,7 @@ if __name__ == "__main__":
     control_supervisor = ControlSupervisor(vehicle, position_controller, adaptive_controller)
 
     ## ground control station connection
-    gcs = serial.Serial('/dev/pts/6', baudrate=115200, timeout=0.05) #
+    gcs = serial.Serial('/dev/pts/5', baudrate=115200, timeout=0.05)
     read = readThread(gcs, vehicle)
     send = sendThread(gcs, vehicle)
 
@@ -86,4 +82,4 @@ if __name__ == "__main__":
 
     while True:
         control_supervisor.supervise()
-        time.sleep(0.001) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
+        time.sleep(0.01) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT

@@ -103,6 +103,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def arm_disarm_vehicle(self, mode):
         if mode == "arm":
+            print(commands["ARM"])
             self.serial_connection.write(commands["ARM"])
             print("Arming command sent..")
         elif mode == "disarm":
@@ -183,7 +184,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     try:
-        ser = serial.Serial('/dev/pts/7', baudrate=115200, timeout=0.05)
+        ser = serial.Serial('/dev/pts/4', baudrate=115200, timeout=0.05)
         print("Connected to serial port")
     except:
         ser = None
