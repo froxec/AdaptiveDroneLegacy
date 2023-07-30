@@ -19,10 +19,8 @@ class readThread(Thread):
         self.start()
     def run(self):
         while True:
-            msg = self.serial_port.readline()
+            msg = self.serial_port.readline(timeout=None)
             command = msg.decode()
-            if command == '':
-                continue
             command, _ = command.split('\n')
             command = command.split(':')
             if len(command) > 1:
