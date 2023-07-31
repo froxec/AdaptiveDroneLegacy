@@ -33,7 +33,7 @@ class TelemetryManager:
         self.telemetry = {}
         for telemetry_name in self.commands_to_telemetry_names.values():
             self.telemetry[telemetry_name] = None
-        self.vehicle = None
+        self.vehicle = vehicle
     def subscribe(self, comms):
         for comm in comms:
             for function in self.subsctiptions_mapping[comm]:
@@ -65,10 +65,10 @@ class TelemetryManager:
             print("Command type {} not valid for arm/disarm.. Command should be 'ARM_DISARM'".format(comm))
             return
         if data==0:
-            self.vehicle.arm()
+            self.vehicle.disarm()
             print("TELEM_MANAGER: Disarming!")
         if data==1:
-            self.vehicle.disarm()
+            self.vehicle.arm()
             print("TELEM_MANAGER: Arming!")
 
     def publish(self, comm, value):
@@ -96,6 +96,6 @@ if __name__ == "__main__":
 
     while True:
         tm.update()
-        time.sleep(0.5)
+        time.sleep(0.01)
 
 

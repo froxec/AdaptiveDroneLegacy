@@ -12,13 +12,13 @@ COMMANDS_ASCII_MAPPING['TELEMETRY_FLIGHT_MODE'] = chr(106)
 
 # ASCII COMMANDS to TelemetryManager methods mapping (subscriptions mapping)
 SUBSCRIPTIONS_MAPPING = {
-    COMMANDS_ASCII_MAPPING['ARM_DISARM']: ['arm_disarm'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_LOC']: ['update_telemetry', 'printer'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_GLOB']: ['update_telemetry', 'printer'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_VELOCITY']: ['update_telemetry', 'printer'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_ATTITUDE']: ['update_telemetry', 'printer'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_HEADING']: ['update_telemetry', 'printer'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_FLIGHT_MODE']: ['update_telemetry', 'printer'],
+    COMMANDS_ASCII_MAPPING['ARM_DISARM']: ['arm_disarm_callback'],
+    COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_LOC']: ['update_telemetry_callback', 'printer_callback'],
+    COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_GLOB']: ['update_telemetry_callback', 'printer_callback'],
+    COMMANDS_ASCII_MAPPING['TELEMETRY_VELOCITY']: ['update_telemetry_callback', 'printer_callback'],
+    COMMANDS_ASCII_MAPPING['TELEMETRY_ATTITUDE']: ['update_telemetry_callback', 'printer_callback'],
+    COMMANDS_ASCII_MAPPING['TELEMETRY_HEADING']: ['update_telemetry_callback', 'printer_callback'],
+    COMMANDS_ASCII_MAPPING['TELEMETRY_FLIGHT_MODE']: ['update_telemetry_callback', 'printer_callback'],
 }
 
 # COMMANDS DATATYPES MAPPING
