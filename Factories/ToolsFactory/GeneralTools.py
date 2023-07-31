@@ -228,5 +228,5 @@ class BidirectionalDict(dict):
         dict.__delitem__(self, self[key])
         dict.__delitem__(self, key)
     def __len__(self):
-        return dict.__len__(self)/2
+        return int(dict.__len__(self)/2)
 

@@ -1,35 +1,44 @@
 from Factories.ToolsFactory.GeneralTools import BidirectionalDict
 
+COMMAND_NAMES = [
+    'ARM_DISARM',
+    'TELEMETRY_HEADING',
+    'TELEMETRY_FLIGHT_MODE',
+    'TELEMETRY_POSITION_LOC:X', 'TELEMETRY_POSITION_LOC:Y', 'TELEMETRY_POSITION_LOC:Z',
+    'TELEMETRY_POSITION_GLOB:X', 'TELEMETRY_POSITION_GLOB:Y', 'TELEMETRY_POSITION_GLOB:Z',
+    'TELEMETRY_VELOCITY:X', 'TELEMETRY_VELOCITY:Y', 'TELEMETRY_VELOCITY:Z',
+    'TELEMETRY_ATTITUDE:X', 'TELEMETRY_ATTITUDE:Y' , 'TELEMETRY_ATTITUDE:Z'
+]
+
+
 # COMMANDS TO ASCII BIDIRECTIONAL MAPPING
 COMMANDS_ASCII_MAPPING = BidirectionalDict()
-COMMANDS_ASCII_MAPPING['ARM_DISARM'] = chr(10)
-COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_LOC'] = chr(101)
-COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_GLOB'] = chr(102)
-COMMANDS_ASCII_MAPPING['TELEMETRY_VELOCITY'] = chr(103)
-COMMANDS_ASCII_MAPPING['TELEMETRY_ATTITUDE'] = chr(104)
-COMMANDS_ASCII_MAPPING['TELEMETRY_HEADING'] = chr(105)
-COMMANDS_ASCII_MAPPING['TELEMETRY_FLIGHT_MODE'] = chr(106)
+id = 10
+for comm_name in COMMAND_NAMES:
+    COMMANDS_ASCII_MAPPING[comm_name] = chr(id)
+    id += 1
+del id
 
-# ASCII COMMANDS to TelemetryManager methods mapping (subscriptions mapping)
+# COMMANDS to TelemetryManager methods mapping (subscriptions mapping)
 SUBSCRIPTIONS_MAPPING = {
-    COMMANDS_ASCII_MAPPING['ARM_DISARM']: ['arm_disarm_callback'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_LOC']: ['update_telemetry_callback', 'printer_callback'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_GLOB']: ['update_telemetry_callback', 'printer_callback'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_VELOCITY']: ['update_telemetry_callback', 'printer_callback'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_ATTITUDE']: ['update_telemetry_callback', 'printer_callback'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_HEADING']: ['update_telemetry_callback', 'printer_callback'],
-    COMMANDS_ASCII_MAPPING['TELEMETRY_FLIGHT_MODE']: ['update_telemetry_callback', 'printer_callback'],
+    'ARM_DISARM': ['arm_disarm_callback'],
+    'TELEMETRY_POSITION_LOC': ['update_telemetry_callback', 'printer_callback'],
+    'TELEMETRY_POSITION_GLOB': ['update_telemetry_callback', 'printer_callback'],
+    'TELEMETRY_VELOCITY': ['update_telemetry_callback', 'printer_callback'],
+    'TELEMETRY_ATTITUDE': ['update_telemetry_callback', 'printer_callback'],
+    'TELEMETRY_HEADING': ['update_telemetry_callback', 'printer_callback'],
+    'TELEMETRY_FLIGHT_MODE': ['update_telemetry_callback', 'printer_callback'],
 }
 
 # COMMANDS DATATYPES MAPPING
 COMMANDS_DATATYPES_MAPPING = {
-    COMMANDS_ASCII_MAPPING['ARM_DISARM']: 'int8',
-    COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_LOC']: 'float32',
-    COMMANDS_ASCII_MAPPING['TELEMETRY_POSITION_GLOB']: 'float32',
-    COMMANDS_ASCII_MAPPING['TELEMETRY_VELOCITY']: 'float32',
-    COMMANDS_ASCII_MAPPING['TELEMETRY_ATTITUDE']: 'float32',
-    COMMANDS_ASCII_MAPPING['TELEMETRY_HEADING']: 'float32',
-    COMMANDS_ASCII_MAPPING['TELEMETRY_FLIGHT_MODE']: 'int8',
+    'ARM_DISARM': 'int8',
+    'TELEMETRY_POSITION_LOC': 'float32',
+    'TELEMETRY_POSITION_GLOB': 'float32',
+    'TELEMETRY_VELOCITY': 'float32',
+    'TELEMETRY_ATTITUDE': 'float32',
+    'TELEMETRY_HEADING': 'float32',
+    'TELEMETRY_FLIGHT_MODE': 'int8',
 }
 
 # COMMANDS TO TELEMETRY NAMES MAPPING

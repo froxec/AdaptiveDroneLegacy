@@ -12,6 +12,7 @@ from Factories.ControllersFactory.control_tools.ControlSupervisor import Control
 from QuadcopterIntegration.Utilities import dronekit_commands
 from Factories.ToolsFactory.GeneralTools import time_control
 from QuadcopterIntegration.PI_TELEMETRY.telemetry import *
+from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManager, TelemetryManagerThread
 import serial
 import argparse
 import numpy as np
@@ -70,16 +71,23 @@ if __name__ == "__main__":
     ## control supervisor
     control_supervisor = ControlSupervisor(vehicle, position_controller, adaptive_controller)
 
+    ## telemetry manager
+    tm = TelemetryManagerThread(serialport='/dev/ttyUSB0',
+                          baudrate=115200,
+                          update_freq=1,
+                          vehicle=vehicle)
+
     ## ground control station connection
-    gcs = serial.Serial('/dev/pts/5', baudrate=115200, timeout=0.05)
-    read = readThread(gcs, vehicle)
-    send = sendThread(gcs, vehicle)
+    # gcs = serial.Serial('/dev/pts/5', baudrate=115200, timeout=0.05)
+    # read = readThread(gcs, vehicle)
+    # send = sendThread(gcs, vehicle)
 
     initialize_drone(vehicle)
 
-    arm_and_takeoff(vehicle, 20)
-    print("Take off complete")
+    # arm_and_takeoff(vehicle, 20)
+    # print("Take off complete")
 
     while True:
         control_supervisor.supervise()
+        tm.update()
         time.sleep(0.01) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
