@@ -27,10 +27,10 @@ class readThread(Thread):
             if len(command) > 1:
                 value = command[1]
                 command = command[0]
-            print(command)
-            self.interpreter(command, value)
-            if command == "arm":
-                break
+                self.interpreter(command, value)
+            else:
+                command = command[0]
+                self.interpreter(command)
             
 
 class sendThread(Thread):

@@ -57,7 +57,7 @@ class GCSCommInterpreter:
       self.commands_map = {
           'arm': self.vehicle.arm,
           'disarm': self.vehicle.disarm,
-          'change_mode': lambda name: self.change_flight_mode(name)
+          'mode': lambda name: self.change_flight_mode(name)
       }
    def __call__(self, command, value=None):
       func = self.commands_map[command]
