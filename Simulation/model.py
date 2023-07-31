@@ -1,7 +1,10 @@
 from math import sin, cos
 import numpy as np
-from numpy import deg2rad
 import copy
+
+from Factories.SimulationsFactory.solvers import *
+
+
 #X-configuration
 #ccw is positive
 #   cw  4        2 ccw
@@ -28,6 +31,7 @@ def odeSystem(x, t, quadcopter_object, load_pendulum_object):
     return dstate
 
 def system(u, deltaT, quadcopter_object, load_pendulum_object=None, solver='RK'):
+    quadcopter_object.time += deltaT
     if load_pendulum_object==None:
         if solver == 'Euler':
             quadcopter_object.modelRT(u, deltaT)
@@ -44,7 +48,19 @@ def system(u, deltaT, quadcopter_object, load_pendulum_object=None, solver='RK')
         RungeKutta4(deltaT, load_pendulum_object)
         return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
 
-def RungeKutta4(deltaT, model_object, u=np.array([None])):
+class System:
+    def __init__(self, model_object, solver='RK'):
+        if solver not in solvers.keys():
+            raise ValueError("{} is not valid solver. Choose one of {}".format(solver, solvers.keys()))
+        self.solver = solvers[solver](model_object=model_object, parent=self)
+
+    def __call__(self, u, delta_t, model_object):
+        model_object.time += delta_t
+        state = self.solver(delta_t=delta_t, model_object=model_object, u=u)
+        return state
+
+
+def rungeKutta4(deltaT, model_object, u=np.array([None])):
     model = copy.deepcopy(model_object) #might be bottleneck/make class
     state0 = model.state
     if u.any() == None:
@@ -60,8 +76,9 @@ def RungeKutta4(deltaT, model_object, u=np.array([None])):
     model_object.state = model_object.state + (1.0 / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
     return model_object.state
 
+
 class quadcopterModel():
-    def __init__(self, state0, quad_parameters):
+    def __init__(self, state0, quad_parameters, t0=0.0, external_disturbance=None):
         self.nominal_mass = quad_parameters['m']
         self.mass = self.nominal_mass
         self.g = quad_parameters['g'] ## move to Environment class
@@ -81,7 +98,8 @@ class quadcopterModel():
         self.M = np.zeros((4), dtype=np.float32)
         self.translational_accelerations = np.zeros((3), dtype=np.float32)
         self.angular_accelerations = np.zeros((3), dtype=np.float32)
-
+        self.external_disturbance = external_disturbance
+        self.time = t0
     def updateStateDict(self):
         #change - use existing structre
         self.state_dict = {key: state_value for key, state_value in zip(self.state_names, self.state)}
@@ -111,7 +129,10 @@ class quadcopterModel():
                                                                 [0],
                                                                 [-self.mass*self.g]], dtype=np.float32)
         referenceFrame = referenceFrame + self.tension_force.reshape((3, 1))
-        accelerations = referenceFrame/self.mass
+        if self.external_disturbance is not None:
+            accelerations = (referenceFrame + self.external_disturbance(self.time))/self.mass
+        else:
+            accelerations = referenceFrame / self.mass
         accelerations = np.reshape(accelerations, 3)
         self.translational_accelerations = accelerations
         return accelerations

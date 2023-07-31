@@ -1,0 +1,5 @@
+When the main thread executes as fast as possible and other threads are asleep it takes a lot of time for them to wake up.
+Therefore time.sleep() times might be inconsistent in these threads.
+
+Solution:
+use time.sleep() in main thread to ensure that other threads have time to wake up

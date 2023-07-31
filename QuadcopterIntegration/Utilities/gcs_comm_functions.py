@@ -17,6 +17,7 @@ class readThread(Thread):
             if bytesToRead > 0:
                 msg = self.serial_port.read(bytesToRead)
                 self.telemetry = pickle.loads(msg)
+                print(self.telemetry)
                 self.telemetry_set_event.set()
 
 

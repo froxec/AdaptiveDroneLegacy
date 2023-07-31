@@ -20,7 +20,7 @@ class readThread(Thread):
         self.start()
     def run(self):
         while True:
-            msg = self.serial_port.readline()
+            msg = self.serial_port.readline(timeout=None)
             command = msg.decode()
             command, _ = command.split('\n')
             command = command.split(':')
@@ -43,18 +43,17 @@ class sendThread(Thread):
         self.start()
     def run(self):
         while True:
-            update_telemetry(telemetry,vehicle)
-            print(telemetry)
+            update_telemetry(telemetry, self.vehicle)
             serialized_telemetry = pickle.dumps(telemetry)
             gcs.write(serialized_telemetry)
             time.sleep(1/self.freq)
 
 
-gcs = serial.Serial(port='/dev/ttyS0', baudrate=115200)
+gcs = serial.Serial(port='/dev/pts/5', baudrate=115200)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--connect', default='/dev/ttyAMA1')
+    parser.add_argument('--connect', default='localhost:8000')
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=921600, wait_ready=False)

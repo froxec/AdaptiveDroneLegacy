@@ -3,7 +3,7 @@
 		{
 			"tittle":"Ground Control Station",
 			"icon":":/icons/feather/sun.svg",
-			"frameless": true,
+			"frameless": false,
 			"transluscentBg": true,
 			"sizeGrip": "size_grip",
 			"navigation":[

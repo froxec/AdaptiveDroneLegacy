@@ -4,7 +4,9 @@ from tools import RadialBasisFunction
 import itertools
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from Simulation.model import RungeKutta4
+from Factories.SimulationsFactory.solvers import RungeKutta4
+
+
 class WingRockSystem:
     def __init__(self):
         self.A = np.array([[0, 1],

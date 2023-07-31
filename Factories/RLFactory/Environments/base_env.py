@@ -1,6 +1,6 @@
 import numpy as np
 from Simulation.model import system
-from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function
+from Factories.ToolsFactory.GeneralTools import manhattan_distance, euclidean_distance, sigmoid_function
 from typing import Type
 
 from Simulation.model import quadcopterModel, loadPendulum
@@ -97,7 +97,8 @@ class ControlLoopEnvironment():
         # normalized_state = self.normalize_trajectory(state)
         # normalized_prediction = self.normalize_trajectory(state_prediction)
         for i in range(self.samples_per_step):
-            reward += manhattan_distance(state[i], state_prediction[i])*self.prediction_deltaT
+            #reward += manhattan_distance(state[i], state_prediction[i])*self.prediction_deltaT
+            reward += euclidean_distance(state[i], state_prediction[i]) * self.prediction_deltaT
         return reward
 
     def normalize_penalty(self, penalty):

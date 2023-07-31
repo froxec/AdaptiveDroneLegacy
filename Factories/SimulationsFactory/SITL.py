@@ -3,11 +3,13 @@ from Simulation.model import system
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from Simulation.model import quadcopterModel, loadPendulum
+from Simulation.model import quadcopterModel, loadPendulum, System
 from Factories.RLFactory.Agents import BanditEstimatorAgent
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
+from Factories.ToolsFactory.Converters import RampSaturation
 from typing import Type
+from copy import deepcopy
 class SoftwareInTheLoop:
     # TODO pass controllers as configuration
     def __init__(self, quad: Type[quadcopterModel],
@@ -19,7 +21,9 @@ class SoftwareInTheLoop:
                  inner_loop_freq: int,
                  outer_loop_freq: int,
                  thrust_compensator=None,
-                 estimator=None):
+                 estimator=None,
+                 adaptive_controller=None,
+                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf])):
         self.INNER_LOOP_FREQ = inner_loop_freq
         self.OUTER_LOOP_FREQ = outer_loop_freq
         self.MODULO_FACTOR = self.INNER_LOOP_FREQ / self.OUTER_LOOP_FREQ
@@ -33,12 +37,17 @@ class SoftwareInTheLoop:
         self.estimator = estimator
         self.trajectory = trajectory
         self.esc = esc
+        self.adaptive_controller = adaptive_controller
+        self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1/self.OUTER_LOOP_FREQ)
+        self.system = System(self.quad)
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time
         t = np.arange(0, stop_time, deltaT)
         x = np.zeros((t.size, 12))
         x[0] = x0
         ref_prev = u0
+        u_prev = ref_prev
+        u_saturated_prev = u_prev
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:
                 delta_x0, delta_u0 = self.mpc_input_converter(x[i, :6], ref_prev)
@@ -46,13 +55,28 @@ class SoftwareInTheLoop:
                 #self.position_controller.plot()
                 if self.thrust_compensator is not None:
                     ref = self.thrust_compensator(x[i, :6], ref)
-                ref_converted = self.mpc_output_converter(ref)
-                attitude_setpoint = np.concatenate([ref_converted[1:], np.array([0.0])])
-                throttle = ref_converted[0]
-                ref_prev = ref + self.mpc_output_converter.u_ss
+                ref_converted = self.mpc_output_converter(ref, throttle=False)
+                u_saturated = self.ramp_saturation(ref_converted, u_saturated_prev)
+                if self.adaptive_controller is not None:
+                    u_saturated_prev = u_saturated
+                else:
+                    u_saturated_converted = self.mpc_output_converter.convert_throttle(u_saturated)
+                    mpc_u = u_saturated_converted
+            if self.adaptive_controller is not None:
+                z = x[i, 3:6]
+                z_prev = x[i - 1, 3:6]
+                u = u_saturated
+                u_composite = self.adaptive_controller(z, z_prev,
+                                                       np.concatenate([u, np.array([0])]),
+                                                       np.concatenate([u_saturated_prev, np.array([0])]), t_i)
+                mpc_u = self.mpc_output_converter.convert_throttle(u_composite)
+            attitude_setpoint = np.concatenate([mpc_u[1:], np.array([0.0])])
+            throttle = mpc_u[0]
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12], throttle)
             motors = self.esc(ESC_PWMs)
-            x[i + 1] = system(np.array(motors), deltaT, self.quad, self.load)[:12]
+            x[i + 1] = self.system(np.array(motors), deltaT, self.quad)[:12]
+            if (i % self.MODULO_FACTOR) == 0:
+                ref_prev = self.mpc_output_converter(ref, throttle=False)
             if self.estimator is not None:
                 self.estimator(x[i + 1, :6], ref_prev)
             if isinstance(self.trajectory, type(TrajectoryWithTerminals())):

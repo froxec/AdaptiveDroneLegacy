@@ -29,7 +29,7 @@ LOAD_STATE0 = np.zeros(4)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 MASS_MIN = 0.2
-MASS_MAX = 2
+MASS_MAX = 3
 
 spiral_trajectory = SpiralTrajectory(15)
 rectangular_trajectory = RectangularTrajectory()
@@ -39,12 +39,12 @@ if __name__ == "__main__":
     #Estimation domain
     deltaT = STEP_TIME/OUTER_LOOP_FREQ
     samples_num = 100
-    domain = (0.2, 4)
+    domain = (MASS_MIN, MASS_MAX)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
 
     #Parameters perturbation
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 1.5})
+    perturber({'m': -0.4})
     print(perturber.perturbed_parameters)
 
     #Configurations
@@ -77,8 +77,8 @@ if __name__ == "__main__":
     # observations
     action = np.random.uniform(domain[0], domain[1], size=(1,))
 
-    rbf_kernel = RBF_Kernel(length=2)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
+    rbf_kernel = RBF_Kernel(length=0.5)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.5)
 
     done = False
     environment.reset(Z550_parameters, Z550_parameters)

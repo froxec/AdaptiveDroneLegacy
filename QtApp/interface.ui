@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1100</width>
-    <height>703</height>
+    <height>705</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -494,7 +494,7 @@ QPushButton {
          <item>
           <widget class="QCustomStackedWidget" name="mainPages">
            <property name="currentIndex">
-            <number>4</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="SettingsPage">
             <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -531,6 +531,16 @@ QPushButton {
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QFrame" name="chartFrame">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
                </property>
               </widget>
              </item>
@@ -928,20 +938,29 @@ QPushButton {
       </item>
       <item>
        <widget class="QWidget" name="mapContainer" native="true">
-        <layout class="QVBoxLayout" name="verticalLayout_11">
-         <item>
-          <widget class="QFrame" name="map_frame">
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="1" column="0">
+          <widget class="LivePlotWidget" name="Vx_plot" native="true"/>
+         </item>
+         <item row="1" column="1">
+          <widget class="LivePlotWidget" name="Vy_plot" native="true"/>
+         </item>
+         <item row="1" column="2">
+          <widget class="LivePlotWidget" name="Vz_plot" native="true"/>
+         </item>
+         <item row="0" column="0">
+          <widget class="LivePlotWidget" name="x_plot" native="true"/>
+         </item>
+         <item row="0" column="2">
+          <widget class="LivePlotWidget" name="z_plot" native="true"/>
+         </item>
+         <item row="0" column="1">
+          <widget class="LivePlotWidget" name="y_plot" native="true">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
            </property>
           </widget>
          </item>
@@ -1027,6 +1046,12 @@ QPushButton {
    <class>qfi_EADI</class>
    <extends>QGraphicsView</extends>
    <header location="global">qfi/qfi_EADI.h</header>
+  </customwidget>
+  <customwidget>
+   <class>LivePlotWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">pglive.sources.live_plot_widget.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

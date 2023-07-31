@@ -2,6 +2,8 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.linalg import toeplitz
 import time
+from scipy.signal import iirfilter
+from collections import deque
 def manhattan_distance(a, b):
     return np.abs(a - b).sum()
 
@@ -160,3 +162,49 @@ def time_control(func):
             finish = time.perf_counter()
         return u
     return wrapper
+
+class LiveFilter:
+    #implementation based on https://www.samproell.io/posts/yarppg/yarppg-live-digital-filter/
+    def __call__(self, x):
+        y = self.process(x)
+        return y
+    def process(self, x):
+        if np.isnan(x).any():
+            return x
+
+        return self._process(x)
+
+    def _process(self, x):
+        return NotImplementedError("Function not implemented..")
+
+class LowPassLiveFilter(LiveFilter):
+    # implementation based on https://www.samproell.io/posts/yarppg/yarppg-live-digital-filter/
+    def __init__(self, bandwidths, fs, signals_num):
+        if isinstance(bandwidths, (list, np.ndarray)) == False:
+            raise ValueError("bandwidths should be either list or np.ndarray")
+        if len(list(bandwidths)) != signals_num:
+            raise ValueError("bandwidths num should be equal to signals num (one BW value per signal)")
+        self.fs = fs
+        self.bandwidth = bandwidths
+        self.signals_num = signals_num
+        a_list = []
+        b_list = []
+        for i in range(signals_num):
+            b, a = iirfilter(2, Wn=bandwidths[i], fs=fs, btype="low", ftype="butter")
+            a_list.append(a)
+            b_list.append(b)
+        self.a = a_list
+        self.b = b_list
+        self.x_que = [deque([0] * len(self.b[i]), maxlen=len(self.b[i])) for i in range(signals_num)]
+        self.y_que = [deque([0] * (len(self.a[i]) -1), maxlen=len(self.a[i])-1) for i in range(signals_num)]
+
+    def _process(self, x):
+        signals_processed = []
+        for i, element in enumerate(x):
+            self.x_que[i].appendleft(element)
+            y = np.dot(self.b[i], self.x_que[i]) - np.dot(self.a[i][1:], self.y_que[i])
+            y = y / self.a[i][0]
+            self.y_que[i].appendleft(y)
+            signals_processed.append(y)
+        return np.array(signals_processed)
+

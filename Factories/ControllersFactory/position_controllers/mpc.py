@@ -20,7 +20,7 @@ class ModelPredictiveControl():
         self.freq = freq
         self.pred_horizon = pred_horizon
         self.Q_base = np.array([0.5, 0.5, 0.5, 1, 1, 1]) + np.ones(6)*1e-6
-        self.P_base = np.array([1, 1000, 1000])
+        self.P_base = np.array([1, 200, 200])
         self.Q = np.diag(np.tile(self.Q_base, pred_horizon))
         self.P = np.diag(np.tile(self.P_base, pred_horizon))
         self.Ol = construct_ext_obs_mat(self.model.Ad, self.model.Cd, horizon=self.pred_horizon)
