@@ -18,18 +18,20 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 100, 20])
+trajectory = SinglePoint([5, 5, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.0})
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
+    wind_force = WindModel(direction_vector=[0, 1, 0], strength=1)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
     #wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=0.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
     #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=2)
     ## Model configuration
-    quad_conf = QuadConfiguration(perturber.perturbed_parameters, pendulum_parameters, np.zeros(12), np.zeros(4), PWM_RANGE,
+    x0 = np.zeros(12)
+    x0[2] = 20
+    quad_conf = QuadConfiguration(perturber.perturbed_parameters, pendulum_parameters, x0, np.zeros(4), PWM_RANGE,
                                   ANGULAR_VELOCITY_RANGE, external_disturbance=wind_force)
     x0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
     u0 = np.zeros(3)
