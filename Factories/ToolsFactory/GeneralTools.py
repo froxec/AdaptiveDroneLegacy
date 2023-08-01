@@ -169,9 +169,6 @@ class LiveFilter:
         y = self.process(x)
         return y
     def process(self, x):
-        if np.isnan(x).any():
-            return x
-
         return self._process(x)
 
     def _process(self, x):

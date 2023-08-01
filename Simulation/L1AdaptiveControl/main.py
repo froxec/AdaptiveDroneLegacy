@@ -37,7 +37,7 @@ if __name__ == "__main__":
     ## Controller configuration
     prediction_model = LinearizedQuadNoYaw(Z550_parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=10)
+                                      PWM_RANGE, horizon=20)
     controller_conf.position_controller.switch_modes(MPCModes.CONSTRAINED)
 
     ## Adaptive Controller configuration

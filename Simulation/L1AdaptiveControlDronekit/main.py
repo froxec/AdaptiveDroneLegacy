@@ -12,7 +12,8 @@ from Factories.ControllersFactory.control_tools.ControlSupervisor import Control
 from QuadcopterIntegration.Utilities import dronekit_commands
 from Factories.ToolsFactory.GeneralTools import time_control
 from QuadcopterIntegration.PI_TELEMETRY.telemetry import *
-from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManager, TelemetryManagerThread
+from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManager, TelemetryManagerThread, \
+    TelemetryManagerThreadUAV
 import serial
 import argparse
 import numpy as np
@@ -35,7 +36,7 @@ def run_controller(controller, x=None):
         u = controller(x)
         return u
 
-trajectory = SinglePoint([0, 400, 60])
+trajectory = SinglePoint([0, 0, 5])
 parameters = Z550_parameters
 
 if __name__ == "__main__":
@@ -48,9 +49,8 @@ if __name__ == "__main__":
 
     ## model predictive controller
     prediction_model = LinearizedQuadNoYaw(parameters, Ts = 1 / OUTER_LOOP_FREQ)
-    mpc = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, pred_horizon=10)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=10)
+                                      PWM_RANGE, horizon=50)
     controller_conf.position_controller.switch_modes(MPCModes.CONSTRAINED)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                            controller_conf.position_controller_input_converter,
@@ -72,10 +72,11 @@ if __name__ == "__main__":
     control_supervisor = ControlSupervisor(vehicle, position_controller, adaptive_controller)
 
     ## telemetry manager
-    tm = TelemetryManagerThread(serialport='/dev/ttyUSB0',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/6',
                           baudrate=115200,
-                          update_freq=1,
-                          vehicle=vehicle)
+                          update_freq=10,
+                          vehicle=vehicle,
+                          position_controller=position_controller)
 
     ## ground control station connection
     # gcs = serial.Serial('/dev/pts/5', baudrate=115200, timeout=0.05)
@@ -88,6 +89,9 @@ if __name__ == "__main__":
     # print("Take off complete")
 
     while True:
-        control_supervisor.supervise()
+        if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 5.0:
+            control_supervisor.supervise()
+        else:
+            ("Waiting for drone to reach required altitude.")
         tm.update()
         time.sleep(0.01) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT

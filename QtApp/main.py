@@ -23,20 +23,17 @@ from time import sleep
 from threading import Thread
 from datetime import datetime
 import itertools
+from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManagerThreadGCS
+from Factories.CommunicationFactory.Telemetry.mappings import AUXILIARY_COMMANDS_MAPPING
 class MainWindow(QMainWindow):
-    def __init__(self, serial_connection, parent=None):
+    def __init__(self, telemetry_manager, parent=None):
         QMainWindow.__init__(self)
 
         # memorize serial connection
-        self.serial_connection = serial_connection
 
         # telemetry
-        self.read_telemetry = readThread(self.serial_connection)
-        self.telemetry_timer = QTimer()
-        self.telemetry_timer.setInterval(500)
-        self.telemetry_timer.start()
-        self.telemetry_timer.timeout.connect(self.readTelemetry)
-        self.telemetry = None
+        self.telemetry_manager = telemetry_manager
+        self.telemetry = telemetry_manager.telemetry
 
         # readings update timer
         self.readings_timer = QTimer()
@@ -97,17 +94,23 @@ class MainWindow(QMainWindow):
         self.window.guidedButton.clicked.connect(lambda: self.change_flight_mode("GUIDED"))
         self.window.acroButton.clicked.connect(lambda: self.change_flight_mode("ACRO"))
 
+        # change reference value
+        self.window.confirmReference.clicked.connect(self.change_setpoint)
+
+        # RETURN TO LAUNCH
+        self.window.returnToLaunchBtn.clicked.connect(lambda: self.auxiliary_command('RETURN_TO_LAUNCH'))
+        self.window.landButton.clicked.connect(lambda: self.auxiliary_command('LAND'))
+        self.window.takeoffBtn.clicked.connect(lambda: self.auxiliary_command('TAKEOFF'))
         #show
         self.show()
 
     @Slot()
     def arm_disarm_vehicle(self, mode):
         if mode == "arm":
-            print(commands["ARM"])
-            self.serial_connection.write(commands["ARM"])
+            self.telemetry_manager.publish('ARM_DISARM', 1)
             print("Arming command sent..")
         elif mode == "disarm":
-            self.serial_connection.write(commands["DISARM"])
+            self.telemetry_manager.publish('ARM_DISARM', 0)
             print("Disarming command sent..")
 
     @Slot()
@@ -143,6 +146,17 @@ class MainWindow(QMainWindow):
         if self.telemetry['flight_mode'] is not None:
             self.window.flightModeStatus.setText(str(self.telemetry['flight_mode']))
 
+    @Slot()
+    def change_setpoint(self):
+        self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:X', self.window.x_ref.value())
+        self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:Y', self.window.y_ref.value())
+        self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:Z', self.window.z_ref.value())
+
+    @Slot()
+    def auxiliary_command(self, comm_name):
+        comm_code = AUXILIARY_COMMANDS_MAPPING[comm_name]
+        self.telemetry_manager.publish('AUXILIARY_COMMAND', comm_code)
+
     def change_flight_mode(self, mode):
         self.serial_connection.write(commands[mode])
     def create_byte_map(self, zoom):
@@ -168,7 +182,7 @@ class MainWindow(QMainWindow):
     def update_plots(self, *connectors):
         x = 0
         while True:
-            if self.telemetry_updated_event.is_set():
+            if self.telemetry_manager.telemetry_set_event.is_set():
                 for i, connector in enumerate(connectors):
                     telem_index = self.telemetry_to_plot[i]
                     if len(telem_index) == 1:
@@ -177,18 +191,16 @@ class MainWindow(QMainWindow):
                         data = self.telemetry[telem_index[0]][telem_index[1]]
                     if data is not None:
                         connector.cb_append_data_point(data, x)
-                self.telemetry_updated_event.clear()
+                self.telemetry_manager.telemetry_set_event.clear()
             x += 1
             sleep(0.01)
 
 
 if __name__ == "__main__":
-    try:
-        ser = serial.Serial('/dev/pts/4', baudrate=115200, timeout=0.05)
-        print("Connected to serial port")
-    except:
-        ser = None
+    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/7',
+                                   baudrate=115200,
+                                   update_freq=10)
     app = QApplication(sys.argv)
-    window = MainWindow(ser)
+    window = MainWindow(tm)
     Thread(target=window.update_plots, args=window.data_connectors).start()
     sys.exit(app.exec())
