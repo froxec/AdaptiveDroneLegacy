@@ -92,6 +92,6 @@ if __name__ == "__main__":
         if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 5.0:
             control_supervisor.supervise()
         else:
-            ("Waiting for drone to reach required altitude.")
+            ("Waiting for drone to reach required attitude.")
         tm.update()
         time.sleep(0.01) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
