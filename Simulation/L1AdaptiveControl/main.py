@@ -8,7 +8,7 @@ from Factories.ToolsFactory.AnalysisTools import ParametersPerturber
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SpiralTrajectory, RectangularTrajectory, SinglePoint, \
     RectangularTrajectoryWithTerminals
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import *
-from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain
+from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain, LinearQuadUncertain
 from Factories.ModelsFactory.external_force_models import WindModel, RandomAdditiveNoiseWind, RandomWalkWind, SinusoidalWind
 from Simulation.plots import plotTrajectory, plotTrajectory3d
 
@@ -18,7 +18,7 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 5, 20])
+trajectory = SinglePoint([5, 50, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.0})
@@ -44,11 +44,12 @@ if __name__ == "__main__":
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
-    As = np.diag([-5, -5, -5])
-    uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
+    As = np.diag([-0.01, -0.01, -0.01])
+    #uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
+    uncertain_model = LinearQuadUncertain(Z550_parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=[0.2, 0.2, 0.2], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=[0.1, 0.1, 0.1], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 

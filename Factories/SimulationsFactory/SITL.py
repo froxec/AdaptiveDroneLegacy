@@ -8,6 +8,7 @@ from Factories.RLFactory.Agents import BanditEstimatorAgent
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
 from Factories.ToolsFactory.Converters import RampSaturation
+from Factories.ModelsFactory.uncertain_models import *
 from typing import Type
 from copy import deepcopy
 class SoftwareInTheLoop:
@@ -45,6 +46,7 @@ class SoftwareInTheLoop:
         t = np.arange(0, stop_time, deltaT)
         x = np.zeros((t.size, 12))
         x[0] = x0
+        z_prev = x0[3:6]
         ref_prev = u0
         u_prev = ref_prev
         u_saturated_prev = u_prev
@@ -52,9 +54,6 @@ class SoftwareInTheLoop:
             if (i % self.MODULO_FACTOR) == 0:
                 delta_x0, delta_u0 = self.mpc_input_converter(x[i, :6], ref_prev)
                 ref = self.position_controller.predict(delta_x0, setpoint)
-                #self.position_controller.plot()
-                if self.thrust_compensator is not None:
-                    ref = self.thrust_compensator(x[i, :6], ref)
                 ref_converted = self.mpc_output_converter(ref, throttle=False)
                 u_saturated = self.ramp_saturation(ref_converted, u_saturated_prev)
                 if self.adaptive_controller is not None:
@@ -62,7 +61,8 @@ class SoftwareInTheLoop:
                 else:
                     u_saturated_converted = self.mpc_output_converter.convert_throttle(u_saturated)
                     mpc_u = u_saturated_converted
-            if self.adaptive_controller is not None:
+            if (self.adaptive_controller is not None and
+                    isinstance(self.adaptive_controller.predictor.ref_model, QuadTranslationalDynamicsUncertain)):
                 z = x[i, 3:6]
                 z_prev = x[i - 1, 3:6]
                 u = u_saturated
@@ -70,6 +70,15 @@ class SoftwareInTheLoop:
                                                        np.concatenate([u, np.array([0])]),
                                                        np.concatenate([u_saturated_prev, np.array([0])]), t_i)
                 mpc_u = self.mpc_output_converter.convert_throttle(u_composite)
+            elif (self.adaptive_controller is not None and
+                    isinstance(self.adaptive_controller.predictor.ref_model, LinearQuadUncertain)):
+                z = delta_x0[3:6]
+                u = ref
+                delta_u_composite = self.adaptive_controller(z, z_prev,
+                                                            u, u_prev, t_i)
+                u_prev = u
+                mpc_u = self.mpc_output_converter(delta_u_composite)
+                z_prev = z
             attitude_setpoint = np.concatenate([mpc_u[1:], np.array([0.0])])
             throttle = mpc_u[0]
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12], throttle)

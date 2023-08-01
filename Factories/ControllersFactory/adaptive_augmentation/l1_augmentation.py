@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.signal import butter, filtfilt
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
+from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import threading
@@ -20,13 +21,15 @@ class L1_Augmentation:
     def __call__(self, z, z_prev, u, u_prev, time=None):
         return self.adapt(z, z_prev, u, u_prev, time)
     def adapt(self, z, z_prev, u, u_prev, time=None):
-        u = self.converter.convert_to_vector(u[0], u[1:])
-        u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
+        if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
+            u = self.converter.convert_to_vector(u[0], u[1:])
+            u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
         u_l1 = self.lp_filter(sigma_hat)
         u_composite = u + u_l1
-        u_composite = self.converter.convert_from_vector(u_composite)
+        if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
+            u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
         self.adaptation_history['time'].append(time)
         self.adaptation_history['sigma_hat'].append(list(sigma_hat.flatten()))
@@ -96,14 +99,16 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         return z, z_prev, u, u_prev, time
 
     def adapt(self, z, z_prev, u, u_prev, time=None):
-        u = self.converter.convert_to_vector(u[0], u[1:])
-        u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
+        if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
+            u = self.converter.convert_to_vector(u[0], u[1:])
+            u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
         #print("Sigma hat", sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
         u_composite = u + u_l1
-        u_composite = self.converter.convert_from_vector(u_composite)
+        if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
+            u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
         return u_composite
 class L1_Predictor:
@@ -130,7 +135,10 @@ class L1_AdaptiveLaw:
         self.exp_As_Ts = np.diag(np.exp(np.diag(self.As * self.Ts)))
         self.PHI = self.As_Inv @ (self.exp_As_Ts - np.identity(As.shape[0]))
         self.PHI_Inv = np.linalg.inv(self.PHI)
-        self.g_inv = 1/self.ref_model.m
+        if isinstance(self.ref_model.G, np.ndarray):
+            self.g_inv = np.linalg.inv(self.ref_model.G)
+        else:
+            self.g_inv = 1/self.ref_model.G
         self.sigma_hat = np.zeros(3)
 
     def __call__(self, z_hat, z):

@@ -6,7 +6,7 @@ class QuadTranslationalDynamicsUncertain:
         self.parameters = deepcopy(parameters)
         self.m = parameters['m']
         self.g = parameters['g']
-
+        self.G = self.m
     def __call__(self, z, u, u_l1, sigma_hat):
         f = (1 / self.m) * u - np.array([0, 0, 1]) * self.g
         g = (1 / self.m) * (u_l1 + sigma_hat)
@@ -20,7 +20,7 @@ class LinearQuadUncertain(LinearizedQuadNoYaw):
         self.B = self.B[3:6, :]
         self.C = self.C[3:6, 3:6]
         self.D = self.D[3:6, :]
-        print("x")
+        self.G = self.B
 
     def __call__(self, z, u, u_l1, sigma_hat):
         f = self.A @ z + self.B @ u
