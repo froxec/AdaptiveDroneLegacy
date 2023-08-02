@@ -1,12 +1,12 @@
 from Factories.ModelsFactory.model_parameters import arducopter_parameters, Z550_parameters
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint, SpiralTrajectory
-from Factories.ModelsFactory.linear_models import AugmentedLinearizedQuadNoYaw, LinearizedQuadNoYaw
+from Factories.ModelsFactory.linear_models import AugmentedLinearizedQuadNoYaw, LinearizedQuadNoYaw, LinearTranslationalMotionDynamics
 from QuadcopterIntegration.SILS.simulation_parameters import *
 from Factories.ControllersFactory.position_controllers.mpc import ModelPredictiveControl
 from Factories.ConfigurationsFactory.configurations import QuadConfiguration, CustomMPCConfig
 from Factories.ConfigurationsFactory.modes import MPCModes
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import *
-from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain
+from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain, LinearQuadUncertain
 from Factories.ControllersFactory.position_controllers.position_controller import PositionControllerThread
 from Factories.ControllersFactory.control_tools.ControlSupervisor import ControlSupervisor
 from QuadcopterIntegration.Utilities import dronekit_commands
@@ -48,9 +48,10 @@ if __name__ == "__main__":
 
 
     ## model predictive controller
-    prediction_model = LinearizedQuadNoYaw(parameters, Ts = 1 / OUTER_LOOP_FREQ)
+    #prediction_model = LinearizedQuadNoYaw(parameters, Ts = 1 / OUTER_LOOP_FREQ)
+    prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=50)
+                                      PWM_RANGE, horizon=10)
     controller_conf.position_controller.switch_modes(MPCModes.CONSTRAINED)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                            controller_conf.position_controller_input_converter,
@@ -60,11 +61,12 @@ if __name__ == "__main__":
     x0 = np.array(dronekit_commands.get_state(vehicle))
     ## adaptive controller
     z0 = x0[3:6]
-    As = np.diag([-5, -5, -5])
+    As = np.diag([-0.01, -0.01, -0.01])
+    # uncertain_model = LinearQuadUncertain(Z550_parameters)
     uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=[0.05, 0.05, 0.05], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=[0., 0., 0.15], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 
