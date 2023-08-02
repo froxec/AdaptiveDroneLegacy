@@ -22,7 +22,7 @@ PWM_RANGE = [1120, 1920]
 trajectory = SinglePoint([5, 50, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': 0.5})
 
     ##External Disturbances
     wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     #prediction_model = LinearizedQuadNoYaw(Z550_parameters, 1 / OUTER_LOOP_FREQ)
     prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=10, normalize_system=False)
+                                      PWM_RANGE, horizon=10, normalize_system=True)
     controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
     position_controller = PositionController(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
@@ -50,12 +50,12 @@ if __name__ == "__main__":
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
-    As = np.diag([-5, -5, -5])
-    #uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
-    uncertain_model = LinearQuadUncertain(Z550_parameters)
+    As = np.diag([-0.01, -0.01, -0.01])
+    uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
+    #uncertain_model = LinearQuadUncertain(Z550_parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=[5, 5, 5], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=[0.1, 0.1, 15], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 
@@ -63,10 +63,10 @@ if __name__ == "__main__":
     ramp_saturation_slope = np.array([np.Inf, 0.78, 0.78])
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, trajectory, position_controller,
                                   controller_conf.attitude_controller,quad_conf.esc,
-                                  INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
+                                  INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller)
     t, x = simulator.run(30, deltaT, x0[0:12], u0, trajectory)
     simulator.quad.external_disturbance.plot_history()
-    # simulator.adaptive_controller.plot_history('sigma_hat')
-    # simulator.adaptive_controller.plot_history('u_l1')
+    simulator.adaptive_controller.plot_history('sigma_hat')
+    simulator.adaptive_controller.plot_history('u_l1')
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     #plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])

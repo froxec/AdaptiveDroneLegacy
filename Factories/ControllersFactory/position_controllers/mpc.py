@@ -22,10 +22,10 @@ class ModelPredictiveControl():
         self.pred_horizon = pred_horizon
         # self.Q_base = np.array([10, 10, 10, 0.1, 0.1, 0.1]) + np.ones(6)*1e-6
         # self.P_base = np.array([0.01, 0.1, 0.1]) #  self.P_base = np.array([1, 200, 200]) #linearized normalized
-        self.Q_base = np.array([10, 10, 10, 10, 10, 10]) + np.ones(6) * 1e-6
-        self.P_base = np.array([10, 10, 0.01]) #TranslationalDynamics non normalized
-        # self.Q_base = np.array([10, 10, 10, 1, 1, 1]) + np.ones(6) * 1e-6
-        # self.P_base = np.array([10, 10, 0.01]) #  self.P_base = np.array([1, 200, 200])
+        # self.Q_base = np.array([10, 10, 10, 10, 10, 10]) + np.ones(6) * 1e-6
+        # self.P_base = np.array([10, 10, 0.01]) #TranslationalDynamics non normalized
+        self.Q_base = np.array([10, 10, 10, 1, 1, 1]) + np.ones(6) * 1e-6
+        self.P_base = np.array([10, 10, 0.01]) #TranslationalDynamics normalized
         self.Q = np.diag(np.tile(self.Q_base, pred_horizon))
         self.P = np.diag(np.tile(self.P_base, pred_horizon))
         self.Ol = construct_ext_obs_mat(self.model.Ad, self.model.Cd, horizon=self.pred_horizon)
