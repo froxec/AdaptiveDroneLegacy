@@ -24,7 +24,7 @@ if __name__ == "__main__":
     perturber({'m': 0.0})
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[0, 1, 0], strength=1)
+    wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
     #wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=0.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
     #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=2)
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     ## Controller configuration
     prediction_model = LinearizedQuadNoYaw(Z550_parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=20)
+                                      PWM_RANGE, horizon=10)
     controller_conf.position_controller.switch_modes(MPCModes.CONSTRAINED)
 
     ## Adaptive Controller configuration
