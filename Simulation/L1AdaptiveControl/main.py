@@ -19,7 +19,7 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 50, 20])
+trajectory = SinglePoint([5, 10, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.0})
@@ -39,9 +39,9 @@ if __name__ == "__main__":
 
     ## Controller configuration
     prediction_model = LinearizedQuadNoYaw(Z550_parameters, 1 / OUTER_LOOP_FREQ)
-    #prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ,max_distances=[50, 50, 50])
+    #prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=10, normalize_system=False)
+                                      PWM_RANGE, horizon=10, normalize_system=True)
     controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
     position_controller = PositionController(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
@@ -50,12 +50,12 @@ if __name__ == "__main__":
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
-    As = np.diag([-0.01, -0.01, -0.01])
-    uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
-    #uncertain_model = LinearQuadUncertain(Z550_parameters)
+    As = np.diag([-5, -5, -5])
+    #uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
+    uncertain_model = LinearQuadUncertain(Z550_parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=[0.1, 0.1, 0.1], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=[5, 5, 5], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
 

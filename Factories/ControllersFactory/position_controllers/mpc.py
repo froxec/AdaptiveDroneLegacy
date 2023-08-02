@@ -20,8 +20,8 @@ class ModelPredictiveControl():
         self.model = model
         self.freq = freq
         self.pred_horizon = pred_horizon
-        self.Q_base = np.array([0.5, 0.5, 0.5, 1, 1, 1]) + np.ones(6)*1e-6
-        self.P_base = np.array([1, 200, 200]) #  self.P_base = np.array([1, 200, 200])
+        self.Q_base = np.array([10, 10, 10, 0.1, 0.1, 0.1]) + np.ones(6)*1e-6
+        self.P_base = np.array([0.01, 0.1, 0.1]) #  self.P_base = np.array([1, 200, 200])
         self.Q = np.diag(np.tile(self.Q_base, pred_horizon))
         self.P = np.diag(np.tile(self.P_base, pred_horizon))
         self.Ol = construct_ext_obs_mat(self.model.Ad, self.model.Cd, horizon=self.pred_horizon)
@@ -101,6 +101,8 @@ class ModelPredictiveControl():
             u_k = u + self.prev_delta_u
         else:
             u_k = u
+        if self.normalize_state:
+            u_k = self._denormalize_control(u_k)
         self.control_history.append(list(u_k))
         self.prev_delta_x = delta_x0
         self.prev_y = self.model.Cd @ x
@@ -140,6 +142,9 @@ class ModelPredictiveControl():
         x = np.diag(1/np.diagonal(self.model.Nx)) @ x
         return x
 
+    def _denormalize_control(self, u):
+        u = self.model.Nu @ u
+        return u
     def plot_history(self):
         fig = make_subplots(rows=3, cols=1, x_title='Czas [s]',
                             subplot_titles=('Thrust', 'Phi',

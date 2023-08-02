@@ -32,8 +32,8 @@ class LinearTranslationalMotionDynamics:
                            [0, 0, 0]])
 
         max_distances = max_distances
-        self.Nx = np.diag(np.concatenate([np.array(max_distances), np.ones(3)]))
-        self.Nu = np.diag(np.ones(self.B.shape[1]))
+        self.Nx = np.diag(np.concatenate([np.array(max_distances), np.ones(3)*5]))
+        self.Nu = np.diag(np.array([self.m*self.g, np.pi/6, np.pi/6]))
         self.Ny = np.diag(np.ones(self.C.shape[0]))
         self.normalize_system(self.Nx, self.Nu, self.Ny)
 
@@ -162,8 +162,8 @@ class LinearizedQuadNoYaw(LinearizedQuad):
                            [0.0, 0.0, 0.0]])
         self.U_OP = np.array([self.m * self.g, 0.0, 0.0, 0.0])
         max_distances = max_distances
-        self.Nx = np.diag(np.concatenate([np.array(max_distances), np.ones(3)]))
-        self.Nu = np.diag(np.ones(self.B.shape[1]))
+        self.Nx = np.diag(np.concatenate([np.array(max_distances), np.ones(3)*5]))
+        self.Nu = np.diag(np.array([self.m*self.g, np.pi/6, np.pi/6]))
         self.Ny = np.diag(np.ones(self.C.shape[0]))
         self.normalize_system(self.Nx, self.Nu, self.Ny)
         if Ts is not None:
