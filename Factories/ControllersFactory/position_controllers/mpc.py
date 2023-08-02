@@ -20,7 +20,7 @@ class ModelPredictiveControl():
         self.model = model
         self.freq = freq
         self.pred_horizon = pred_horizon
-        self.Q_base = np.array([0.1, 0.1, 0.1, 1, 1, 1]) + np.ones(6)*1e-6
+        self.Q_base = np.array([0.5, 0.5, 0.5, 1, 1, 1]) + np.ones(6)*1e-6
         self.P_base = np.array([1, 200, 200]) #  self.P_base = np.array([1, 200, 200])
         self.Q = np.diag(np.tile(self.Q_base, pred_horizon))
         self.P = np.diag(np.tile(self.P_base, pred_horizon))
@@ -134,10 +134,7 @@ class ModelPredictiveControl():
 
     def change_setpoint(self, setpoint):
         self.setpoint=setpoint
-        if self.normalize_state:
-            extended_ref = np.repeat(np.zeros_like(self.setpoint), self.pred_horizon, axis=1).transpose(1, 0)
-        else:
-            extended_ref = np.repeat(self.setpoint, self.pred_horizon, axis=1).transpose(1, 0)
+        extended_ref = np.repeat(np.zeros_like(self.setpoint), self.pred_horizon, axis=1).transpose(1, 0)
         self.ref = extended_ref
     def _normalize_state(self, x):
         x = np.diag(1/np.diagonal(self.model.Nx)) @ x

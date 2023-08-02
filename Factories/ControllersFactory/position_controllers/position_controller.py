@@ -76,7 +76,7 @@ class PositionController():
 
         #update_other_objects
         self.controller.change_setpoint(self.setpoint)
-        #self.input_converter.update(x_ss=self.setpoint.flatten())
+        self.input_converter.update(x_ss=self.setpoint.flatten())
 
     def check_if_reached_waypoint(self, x):
         if self.setpoint.shape != x.shape:
