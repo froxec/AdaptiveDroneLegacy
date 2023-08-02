@@ -19,7 +19,7 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 10, 20])
+trajectory = SinglePoint([5, 50, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.0})
@@ -38,10 +38,10 @@ if __name__ == "__main__":
     u0 = np.zeros(3)
 
     ## Controller configuration
-    prediction_model = LinearizedQuadNoYaw(Z550_parameters, 1 / OUTER_LOOP_FREQ)
-    #prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ)
+    #prediction_model = LinearizedQuadNoYaw(Z550_parameters, 1 / OUTER_LOOP_FREQ)
+    prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=10, normalize_system=True)
+                                      PWM_RANGE, horizon=10, normalize_system=False)
     controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
     position_controller = PositionController(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
