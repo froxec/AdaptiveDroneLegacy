@@ -8,6 +8,7 @@ from Factories.ControllersFactory.position_controllers.position_controller_param
 import numpy as np
 from Factories.ControllersFactory.position_controllers.mpc_controllers import gekkoMPC
 from Factories.ControllersFactory.position_controllers.mpc import ModelPredictiveControl
+from Factories.ModelsFactory.linear_models import LinearizedQuad, LinearTranslationalMotionDynamics
 from typing import Type
 
 class Configuration():
@@ -47,12 +48,19 @@ class QuadConfiguration(Configuration):
 
 class CustomMPCConfig(ControllerConfigurationBase):
     def __init__(self, prediction_model, INNER_LOOP_FREQ,
-                 OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10):
-        self.position_controller = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, horizon)
-        u_ss = np.array([prediction_model.parameters['m']*prediction_model.parameters['g'], 0, 0])
+                 OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10, normalize_system=False):
+        if isinstance(prediction_model, LinearTranslationalMotionDynamics):
+            mode = 'transDynamicsModel'
+        elif isinstance(prediction_model, LinearizedQuad):
+            mode = 'proprietary'
+        self.position_controller = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, horizon, normalize_system=normalize_system)
+        if mode == 'transDynamicsModel':
+            u_ss = np.array([0, 0, prediction_model.parameters['m'] * prediction_model.parameters['g']])
+        elif mode == 'proprietary':
+            u_ss = np.array([prediction_model.parameters['m']*prediction_model.parameters['g'], 0, 0])
         x_ss = np.zeros(prediction_model.A.shape[0])
         self.position_controller_output_converter = MPC_output_converter(u_ss, prediction_model.parameters['Kt'],
-                                                                         ANGULAR_VELOCITY_RANGE)
+                                                                         ANGULAR_VELOCITY_RANGE, mode)
         self.position_controller_input_converter = MPC_input_converter(x_ss, u_ss)
         PWM0 = PWM_RANGE[0]
         self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ, PWM_RANGE, PWM0)

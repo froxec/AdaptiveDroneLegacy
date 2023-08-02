@@ -1,5 +1,5 @@
 from Factories.ConfigurationsFactory.configurations import QuadConfiguration, ControllerWithCompensatorConfiguration, CustomMPCConfig
-from Factories.SimulationsFactory.SITL import SoftwareInTheLoop
+from Factories.SimulationsFactory.SITL import SoftwareInTheLoopLegacy
 from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 import numpy as np
 from plots import plotTrajectory, plotTrajectory3d
@@ -50,9 +50,9 @@ if __name__ == '__main__':
     #                                        u_ss=np.array([perturber.perturbed_parameters['m']*perturber.perturbed_parameters['g'], 0.0, 0.0]), prediction_model=LinearizedQuadNoYaw,
     #                                        INNER_LOOP_FREQ=INNER_LOOP_FREQ, OUTER_LOOP_FREQ=OUTER_LOOP_FREQ,
     #                                        ANGULAR_VELOCITY_RANGE=ANGULAR_VELOCITY_RANGE, PWM_RANGE=PWM_RANGE, control_horizon=5)
-    simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller, controller_conf.attitude_controller,
-                                  [controller_conf.position_controller_input_converter, controller_conf.position_controller_output_converter]
-                                  , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
+    simulator = SoftwareInTheLoopLegacy(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller, controller_conf.attitude_controller,
+                                        [controller_conf.position_controller_input_converter, controller_conf.position_controller_output_converter]
+                                        , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
     # visualizer = ParallelVisualizer()
     # plot_pipe, remote_end = mp.Pipe()
     # plot_process = mp.Process(

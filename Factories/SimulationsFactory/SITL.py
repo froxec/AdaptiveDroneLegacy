@@ -9,9 +9,107 @@ from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
 from Factories.ToolsFactory.Converters import RampSaturation
 from Factories.ModelsFactory.uncertain_models import *
+from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from typing import Type
 from copy import deepcopy
+
 class SoftwareInTheLoop:
+    def __init__(self, quad: Type[quadcopterModel],
+                 trajectory,
+                 position_controller: Type[PositionController],
+                 attitude_controller, esc,
+                 inner_loop_freq: int,
+                 outer_loop_freq: int,
+                 estimator=None,
+                 adaptive_controller=None,
+                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf])):
+        self.INNER_LOOP_FREQ = inner_loop_freq
+        self.OUTER_LOOP_FREQ = outer_loop_freq
+        self.MODULO_FACTOR = self.INNER_LOOP_FREQ / self.OUTER_LOOP_FREQ
+        self.quad = quad
+        self.position_controller = position_controller
+        self.attitude_controller = attitude_controller
+        self.estimator = estimator
+        self.trajectory = trajectory
+        self.esc = esc
+        self.adaptive_controller = adaptive_controller
+        self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1 / self.OUTER_LOOP_FREQ)
+        self.system = System(self.quad)
+
+    def run(self, stop_time, deltaT, x0, u0, setpoint):
+        import time
+        t = np.arange(0, stop_time, deltaT)
+        x = np.zeros((t.size, 12))
+        x[0] = x0
+        z_prev = x0[3:6]
+        ref_prev = u0
+        u_prev = ref_prev
+        self.position_controller.change_trajectory(setpoint)
+        for i, t_i in enumerate(t[1:], 0):
+            if (i % self.MODULO_FACTOR) == 0:
+                ref = self.position_controller(x[i, :6], convert_throttle=False)
+                if self.adaptive_controller is None:
+                    mpc_u = self.position_controller.output_converter.convert_throttle(ref)
+            if (self.adaptive_controller is not None and
+                    isinstance(self.adaptive_controller.predictor.ref_model, QuadTranslationalDynamicsUncertain)):
+                z = x[i, 3:6]
+                z_prev = x[i - 1, 3:6]
+                u = ref
+                u_composite = self.adaptive_controller(z, z_prev,
+                                                       np.concatenate([u, np.array([0])]),
+                                                       np.concatenate([u_prev, np.array([0])]), t_i)
+                u_prev = u
+                mpc_u = self.position_controller.output_converter.convert_throttle(u_composite)
+            elif (self.adaptive_controller is not None and
+                  isinstance(self.adaptive_controller.predictor.ref_model, LinearQuadUncertain)):
+                delta_x, delta_u = self.position_controller.input_converter(x[i, :6], ref)
+                z = delta_x[3:6]
+                u = delta_u
+                delta_u_composite = self.adaptive_controller(z, z_prev,
+                                                             u, u_prev, t_i)
+                u_prev = u
+                mpc_u = self.position_controller.output_converter(delta_u_composite)
+                z_prev = z
+            attitude_setpoint = np.concatenate([mpc_u[1:], np.array([0.0])])
+            throttle = mpc_u[0]
+            ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12],
+                                                throttle)
+            motors = self.esc(ESC_PWMs)
+            x[i + 1] = self.system(np.array(motors), deltaT, self.quad)[:12]
+            if self.estimator is not None:
+                self.estimator(x[i + 1, :6], ref_prev)
+            if isinstance(self.trajectory, type(TrajectoryWithTerminals())):
+                terminal_ind = self.check_if_reached_terminal(x[i + 1, :6])
+                if terminal_ind is not None:
+                    self.quad.mass = self.quad.nominal_mass + self.trajectory.terminals_payload[terminal_ind]
+            ##TODO move animation into different module
+            # if (i % int(1/(deltaT*FPS))) == 0:
+            #     #print(i)
+            #     #visualizer(quad.state[0:3], quad.state[6:9], t_i)
+            #     # send = plot_pipe.send
+            #     data_to_send = np.concatenate((quad.state[0:3], quad.state[6:9], np.array([t_i])))
+            # send(data_to_send)
+            # time.sleep(deltaT)
+            # while(time.time() - start < t_i + deltaT):
+            #     time.sleep(PAUSE_INCREMENT)
+
+            # print(prev_stop_time)
+            # print(time.time() - t1)
+        return t, x
+
+    def check_if_reached_terminal(self, x):
+        x = x[None, :]
+        terminals = self.trajectory.terminals
+        terminals = np.concatenate([terminals, np.zeros((3, 3))], axis=1)
+        distances = euclidean_distance(x, terminals, axis=1)
+        terminal_ind = None
+        if True in [dist < 1 for dist in distances]:
+            terminal_ind = np.argmin(distances)
+            print(terminal_ind)
+        return terminal_ind
+
+
+class SoftwareInTheLoopLegacy:
     # TODO pass controllers as configuration
     def __init__(self, quad: Type[quadcopterModel],
                  load: Type[loadPendulum],
@@ -117,6 +215,7 @@ class SoftwareInTheLoop:
             terminal_ind = np.argmin(distances)
             print(terminal_ind)
         return terminal_ind
+
 
 class InnerLoopSITL(SoftwareInTheLoop):
     def __init__(self, quad, load, attitude_controler, esc, inner_loop_freq):

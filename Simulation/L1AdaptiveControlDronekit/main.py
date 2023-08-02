@@ -50,7 +50,7 @@ if __name__ == "__main__":
     ## model predictive controller
     prediction_model = LinearizedQuadNoYaw(parameters, Ts = 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=50)
+                                      PWM_RANGE, horizon=20)
     controller_conf.position_controller.switch_modes(MPCModes.CONSTRAINED)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                            controller_conf.position_controller_input_converter,

@@ -92,7 +92,7 @@ class TelemetryManager:
                 return
             setpoint = self.position_controller.trajectory.setpoint
             setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
-            self.position_controller.change_setpoint(SinglePoint(setpoint))
+            self.position_controller.change_trajectory(SinglePoint(setpoint))
 
     def auxiliary_command_callback(self, topic, data, opts):
         command = AUXILIARY_COMMANDS_MAPPING[data]

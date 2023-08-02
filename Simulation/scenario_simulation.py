@@ -2,7 +2,7 @@ from Factories.ConfigurationsFactory.configurations import QuadConfiguration, \
     ControllerConfiguration, ControllerWithCompensatorConfiguration, \
     GekkoConfiguration, positionControllerWrapper, CustomMPCConfig
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAgent
-from Factories.SimulationsFactory.SITL import SoftwareInTheLoop
+from Factories.SimulationsFactory.SITL import SoftwareInTheLoopLegacy
 from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw, AugmentedLinearizedQuadNoYaw
 from Factories.ConfigurationsFactory.modes import MPCModes
@@ -53,9 +53,9 @@ if __name__ == '__main__':
     gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
     mass_estimator = BanditEstimatorAgent(position_controller_conf, prediction_model, gp, ATOMIC_TRAJ_SAMPLES_NUM, deltaT=1/SAMPLING_FREQ)
 
-    simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller, controller_conf.attitude_controller,
-                                  [controller_conf.position_controller_input_converter, controller_conf.position_controller_output_converter]
-                                  , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, thrust_compensator=None, estimator=mass_estimator)
+    simulator = SoftwareInTheLoopLegacy(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller, controller_conf.attitude_controller,
+                                        [controller_conf.position_controller_input_converter, controller_conf.position_controller_output_converter]
+                                        , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, thrust_compensator=None, estimator=mass_estimator)
     state0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
     u0 = np.array([0, 0, 0])
 
