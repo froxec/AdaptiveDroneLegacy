@@ -35,8 +35,7 @@ class ControlSupervisor:
             u_composite = self.position_controller.output_converter.convert_throttle(self.mpc_ref)
         if self.adaptive_controller is not None and self.mpc_ref is not None and self.adaptive_controller.ready_event.is_set():
             z = x[3:6]
-            self.adaptive_controller.data = [z, self.z_prev, self.mpc_ref, self.u_prev, None]
-            self.adaptive_controller.data_set.set()
+            self.adaptive_controller.set_data([z, self.z_prev, self.mpc_ref, self.u_prev, None])
             self.adaptive_controller.ready_event.clear()
             self.z_prev = z
             self.u_prev = self.mpc_ref

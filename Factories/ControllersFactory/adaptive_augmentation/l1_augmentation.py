@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.signal import butter, filtfilt
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
-from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain
+from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain, LinearizedQuadNoYaw
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import threading
@@ -69,10 +69,13 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         while True:
             self._restart_watchdog()
             z, z_prev, u, u_prev, time = self._get_data()
-            #print("(z, z_prev, u, u_prev) ", (z, z_prev, u, u_prev))
-            self.u_composite = self.adapt(z, z_prev,
-                                          np.concatenate([u, np.array([0])]),
-                                          np.concatenate([u_prev, np.array([0])]), time)
+            if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
+                self.u_composite = self.adapt(z, z_prev,
+                                              np.concatenate([u, np.array([0])]),
+                                              np.concatenate([u_prev, np.array([0])]), time)
+            elif isinstance(self.predictor.ref_model, LinearizedQuadNoYaw):
+                self.u_composite = self.adapt(z, z_prev,
+                                              u, u_prev, time)
             self.control_set.set()
             self._control_execution()
 
@@ -144,7 +147,10 @@ class L1_AdaptiveLaw:
     def __call__(self, z_hat, z):
         error = z_hat - z
         miu = self.exp_As_Ts @ error
-        self.sigma_hat = - self.g_inv * self.PHI_Inv @ miu
+        if isinstance(self.g_inv, np.ndarray):
+            self.sigma_hat = - self.g_inv @ self.PHI_Inv @ miu
+        else:
+            self.sigma_hat = - self.g_inv * self.PHI_Inv @ miu
         return self.sigma_hat
 
 
@@ -182,7 +188,7 @@ class L1_ControlConverter:
         f_yz = force[[1, 2]]
         fx = force[0]
         fy = force[1]
-        force_norm = np.linalg.norm(force)
+        force_norm = np.sign(force[2])*np.linalg.norm(force)
         phi = -np.arcsin(fy / (np.linalg.norm(f_yz) + self.epsilon))
         theta = np.arcsin(fx / (np.linalg.norm(f_xz) + self.epsilon))
         return np.array([force_norm, phi, theta])

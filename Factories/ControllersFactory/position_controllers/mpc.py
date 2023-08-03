@@ -1,10 +1,12 @@
 import numpy as np
 from qpsolvers import solve_qp
 from Factories.ToolsFactory.GeneralTools import construct_ext_obs_mat, construct_low_tril_Toeplitz, euclidean_distance
-from Factories.ModelsFactory.linear_models import LinearizedQuad, LinearizedQuadNoYaw, AugmentedLinearizedQuadNoYaw
+from Factories.ModelsFactory.linear_models import LinearizedQuad, LinearizedQuadNoYaw, AugmentedLinearizedQuadNoYaw, \
+    LinearTranslationalMotionDynamics
 from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Trajectory
 from Factories.ConfigurationsFactory.modes import MPCModes
+from Factories.ControllersFactory.position_controllers.mpc_parameters import MPC_PARAMETERS_MAPPING
 from plotly.subplots import make_subplots
 from typing import Any, Type
 import plotly.graph_objects as go
@@ -20,12 +22,25 @@ class ModelPredictiveControl():
         self.model = model
         self.freq = freq
         self.pred_horizon = pred_horizon
+        if isinstance(model, LinearizedQuadNoYaw):
+            if normalize_system:
+                parameters_type = 'LINEARIZED_NORMALIZED'
+            else:
+                parameters_type = 'LINEARIZED'
+        elif isinstance(model, LinearTranslationalMotionDynamics):
+            if normalize_system:
+                parameters_type = 'TRANSLATIONAL_DYNAMICS_NORMALIZED'
+            else:
+                parameters_type = 'TRANSLATIONAL_DYNAMICS'
+
+        self.Q_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base']) + np.ones(6)*1e-6
+        self.P_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['P_base'])
         # self.Q_base = np.array([10, 10, 10, 0.1, 0.1, 0.1]) + np.ones(6)*1e-6
         # self.P_base = np.array([0.01, 0.1, 0.1]) #  self.P_base = np.array([1, 200, 200]) #linearized normalized
         # self.Q_base = np.array([10, 10, 10, 10, 10, 10]) + np.ones(6) * 1e-6
         # self.P_base = np.array([10, 10, 0.01]) #TranslationalDynamics non normalized
-        self.Q_base = np.array([10, 10, 10, 1, 1, 1]) + np.ones(6) * 1e-6
-        self.P_base = np.array([10, 10, 0.01]) #TranslationalDynamics normalized
+        # self.Q_base = np.array([10, 10, 10, 1, 1, 1]) + np.ones(6) * 1e-6
+        # self.P_base = np.array([10, 10, 0.01]) #TranslationalDynamics normalized
         self.Q = np.diag(np.tile(self.Q_base, pred_horizon))
         self.P = np.diag(np.tile(self.P_base, pred_horizon))
         self.Ol = construct_ext_obs_mat(self.model.Ad, self.model.Cd, horizon=self.pred_horizon)
@@ -107,7 +122,7 @@ class ModelPredictiveControl():
             u_k = u
         if self.normalize_state:
             u_k = self._denormalize_control(u_k)
-        self.control_history.append(list(u_k))
+        #self.control_history.append(list(u_k))
         self.prev_delta_x = delta_x0
         self.prev_y = self.model.Cd @ x
         self.prev_delta_u = u_k

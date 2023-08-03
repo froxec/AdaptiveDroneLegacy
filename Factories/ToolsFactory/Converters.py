@@ -17,7 +17,9 @@ class MPC_output_converter():
         u = delta_u + self.u_ss
         self.nominal_u = deepcopy(u)
         if self.mode == 'transDynamicsModel':
-           u = self.convert_force_vector_to_u(u)
+            print("Before conversion:", u)
+            u = self.convert_force_vector_to_u(u)
+            print("After  conversion:", u)
         if throttle:
             omega = self.thrust_converter(u[0])
             throttle = self.angular_vel_normalizer(omega)
@@ -38,7 +40,7 @@ class MPC_output_converter():
         f_yz = force[[1, 2]]
         fx = force[0]
         fy = force[1]
-        force_norm = np.linalg.norm(force)
+        force_norm = np.sign(force[2])*np.linalg.norm(force)
         phi = -np.arcsin(fy / (np.linalg.norm(f_yz) + self.epsilon))
         theta = np.arcsin(fx / (np.linalg.norm(f_xz) + self.epsilon))
         return np.array([force_norm, phi, theta])
@@ -50,6 +52,7 @@ class MPC_output_converter():
     def update(self, u_ss, Kt):
         self.u_ss = u_ss
         self.thrust_converter = ThrustToAngularVelocity(Kt)
+
 class MPC_input_converter():
     def __init__(self, x_ss, u_ss):
         self.x_ss = x_ss
@@ -177,3 +180,8 @@ class RampSaturation:
             else:
                 output[i] = curr[i]
         return output
+
+if __name__ == "__main__":
+    u = np.array([0, 0, -10])
+    converter = MPC_output_converter(None, None, [None, None])
+    u = converter.convert_force_vector_to_u(u)

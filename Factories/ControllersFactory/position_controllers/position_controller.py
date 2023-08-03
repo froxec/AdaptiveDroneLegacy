@@ -128,8 +128,9 @@ class PositionControllerThread(PositionController, Thread):
                 self.change_trajectory(trajectory)
         else:
             self.x = x
+        self.set_reference(self.trajectory, x)
         delta_x, _ = self.input_converter(self.x, None)
-        delta_u_next = self.controller.predict(delta_x, self.trajectory)
+        delta_u_next = self.controller.predict(delta_x)
         u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)

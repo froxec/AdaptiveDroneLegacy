@@ -36,6 +36,13 @@ def run_controller(controller, x=None):
         u = controller(x)
         return u
 
+
+#TESTING OPTIONS
+NORMALIZE = True
+MODEL = 2 # 0 - linearized, 1 - translational dynamics, #2 hybrid
+USE_ADAPTIVE = True
+MPC_MODE = MPCModes.UNCONSTRAINED
+
 trajectory = SinglePoint([0, 0, 5])
 parameters = Z550_parameters
 
@@ -48,11 +55,13 @@ if __name__ == "__main__":
 
 
     ## model predictive controller
-    #prediction_model = LinearizedQuadNoYaw(parameters, Ts = 1 / OUTER_LOOP_FREQ)
-    prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ)
+    if MODEL == 0 or MODEL == 2:
+        prediction_model = LinearizedQuadNoYaw(parameters, Ts = 1 / OUTER_LOOP_FREQ)
+    if MODEL == 1:
+        prediction_model = LinearTranslationalMotionDynamics(parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=10)
-    controller_conf.position_controller.switch_modes(MPCModes.CONSTRAINED)
+                                      PWM_RANGE, horizon=10, normalize_system=NORMALIZE)
+    controller_conf.position_controller.switch_modes(MPC_MODE)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                            controller_conf.position_controller_input_converter,
                            controller_conf.position_controller_output_converter,
@@ -61,15 +70,26 @@ if __name__ == "__main__":
     x0 = np.array(dronekit_commands.get_state(vehicle))
     ## adaptive controller
     z0 = x0[3:6]
-    As = np.diag([-0.01, -0.01, -0.01])
-    # uncertain_model = LinearQuadUncertain(Z550_parameters)
-    uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
+    if MODEL == 0:
+        As = np.diag([-0.1, -0.1, -0.1])
+        bandwidths = [1, 0.2, 0.2]
+    elif MODEL == 1 or MODEL==2:
+        As = np.diag([-0.1, -0.1, -0.1])
+        bandwidths = [0.1, 0.1, 0.1]
+    if isinstance(prediction_model, LinearizedQuadNoYaw):
+        uncertain_model = LinearQuadUncertain(parameters)
+    else:
+        uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
+    if MODEL == 2:
+        uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=[0., 0., 0.15], fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_filter = L1_LowPass(bandwidths=bandwidths, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
-    adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
-
+    if USE_ADAPTIVE:
+        adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter)
+    else:
+        adaptive_controller = None
     ## control supervisor
     control_supervisor = ControlSupervisor(vehicle, position_controller, adaptive_controller)
 
