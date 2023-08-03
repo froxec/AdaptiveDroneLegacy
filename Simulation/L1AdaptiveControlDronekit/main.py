@@ -39,8 +39,8 @@ def run_controller(controller, x=None):
 
 #TESTING OPTIONS
 NORMALIZE = True
-MODEL = 2 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = False
+MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
+USE_ADAPTIVE = True
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 20
 
@@ -75,8 +75,8 @@ if __name__ == "__main__":
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [15, 0.7, 0.7]
     elif MODEL == 1 or MODEL == 2:
-        As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [.1, .1, .1]
+        As = np.diag([-5, -5, -5])
+        bandwidths = [.5, .5, .5]
     if isinstance(prediction_model, LinearizedQuadNoYaw):
         uncertain_model = LinearQuadUncertain(parameters)
     else:

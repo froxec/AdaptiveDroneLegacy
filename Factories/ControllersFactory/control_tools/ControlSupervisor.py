@@ -31,7 +31,7 @@ class ControlSupervisor:
         if self.position_controller.control_set.is_set():
             self.mpc_ref = self.position_controller.u_ref
             self.position_controller.control_set.clear()
-            #print("Got MPC reference {}".format(self.mpc_ref))
+            print("Got MPC reference {}".format(self.mpc_ref))
             u_composite = self.position_controller.output_converter.convert_throttle(self.mpc_ref)
         if self.adaptive_controller is not None and self.mpc_ref is not None and self.adaptive_controller.ready_event.is_set():
             z = x[3:6]
@@ -47,7 +47,7 @@ class ControlSupervisor:
         if u_composite is not None:
             u_composite_converted = self.command_convert(u_composite, 0,
                                                          2*self.position_controller.controller.model.parameters['m']*self.position_controller.controller.model.parameters['g'])
-            #print("Control", u_composite_converted)
+            print("Control", u_composite_converted)
             self.set_attitude(u_composite_converted)
 
     def get_state(self):

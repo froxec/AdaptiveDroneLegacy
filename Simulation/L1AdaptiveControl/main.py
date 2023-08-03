@@ -16,7 +16,7 @@ from Simulation.plots import plotTrajectory, plotTrajectory3d
 
 #TESTING OPTIONS
 NORMALIZE = True
-MODEL = 2 # 0 - linearized, 1 - translational dynamics, #2 hybrid
+MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 20
@@ -27,7 +27,7 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 50, 20])
+trajectory = SinglePoint([-5, -50, -50])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.5})

@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import threading
 from threading import Thread
+from Factories.ToolsFactory.Converters import RampSaturation
 import pdb
 class L1_Augmentation:
     def __init__(self, predictor, adaptive_law, lp_filter, converter):
@@ -17,7 +18,6 @@ class L1_Augmentation:
                                    'sigma_hat': [],
                                    'u_l1': []}
         self._time = 0.0
-
     def __call__(self, z, z_prev, u, u_prev, time=None):
         return self.adapt(z, z_prev, u, u_prev, time)
     def adapt(self, z, z_prev, u, u_prev, time=None):

@@ -68,6 +68,11 @@ def get_state(vehicle):
     state.extend(velocity)
     return state
 
+def get_attitude(vehicle):
+    attitude = vehicle.attitude
+    attitude = [attitude.roll, attitude.pitch, attitude.yaw]
+    return attitude
+
 def update_telemetry(telemetry, vehicle):
    state = get_state(vehicle)
    telemetry['position_local'] = state[:3]
