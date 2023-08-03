@@ -18,7 +18,8 @@ from Simulation.plots import plotTrajectory, plotTrajectory3d
 NORMALIZE = True
 MODEL = 2 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
-MPC_MODE = MPCModes.UNCONSTRAINED
+MPC_MODE = MPCModes.CONSTRAINED
+HORIZON = 20
 
 INNER_LOOP_FREQ = 100
 deltaT = 1 / INNER_LOOP_FREQ
@@ -26,10 +27,10 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 20, 20])
+trajectory = SinglePoint([5, 50, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': 0.5})
 
     ##External Disturbances
     wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     elif MODEL == 1:
         prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=10, normalize_system=NORMALIZE)
+                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
     controller_conf.position_controller.switch_modes(MPC_MODE)
     position_controller = PositionController(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
@@ -63,8 +64,8 @@ if __name__ == "__main__":
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [15, 0.7, 0.7]
     elif MODEL == 1 or MODEL == 2:
-        As = np.diag([-1, -1, -1])
-        bandwidths = [0.1, 0.1, 0.1]
+        As = np.diag([-0.1, -0.1, -0.1])
+        bandwidths = [.1, .1, .1]
     if isinstance(prediction_model, LinearizedQuadNoYaw):
         uncertain_model = LinearQuadUncertain(Z550_parameters)
     else:

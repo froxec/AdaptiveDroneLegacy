@@ -40,8 +40,9 @@ def run_controller(controller, x=None):
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 2 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = True
-MPC_MODE = MPCModes.UNCONSTRAINED
+USE_ADAPTIVE = False
+MPC_MODE = MPCModes.CONSTRAINED
+HORIZON = 20
 
 trajectory = SinglePoint([0, 0, 5])
 parameters = Z550_parameters
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     if MODEL == 1:
         prediction_model = LinearTranslationalMotionDynamics(parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=10, normalize_system=NORMALIZE)
+                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
     controller_conf.position_controller.switch_modes(MPC_MODE)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                            controller_conf.position_controller_input_converter,
@@ -72,10 +73,10 @@ if __name__ == "__main__":
     z0 = x0[3:6]
     if MODEL == 0:
         As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [1, 0.2, 0.2]
-    elif MODEL == 1 or MODEL==2:
+        bandwidths = [15, 0.7, 0.7]
+    elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [0.1, 0.1, 0.1]
+        bandwidths = [.1, .1, .1]
     if isinstance(prediction_model, LinearizedQuadNoYaw):
         uncertain_model = LinearQuadUncertain(parameters)
     else:
