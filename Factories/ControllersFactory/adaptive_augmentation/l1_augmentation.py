@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.signal import butter, filtfilt
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
-from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain, LinearizedQuadNoYaw
+from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain, LinearizedQuadNoYaw, LinearQuadUncertain
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import threading
@@ -9,11 +9,12 @@ from threading import Thread
 from Factories.ToolsFactory.Converters import RampSaturation
 import time
 class L1_Augmentation:
-    def __init__(self, predictor, adaptive_law, lp_filter, converter):
+    def __init__(self, predictor, adaptive_law, lp_filter, converter, saturator):
         self.predictor = predictor
         self.adaptive_law = adaptive_law
         self.lp_filter = lp_filter
         self.converter = converter
+        self.saturator = saturator
         self.adaptation_history = {'time': [],
                                    'sigma_hat': [],
                                    'u_l1': []}
@@ -28,7 +29,8 @@ class L1_Augmentation:
         sigma_hat = self.adaptive_law(z_hat, z)
         #print(sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
-        u_composite = u + u_l1
+        u_composite, u_l1 = self.saturator(u, u_l1)
+        self.lp_filter.u_l1 = u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
@@ -53,8 +55,8 @@ class L1_Augmentation:
         fig.show()
 
 class L1_AugmentationThread(L1_Augmentation, Thread):
-    def __init__(self, predictor, adaptive_law, lp_filter, converter):
-        L1_Augmentation.__init__(self, predictor, adaptive_law, lp_filter, converter)
+    def __init__(self, predictor, adaptive_law, lp_filter, converter, saturator):
+        L1_Augmentation.__init__(self, predictor, adaptive_law, lp_filter, converter, saturator)
         Thread.__init__(self)
         self.data = None
         self.u_composite = None
@@ -113,13 +115,16 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
             u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
-        print("Sigma hat", sigma_hat)
+        #print("Sigma hat", sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
-        u_composite = u + u_l1
+        u_composite, u_l1 = self.saturator(u, u_l1)
+        self.lp_filter.u_l1 = u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
         return u_composite
+
+
 class L1_Predictor:
     def __init__(self, ref_model, z0, Ts, As):
         self.ref_model = ref_model
@@ -198,6 +203,23 @@ class L1_ControlConverter:
         phi = -np.arcsin(fy / (np.linalg.norm(f_yz) + self.epsilon))
         theta = np.arcsin(fx / (np.linalg.norm(f_xz) + self.epsilon))
         return np.array([force_norm, phi, theta])
+
+class L1_ControlSaturator:
+    def __init__(self,
+                 control_bounds: list):
+        self.control_bounds = control_bounds
+
+    def __call__(self, u, u_l1):
+        composite = [None] * u.shape[0]
+        for i in range(u.shape[0]):
+            composite[i] = u[i] + u_l1[i]
+            if composite[i] > self.control_bounds[i]:
+                composite[i] = self.control_bounds[i]
+                u_l1[i] = self.control_bounds[i] - u[i]
+            elif composite[i] < -self.control_bounds[i]:
+                composite[i] = -self.control_bounds[i]
+                u_l1[i] = -self.control_bounds[i] - u[i]
+        return np.array(composite), u_l1
 
 if __name__ == "__main__":
     vector = np.array([100, 0, 10])

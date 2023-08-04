@@ -13,6 +13,12 @@ class QuadTranslationalDynamicsUncertain:
         dyn = f + g
         return dyn
 
+class NonlinearQuadUncertain:
+    def __init__(self):
+        pass
+    def __call__(self):
+        pass
+
 class LinearQuadUncertain(LinearizedQuadNoYaw):
     def __init__(self, parameters ,yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
         super().__init__(parameters, Ts=None, yaw_ss=yaw_ss, x_ref=x_ref, y_ref=y_ref, z_ref=z_ref)

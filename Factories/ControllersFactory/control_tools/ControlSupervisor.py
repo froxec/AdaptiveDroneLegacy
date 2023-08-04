@@ -47,7 +47,6 @@ class ControlSupervisor:
             self.u_prev = u
         if self.adaptive_controller is not None and self.adaptive_controller.control_set.is_set():
             u_composite = self.adaptive_controller.u_composite
-            #print("Got adaptive output {}".format(u_composite))
             u_composite = self.position_controller.output_converter.convert_throttle(u_composite)
             self.adaptive_controller.control_set.clear()
         if u_composite is not None:
@@ -65,10 +64,10 @@ class ControlSupervisor:
     def command_convert(self, u, thrust_min, thrust_max):
         thrust = u[0]
         # for i, angle in enumerate(u[1:], 1):
-        #     if angle > np.pi/6:
-        #         u[i] = np.pi/6
-        #     elif angle < -np.pi/6:
-        #         u[i] = -np.pi/6
+        #     if angle > np.pi/4:
+        #         u[i] = np.pi/4
+        #     elif angle < -np.pi/4:
+        #         u[i] = -np.pi/4
         u = -u
         if thrust > 1:
             thrust_converted = 1
