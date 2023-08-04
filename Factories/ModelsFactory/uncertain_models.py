@@ -6,7 +6,7 @@ class QuadTranslationalDynamicsUncertain:
         self.parameters = deepcopy(parameters)
         self.m = parameters['m']
         self.g = parameters['g']
-        self.G = self.m
+        self.G = 1/self.m
     def __call__(self, z, u, u_l1, sigma_hat):
         f = (1 / self.m) * u - np.array([0, 0, 1]) * self.g
         g = (1 / self.m) * (u_l1 + sigma_hat)

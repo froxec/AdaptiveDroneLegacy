@@ -135,11 +135,13 @@ class ModelPredictiveControl():
 
     def bounds(self):
         if self.normalize_state:
-            u_constraints = np.array([1, 1, 1])
+            lb_constraints = -np.array([0.8, 1, 1])
+            ub_constraints = np.array([1, 1, 1])
         else:
-            u_constraints = np.array([self.model.parameters['m']*self.model.parameters['g'], np.pi/6, np.pi/6])
-        lb = -np.tile(u_constraints, self.pred_horizon)
-        ub = np.tile(u_constraints, self.pred_horizon)
+            lb_constraints = np.array([-0.8*self.model.parameters['m'] * self.model.parameters['g'], np.pi / 6, np.pi / 6])
+            ub_constraints = np.array([self.model.parameters['m']*self.model.parameters['g'], np.pi/6, np.pi/6])
+        lb = np.tile(lb_constraints, self.pred_horizon)
+        ub = np.tile(ub_constraints, self.pred_horizon)
         return lb, ub
 
     def prediction(self, pl, Fl, u):

@@ -44,7 +44,7 @@ USE_ADAPTIVE = True
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 20
 
-trajectory = SinglePoint([0, 0, 5])
+trajectory = SinglePoint([0, 0, 10])
 parameters = Z550_parameters
 
 if __name__ == "__main__":
@@ -73,10 +73,10 @@ if __name__ == "__main__":
     z0 = x0[3:6]
     if MODEL == 0:
         As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [15, 0.7, 0.7]
+        bandwidths = [1, 0.2, 0.2]
     elif MODEL == 1 or MODEL == 2:
-        As = np.diag([-5, -5, -5])
-        bandwidths = [.5, .5, .5]
+        As = np.diag([-0.1, -0.1, -0.1])
+        bandwidths = [.1, .1, .1]
     if isinstance(prediction_model, LinearizedQuadNoYaw):
         uncertain_model = LinearQuadUncertain(parameters)
     else:

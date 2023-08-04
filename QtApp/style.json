@@ -86,6 +86,21 @@
 				}
 			]
 
+		},
+		{
+			"name":"infoPages",
+			"navigation":[
+				{
+					"navigationButtons":[
+						{
+							"mainInfoPageBtn": "statePage",
+							"estimationPageBtn": "estimationPage",
+							"controlPageBtn": "controlPage"
+						}
+					]
+				}
+			]
+
 		}
 	],
 	"QPushButtonGroup": [{
@@ -94,13 +109,13 @@
 			"ControlsButton",
 			"HomeButton",
 			"moveButton",
-			"menuButton",
 			"AlarmsButton",
-			"SettingsButton"
+			"SettingsButton",
+			"closeMenuBtn"
 		],
 		"Style":[{
-			"Active": "background-color: #2E3642; border: none; border-radius: 2px;",
-			"NotActive": ""
+			"Active": "background-color: #596170; border: none; border-radius: 2px;",
+			"NotActive": "background-color: #2E3642"
 		}]
 	},
 	{
@@ -112,6 +127,18 @@
 		"Style":[{
 			"Active": "background-color: #2E3642; border-style: solid; border-radius: 2 px;",
 			"NotActive": "border-style: solid; border-radius: 2 px;"
+		}]
+	},
+	{
+		"Buttons": [
+			"controlPageBtn",
+			"estimationPageBtn",
+			"mainInfoPageBtn"
+		],
+		"theme": 2,
+		"Style":[{
+			"Active": "background-color: #465366; border: none; border-radius: 2px;",
+			"NotActive": "background-color: #2E3642;"
 		}]
 	}]
 }

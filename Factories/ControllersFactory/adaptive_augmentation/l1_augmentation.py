@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 import threading
 from threading import Thread
 from Factories.ToolsFactory.Converters import RampSaturation
-import pdb
+import time
 class L1_Augmentation:
     def __init__(self, predictor, adaptive_law, lp_filter, converter):
         self.predictor = predictor
@@ -26,6 +26,7 @@ class L1_Augmentation:
             u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
+        #print(sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
         u_composite = u + u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
@@ -66,16 +67,19 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         self.start()
 
     def run(self):
+        start = time.time()
         while True:
+            dt = time.time() - start
+            start = time.time()
             self._restart_watchdog()
-            z, z_prev, u, u_prev, time = self._get_data()
+            z, z_prev, u, u_prev, t = self._get_data()
             if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
                 self.u_composite = self.adapt(z, z_prev,
                                               np.concatenate([u, np.array([0])]),
-                                              np.concatenate([u_prev, np.array([0])]), time)
+                                              np.concatenate([u_prev, np.array([0])]), dt)
             elif isinstance(self.predictor.ref_model, LinearizedQuadNoYaw):
                 self.u_composite = self.adapt(z, z_prev,
-                                              u, u_prev, time)
+                                              u, u_prev, dt)
             self.control_set.set()
             self._control_execution()
 
@@ -101,13 +105,15 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         self.data_set.clear()
         return z, z_prev, u, u_prev, time
 
-    def adapt(self, z, z_prev, u, u_prev, time=None):
+    def adapt(self, z, z_prev, u, u_prev, deltaT=None):
+        if deltaT is not None:
+            self.Ts = deltaT
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u = self.converter.convert_to_vector(u[0], u[1:])
             u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
-        #print("Sigma hat", sigma_hat)
+        print("Sigma hat", sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
         u_composite = u + u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
