@@ -41,19 +41,21 @@ def run_controller(controller, x=None):
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
-MPC_MODE = MPCModes.CONSTRAINED
+MPC_MODE = MPCModes.UNCONSTRAINED
 HORIZON = 20
+SIM_IP = '192.168.0.27:8500'
+ADAPTIVE_FREQ = 200
 
 trajectory = SinglePoint([0, 0, 10])
 parameters = Z550_parameters
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--connect', default='localhost:8000')
+    parser.add_argument('--connect', default=SIM_IP)
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=921600, wait_ready=True, rate=100)
-
+    print('Connected to vehicle!')
 
     ## model predictive controller
     if MODEL == 0 or MODEL == 2:
@@ -73,7 +75,7 @@ if __name__ == "__main__":
     z0 = x0[3:6]
     if MODEL == 0:
         As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [1, 0.2, 0.2]
+        bandwidths = [0.1, 0.1, 0.1]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -83,9 +85,9 @@ if __name__ == "__main__":
         uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
     if MODEL == 2:
         uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
-    l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
-    l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=bandwidths, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+    l1_predictor = L1_Predictor(uncertain_model, z0, 1 / ADAPTIVE_FREQ, As)
+    l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / ADAPTIVE_FREQ, As)
+    l1_filter = L1_LowPass(bandwidths=bandwidths, fs=ADAPTIVE_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     l1_saturator = L1_ControlSaturator([np.Inf, np.pi / 5, np.pi / 5])
     if USE_ADAPTIVE:
@@ -96,7 +98,7 @@ if __name__ == "__main__":
     control_supervisor = ControlSupervisor(vehicle, position_controller, adaptive_controller)
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/6',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/ttyS0',
                           baudrate=115200,
                           update_freq=10,
                           vehicle=vehicle,
@@ -111,11 +113,10 @@ if __name__ == "__main__":
 
     # arm_and_takeoff(vehicle, 20)
     # print("Take off complete")
-
     while True:
         if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 5.0:
             control_supervisor.supervise()
         else:
             ("Waiting for drone to reach required attitude.")
         tm.update()
-        time.sleep(0.01) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
+        time.sleep(1/ADAPTIVE_FREQ) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT

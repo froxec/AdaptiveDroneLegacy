@@ -72,6 +72,7 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         start = time.time()
         while True:
             dt = time.time() - start
+            print(dt)
             start = time.time()
             self._restart_watchdog()
             z, z_prev, u, u_prev, t = self._get_data()

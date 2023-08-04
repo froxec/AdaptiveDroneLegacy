@@ -109,7 +109,11 @@ class PositionControllerThread(PositionController, Thread):
         self._watchdog = threading.Timer(1 / self.controller.freq, self._watchdog_activation)
         self.start()
     def run(self):
+        import time
+        t1 = time.time()
         while True:
+            #print(time.time() - t1)
+            t1 = time.time()
             self._restart_watchdog()
             x = self._get_data()
             self.u_ref = self.get_control(x)
