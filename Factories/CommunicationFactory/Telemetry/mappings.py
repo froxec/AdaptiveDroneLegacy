@@ -1,0 +1,93 @@
+from Factories.ToolsFactory.GeneralTools import BidirectionalDict
+
+COMMAND_NAMES = [
+    'ARM_DISARM',
+    'SET_SPIRAL_SETPOINT:X', 'SET_SPIRAL_SETPOINT:Y', 'SET_SPIRAL_SETPOINT:Z',
+    'AUXILIARY_COMMAND',
+    'HEARTBEAT',
+    'TELEMETRY_HEADING',
+    'TELEMETRY_FLIGHT_MODE',
+    'TELEMETRY_POSITION_LOC:X', 'TELEMETRY_POSITION_LOC:Y', 'TELEMETRY_POSITION_LOC:Z',
+    'TELEMETRY_POSITION_GLOB:X', 'TELEMETRY_POSITION_GLOB:Y', 'TELEMETRY_POSITION_GLOB:Z',
+    'TELEMETRY_VELOCITY:X', 'TELEMETRY_VELOCITY:Y', 'TELEMETRY_VELOCITY:Z',
+    'TELEMETRY_ATTITUDE:X', 'TELEMETRY_ATTITUDE:Y' , 'TELEMETRY_ATTITUDE:Z'
+]
+
+
+# COMMANDS TO ASCII BIDIRECTIONAL MAPPING
+COMMANDS_ASCII_MAPPING = BidirectionalDict()
+id = 10
+for comm_name in COMMAND_NAMES:
+    COMMANDS_ASCII_MAPPING[comm_name] = chr(id)
+    id += 1
+del id
+
+# COMMANDS to TelemetryManager methods mapping (subscriptions mapping)
+SUBSCRIPTIONS_MAPPING = {
+    'ARM_DISARM': ['arm_disarm_callback'],
+    'AUXILIARY_COMMAND': ['auxiliary_command_callback'],
+    'SET_SPIRAL_SETPOINT': ['change_setpoint_callback'],
+    'HEARTBEAT': ['printer_callback'],
+    'TELEMETRY_POSITION_LOC': ['update_telemetry_callback'],
+    'TELEMETRY_POSITION_GLOB': ['update_telemetry_callback'],
+    'TELEMETRY_VELOCITY': ['update_telemetry_callback'],
+    'TELEMETRY_ATTITUDE': ['update_telemetry_callback'],
+    'TELEMETRY_HEADING': ['update_telemetry_callback'],
+    'TELEMETRY_FLIGHT_MODE': ['update_telemetry_callback'],
+}
+
+# COMMANDS DATATYPES MAPPING
+COMMANDS_DATATYPES_MAPPING = {
+    'ARM_DISARM': 'int8',
+    'AUXILIARY_COMMAND': 'int8',
+    'SET_SPIRAL_SETPOINT': 'float32',
+    'HEARTBEAT': 'int8',
+    'TELEMETRY_POSITION_LOC': 'float32',
+    'TELEMETRY_POSITION_GLOB': 'float32',
+    'TELEMETRY_VELOCITY': 'float32',
+    'TELEMETRY_ATTITUDE': 'float32',
+    'TELEMETRY_HEADING': 'float32',
+    'TELEMETRY_FLIGHT_MODE': 'int8',
+}
+
+# COMMANDS TO TELEMETRY NAMES MAPPING
+COMMANDS_TO_TELEMETRY_INDICES = {
+    'TELEMETRY_POSITION_LOC:X': ('position_local', 0),
+    'TELEMETRY_POSITION_LOC:Y': ('position_local', 1),
+    'TELEMETRY_POSITION_LOC:Z': ('position_local', 2),
+    'TELEMETRY_POSITION_GLOB:X': ('position_global', 0),
+    'TELEMETRY_POSITION_GLOB:Y': ('position_global', 1),
+    'TELEMETRY_POSITION_GLOB:Z': ('position_global', 2),
+    'TELEMETRY_VELOCITY:X': ('velocity', 0),
+    'TELEMETRY_VELOCITY:Y': ('velocity', 1),
+    'TELEMETRY_VELOCITY:Z': ('velocity', 2),
+    'TELEMETRY_ATTITUDE:X': ('attitude', 0),
+    'TELEMETRY_ATTITUDE:Y': ('attitude', 1),
+    'TELEMETRY_ATTITUDE:Z': ('attitude', 2),
+    'TELEMETRY_HEADING': 'heading',
+    'TELEMETRY_FLIGHT_MODE': 'flight_mode'
+}
+
+# MAPPING FLIGHT_MODES TO VALUES INT8
+FLIGHT_MODES_MAPPING = BidirectionalDict()
+MODES = ['STABILIZE', 'ACRO', 'GUIDED', 'RTL', 'LAND']
+for i, mode in enumerate(MODES):
+    FLIGHT_MODES_MAPPING[mode] = i
+
+# TRAJECTORY TYPE MAPPING
+TRAJECTORY_TYPE_MAPPING = BidirectionalDict()
+TRAJECTORY_TYPE_MAPPING['SINGLE_POINT_TRAJECTORY'] = 1
+TRAJECTORY_TYPE_MAPPING['SPIRAL_TRAJECTORY'] = 2
+TRAJECTORY_TYPE_MAPPING['EIGHT_TRAJECTORY'] = 3
+
+# SUFFIX_INDICES_MAPPING
+SUFFIX_INDICES_MAPPING = BidirectionalDict()
+SUFFIX_INDICES_MAPPING['X'] = 0
+SUFFIX_INDICES_MAPPING['Y'] = 1
+SUFFIX_INDICES_MAPPING['Z'] = 2
+
+# AUXILIARY COMMANDS MAPPING
+AUXILIARY_COMMANDS_MAPPING = BidirectionalDict()
+AUXILIARY_COMMANDS = ['RETURN_TO_LAUNCH', 'LAND', 'TAKEOFF']
+for i, mode in enumerate(AUXILIARY_COMMANDS):
+    AUXILIARY_COMMANDS_MAPPING[mode] = i

@@ -1,5 +1,5 @@
 from Factories.ConfigurationsFactory.configurations import QuadConfiguration, ControllerWithCompensatorConfiguration, CustomMPCConfig
-from Factories.SimulationsFactory.SITL import SoftwareInTheLoop
+from Factories.SimulationsFactory.SITL import SoftwareInTheLoopLegacy
 from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 import numpy as np
 from plots import plotTrajectory, plotTrajectory3d
@@ -50,9 +50,9 @@ if __name__ == '__main__':
         controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10)
         controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
 
-        simulator = SoftwareInTheLoop(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller, controller_conf.attitude_controller,
-                                      [controller_conf.position_controller_input_converter, controller_conf.position_controller_output_converter]
-                                      , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
+        simulator = SoftwareInTheLoopLegacy(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller, controller_conf.attitude_controller,
+                                            [controller_conf.position_controller_input_converter, controller_conf.position_controller_output_converter]
+                                            , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ)
 
         state0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
         u0 = np.array([0, 0, 0])

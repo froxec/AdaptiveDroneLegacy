@@ -78,7 +78,7 @@ class BanditEstimatorAgent():
         parameters = self.predictive_model.parameters
         u_ss = self.predictive_model.U_OP[:3]
         self.position_controller_conf.position_controller.update_model_parameters(parameters)
-        self.position_controller_conf.input_converter.update(u_ss)
+        self.position_controller_conf.input_converter.update(u_ss=u_ss)
         self.position_controller_conf.output_converter.update(u_ss, parameters['Kt'])
 
     def add_sample_to_buffer(self, state, state_prediction, control_input):

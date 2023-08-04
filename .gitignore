@@ -1,7 +1,6 @@
 __pycache__/
-./idea
+.idea
 .vscode/
-.idea/
 images/
 */__pycache__
 mav.tlog.raw

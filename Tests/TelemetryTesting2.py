@@ -1,5 +1,6 @@
 from pytelemetry import Pytelemetry
 from pytelemetry.transports.serialtransport import SerialTransport
+from Factories.CommunicationFactory.Telemetry.mappings import *
 import struct
 import time
 

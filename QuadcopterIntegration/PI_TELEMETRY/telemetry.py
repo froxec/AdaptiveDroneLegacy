@@ -45,13 +45,12 @@ class sendThread(Thread):
         while True:
             update_telemetry(telemetry, self.vehicle)
             serialized_telemetry = pickle.dumps(telemetry)
-            gcs.write(serialized_telemetry)
+            self.serial_port.write(serialized_telemetry)
             time.sleep(1/self.freq)
 
 
-gcs = serial.Serial(port='/dev/pts/5', baudrate=115200)
-
 if __name__ == "__main__":
+    gcs = serial.Serial(port='/dev/pts/5', baudrate=115200)
     parser = argparse.ArgumentParser()
     parser.add_argument('--connect', default='localhost:8000')
     args = parser.parse_args()

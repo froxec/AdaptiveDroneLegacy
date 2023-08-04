@@ -169,9 +169,6 @@ class LiveFilter:
         y = self.process(x)
         return y
     def process(self, x):
-        if np.isnan(x).any():
-            return x
-
         return self._process(x)
 
     def _process(self, x):
@@ -207,4 +204,26 @@ class LowPassLiveFilter(LiveFilter):
             self.y_que[i].appendleft(y)
             signals_processed.append(y)
         return np.array(signals_processed)
+
+class BidirectionalDict(dict):
+    def __init__(self):
+        super().__init__()
+        self.nominal_keys = []
+        self.nominal_values = []
+    def __setitem__(self, key, value):
+        if key in self:
+            print("{} already in dict .. substituting with new entry.".format(key))
+            del self[key]
+        if value in self:
+            print("{} already in dict .. substituting with new entry.".format(value))
+            del self[value]
+        dict.__setitem__(self, key, value)
+        dict.__setitem__(self, value, key)
+        self.nominal_keys.append(key)
+        self.nominal_values.append(value)
+    def __delitem__(self, key):
+        dict.__delitem__(self, self[key])
+        dict.__delitem__(self, key)
+    def __len__(self):
+        return int(dict.__len__(self)/2)
 

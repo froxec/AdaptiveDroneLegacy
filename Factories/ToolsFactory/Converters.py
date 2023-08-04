@@ -8,12 +8,18 @@ class MPC_output_converter():
         self.thrust_converter = ThrustToAngularVelocity(Kt)
         self.angular_vel_normalizer = Normalizer(min=self.angular_vel_min, max=self.angular_vel_max)
         self.nominal_u = None
-        self.valid_modes = {'proprietary', 'ardupilot'}
+        self.valid_modes = {'proprietary', 'ardupilot', 'transDynamicsModel'}
         if mode not in self.valid_modes:
             raise ValueError("mode must be one of %r." % self.valid_modes)
+        self.mode = mode
+        self.epsilon = 1e-15
     def __call__(self, delta_u, throttle=True):
         u = delta_u + self.u_ss
         self.nominal_u = deepcopy(u)
+        if self.mode == 'transDynamicsModel':
+            print("Before conversion:", u)
+            u = self.convert_force_vector_to_u(u)
+            print("After  conversion:", u)
         if throttle:
             omega = self.thrust_converter(u[0])
             throttle = self.angular_vel_normalizer(omega)
@@ -28,6 +34,17 @@ class MPC_output_converter():
         u[0] = throttle
         # u[3] = 0
         return u
+
+    def convert_force_vector_to_u(self, force):
+        f_xz = force[[0, 2]]
+        f_yz = force[[1, 2]]
+        fx = force[0]
+        fy = force[1]
+        force_norm = np.sign(force[2])*np.linalg.norm(force)
+        phi = -np.arcsin(fy / (np.linalg.norm(f_yz) + self.epsilon))
+        theta = np.arcsin(fx / (np.linalg.norm(f_xz) + self.epsilon))
+        return np.array([force_norm, phi, theta])
+
     def convert(self):
         ## TODO x
         pass
@@ -35,6 +52,7 @@ class MPC_output_converter():
     def update(self, u_ss, Kt):
         self.u_ss = u_ss
         self.thrust_converter = ThrustToAngularVelocity(Kt)
+
 class MPC_input_converter():
     def __init__(self, x_ss, u_ss):
         self.x_ss = x_ss
@@ -47,8 +65,11 @@ class MPC_input_converter():
         delta_u0 = u0 - self.u_ss
         return delta_x0, delta_u0
 
-    def update(self, u_ss):
-        self.u_ss = u_ss
+    def update(self, x_ss=None, u_ss=None):
+        if x_ss is not None:
+            self.x_ss = x_ss
+        if u_ss is not None:
+            self.u_ss = u_ss
 
 def convert_trajectory(velocity_trajectory, input_trajectory, deltaT):
     ## pitch, roll, yaw are ommited (not required)
@@ -159,3 +180,8 @@ class RampSaturation:
             else:
                 output[i] = curr[i]
         return output
+
+if __name__ == "__main__":
+    u = np.array([0, 0, -10])
+    converter = MPC_output_converter(None, None, [None, None])
+    u = converter.convert_force_vector_to_u(u)

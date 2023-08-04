@@ -31,4 +31,4 @@ class sendThread(threading.Thread):
         while True:
             command = "arm\n".encode()
             self.serial_port.write(command)
-            time.sleep(1)
+            time.sleep(0.1)

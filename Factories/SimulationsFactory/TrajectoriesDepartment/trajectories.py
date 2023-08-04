@@ -46,4 +46,5 @@ class RectangularTrajectoryWithTerminals(TrajectoryWithTerminals):
 
 class SinglePoint(Trajectory):
     def __init__(self, ref):
+        self.setpoint = ref
         self.generated_trajectory = np.array(ref).reshape(1, -1)
