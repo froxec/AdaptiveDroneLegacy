@@ -584,7 +584,7 @@ QPushButton {
          <item>
           <widget class="QCustomStackedWidget" name="mainPages">
            <property name="currentIndex">
-            <number>1</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="SettingsPage">
             <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -1628,7 +1628,7 @@ QPushButton {
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="statePage">
          <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1680,6 +1680,21 @@ QPushButton {
         <widget class="QWidget" name="estimationPage">
          <layout class="QVBoxLayout" name="verticalLayout_15">
           <item>
+           <widget class="QWidget" name="estimationPlotsContainer" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_8">
+             <item>
+              <widget class="LivePlotWidget" name="estimation_F_plot" native="true"/>
+             </item>
+             <item>
+              <widget class="LivePlotWidget" name="estimation_phi_plot" native="true"/>
+             </item>
+             <item>
+              <widget class="LivePlotWidget" name="estimation_theta_plot" native="true"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="label_13">
             <property name="text">
              <string>Estimation Page</string>
@@ -1690,6 +1705,21 @@ QPushButton {
         </widget>
         <widget class="QWidget" name="controlPage">
          <layout class="QVBoxLayout" name="verticalLayout_16">
+          <item>
+           <widget class="QWidget" name="controlPlotsContainer" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_17">
+             <item>
+              <widget class="LivePlotWidget" name="u_ref_F_plot" native="true"/>
+             </item>
+             <item>
+              <widget class="LivePlotWidget" name="u_ref_phi_plot" native="true"/>
+             </item>
+             <item>
+              <widget class="LivePlotWidget" name="u_ref_theta_plot" native="true"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
           <item>
            <widget class="QLabel" name="label_14">
             <property name="text">
@@ -1728,7 +1758,6 @@ QPushButton {
  </customwidgets>
  <resources>
   <include location="resources.qrc"/>
-  <include location="../../../.designer/backup/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

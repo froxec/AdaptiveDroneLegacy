@@ -9,7 +9,9 @@ from Factories.CommunicationFactory.Telemetry.mappings import *
 from Factories.CommunicationFactory.Telemetry.aux_functions import update_telemetry
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
+from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import L1_Augmentation
 from threading import Thread
+import warnings
 import time
 class TelemetryManager:
     def __init__(self,
@@ -172,7 +174,9 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                  update_freq: int,
                  vehicle: Type[Vehicle],
                  position_controller: Type[PositionController],
-                 subscribed_comms='ALL'):
+                 adaptive_augmentation: Type[L1_Augmentation]=None,
+                 subscribed_comms='ALL',
+                 additional_telemetry=['control', 'estimation_and_control']):
         TelemetryManagerThread.__init__(self,
                                   serialport=serialport,
                                   baudrate=baudrate,
@@ -180,17 +184,53 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                                   update_freq=update_freq,
                                   subscribed_comms=subscribed_comms)
         self.position_controller = position_controller
+        self.adaptive_augmentation = adaptive_augmentation
+        self.additional_telemetry = additional_telemetry
+        if 'estimation_and_control' in additional_telemetry and self.adaptive_augmentation is None:
+            warnings.warn("'Estimation and control' telemetry requested, but it requires adaptive controller, which"
+                          "is None. Requested telemetry won't be added to a stream.")
+            self.additional_telemetry.remove('estimation_and_control')
+        if ('control' in additional_telemetry and 'estimation_and_control' in additional_telemetry):
+            warnings.warn("'Control' telemetry requested, but 'estimation and control' already satisfies the needs."
+                          " Requested telemetry won't be added to a stream.")
+            self.additional_telemetry.remove('control')
+
 
     def publish_telemetry(self):
         update_telemetry(self.telemetry, self.vehicle)
+        if hasattr(self, 'additional_telemetry') and 'estimation_and_control' in self.additional_telemetry:
+            self._add_estimation_to_telemetry(self.telemetry)
+        if hasattr(self, 'additional_telemetry') and 'control' in self.additional_telemetry:
+            self._add_control_to_telemetry(self.telemetry)
+        available_telemetry = self.telemetry.keys()
         for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
             if not isinstance(indices, tuple):
-                id = indices
-                value = self.telemetry[id]
+                key = indices
+                if key not in available_telemetry:
+                    continue
+                value = self.telemetry[key]
             else:
                 key, id = indices
+                if key not in available_telemetry:
+                    continue
                 value = self.telemetry[key][id]
             self.publish(command, value)
+
+    def _add_estimation_to_telemetry(self, telemetry):
+        estimation_telemetry = self.adaptive_augmentation.telemetry_to_read
+        if estimation_telemetry is not None:
+            for key in estimation_telemetry.keys():
+                telemetry[key] = estimation_telemetry[key]
+        self.telemetry = telemetry
+        return self.telemetry
+
+    def _add_control_to_telemetry(self, telemetry):
+        control_telemetry = self.position_controller.telemetry_to_read
+        if control_telemetry is not None:
+            for key in control_telemetry.keys():
+                telemetry[key] = control_telemetry[key]
+        self.telemetry = telemetry
+        return self.telemetry
 
     def run(self):
         while True:

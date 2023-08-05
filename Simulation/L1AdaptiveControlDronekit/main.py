@@ -73,7 +73,7 @@ if __name__ == "__main__":
     z0 = x0[3:6]
     if MODEL == 0:
         As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [1, 0.2, 0.2]
+        bandwidths = [0.1, 0.1, 0.1]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -100,7 +100,8 @@ if __name__ == "__main__":
                           baudrate=115200,
                           update_freq=10,
                           vehicle=vehicle,
-                          position_controller=position_controller)
+                          position_controller=position_controller,
+                          adaptive_augmentation=adaptive_controller)
 
     ## ground control station connection
     # gcs = serial.Serial('/dev/pts/5', baudrate=115200, timeout=0.05)

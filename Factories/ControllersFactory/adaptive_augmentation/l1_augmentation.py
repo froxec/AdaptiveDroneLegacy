@@ -66,6 +66,7 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         self.ready_event.set()
         self._watchdog_active = threading.Event()
         self._watchdog = threading.Timer(self.predictor.Ts, self._watchdog_activation)
+        self.telemetry_to_read = None
         self.start()
 
     def run(self):
@@ -107,6 +108,12 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         self.data_set.clear()
         return z, z_prev, u, u_prev, time
 
+    def _set_telemetry(self, sigma_hat, u_l1, u):
+        self.telemetry_to_read = {'sigma_hat': sigma_hat,
+                                  'u_l1': u_l1,
+                                  'u': u}
+        return self.telemetry_to_read
+
     def adapt(self, z, z_prev, u, u_prev, deltaT=None):
         if deltaT is not None:
             self.Ts = deltaT
@@ -122,6 +129,7 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
+        self._set_telemetry(sigma_hat, u_l1, u)
         return u_composite
 
 

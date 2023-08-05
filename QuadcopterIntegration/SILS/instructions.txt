@@ -6,7 +6,10 @@ Aby sterowanie działało poprawnie należy ustawić drona w tryb GUIDED!
 
 #Uruchomienie symulacji SITL
 1. w folderze Documents/Studia/praca magisterska/ardupilot_repo/ardupilot uruchomić komendę
+PC:
 sim_vehicle.py -v ArduCopter -m "--out udp:localhost:8000 --out udp:localhost:8500 --streamrate=-1"
+RPI:
+sim_vehicle.py -v ArduCopter -m "--out udp:localhost:8000 192.168.0.27:8500 --streamrate=-1"
 skrypt automatycznie uruchomi server mavproxy z dodatkowymi parametrami zapisanymi w argumencie -m
 2. Można odbierać i wysyłać komendy za pomocą dronekit lub pymavlink
 

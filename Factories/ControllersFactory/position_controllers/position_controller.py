@@ -108,6 +108,10 @@ class PositionControllerThread(PositionController, Thread):
         self._watchdog_active = threading.Event()
         self._watchdog = threading.Timer(1 / self.controller.freq, self._watchdog_activation)
         self.start()
+
+        # telemetry
+        self.telemetry_to_read = None
+
     def run(self):
         while True:
             self._restart_watchdog()
@@ -134,6 +138,7 @@ class PositionControllerThread(PositionController, Thread):
         u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)
+        self._set_telemetry(u_next)
         return u_next
 
     def _control_execution(self):
@@ -157,3 +162,7 @@ class PositionControllerThread(PositionController, Thread):
         x = self.x
         self.data_set.clear()
         return x
+
+    def _set_telemetry(self, u):
+        self.telemetry_to_read = {'u': u}
+        return self.telemetry_to_read

@@ -67,9 +67,13 @@ class MainWindow(QMainWindow):
 
         # RT plots embedding
         self.live_plot_widgets = [self.window.x_plot, self.window.y_plot, self.window.z_plot,
-                             self.window.Vx_plot, self.window.Vy_plot, self.window.Vz_plot]
+                             self.window.Vx_plot, self.window.Vy_plot, self.window.Vz_plot,
+                             self.window.estimation_F_plot, self.window.estimation_phi_plot, self.window.estimation_theta_plot,
+                             self.window.u_ref_F_plot, self.window.u_ref_phi_plot, self.window.u_ref_theta_plot]
         self.telemetry_to_plot = [('position_local', 0), ('position_local', 1), ('position_local', 2),
-                                  ('velocity', 0), ('velocity', 1), ('velocity', 2)]
+                                  ('velocity', 0), ('velocity', 1), ('velocity', 2),
+                                  ('sigma_hat', 0), ('sigma_hat', 1), ('sigma_hat', 2),
+                                  ('u', 0), ('u', 1), ('u', 2)]
         self.data_connectors = []
         self.telemetry_updated_event = threading.Event()
         for live_plot in self.live_plot_widgets:
@@ -182,18 +186,23 @@ class MainWindow(QMainWindow):
     def update_plots(self, *connectors):
         x = 0
         while True:
+            available_telemetry = self.telemetry.keys()
             if self.telemetry_manager.telemetry_set_event.is_set():
                 for i, connector in enumerate(connectors):
                     telem_index = self.telemetry_to_plot[i]
                     if len(telem_index) == 1:
+                        if telem_index not in available_telemetry:
+                            continue
                         data = self.telemetry[telem_index]
                     elif len(telem_index) == 2:
+                        if telem_index[0] not in available_telemetry:
+                            continue
                         data = self.telemetry[telem_index[0]][telem_index[1]]
                     if data is not None:
                         connector.cb_append_data_point(data, x)
                 self.telemetry_manager.telemetry_set_event.clear()
             x += 1
-            sleep(0.01)
+            sleep(0.1)
 
 
 if __name__ == "__main__":
