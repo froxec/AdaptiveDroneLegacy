@@ -32,7 +32,7 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 5, 50])
+trajectory = SinglePoint([0, 0, 10])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.0})
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         estimator_agent = BanditEstimatorAgent(parameters_manager=parameters_manager,
                                                 predictive_model=prediction_model,
                                                 gp=gp,
-                                                deltaT=1/INNER_LOOP_FREQ,
+                                                deltaT=1/s,
                                                 atomic_traj_samples_num=ATOMIC_TRAJ_SAMPLES_NUM)
     else:
         estimator_agent = None

@@ -50,14 +50,12 @@ class BanditEstimatorAgent():
             self.penalties_buffer.add_sample(['penalties'], [penalty])
             self.penalty_history.append(penalty)
             if not self.converged:
-                import os
-                print(os.getcwd())
                 self.update_gp(self.estimated_parameters_holder.m, penalty)
                 self.gp.plot('./images/gp/')
                 action = self.take_action()
                 print("Action taken {}".format(action))
                 self.actions_buffer.add_sample(['actions'], [action])
-                self.m = action
+                self.estimated_parameters_holder.m = action
                 self.predictive_model.update_parameters()
             else:
                 # conditions_changed = self.check_for_conditions_changes()
@@ -140,6 +138,7 @@ class BanditEstimatorAgent():
 
         fig.add_trace(go.Scatter(x=list(range(len(self.penalty_history))), y=self.penalty_history, name='penalty_history'))
 
+
 class BanditEstimatorThread(BanditEstimatorAgent, Thread):
     def __init__(self,
                  parameters_manager: Type[ParametersManager],
@@ -176,7 +175,7 @@ class BanditEstimatorThread(BanditEstimatorAgent, Thread):
                 action = self.take_action()
                 print("Action taken {}".format(action))
                 self.actions_buffer.add_sample(['actions'], [action])
-                self.m = action
+                self.estimated_parameters_holder.m = action
                 self.predictive_model.update_parameters()
             else:
                 # conditions_changed = self.check_for_conditions_changes()
@@ -205,4 +204,36 @@ class BanditEstimatorThread(BanditEstimatorAgent, Thread):
     def _control_execution(self):
         self.data_set_event.wait()
         self.data_set_event.clear()
+
+class BanditEstimatorAcceleration:
+    def __init__(self,
+                 parameters_manager: Type[ParametersManager],
+                 prediction_model,
+                 gp: Type[EfficientGaussianProcess]):
+        self.parameters_manager = parameters_manager
+        self.prediction_model = prediction_model
+        self.gp = gp
+
+        # parameters holders
+        self.nominal_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
+        self.estimated_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
+        self.predictive_model.parameters_holder = self.estimated_parameters_holder
+
+    def __call__(self, acceleration, u_prev):
+        a_hat = self.prediction_model(u_prev)
+        penalty = self._calculate_penalty(a_hat, acceleration)
+        self.update_gp(self.prediction_model.m, penalty)
+        action = self.take_action()
+        self.estimated_parameters_holder.m = action
+        self.predictive_model.update_parameters()
+    def update_gp(self, action, reward):
+        self.gp(np.array(action).reshape(-1, 1), [reward])
+    def _calculate_penalty(self, a_hat, a):
+        reward = manhattan_distance(a_hat, a)
+        return reward
+
+    def take_action(self):
+        best = self.gp.Thompson_sampling(mode='min', number_of_samples=1)
+        action = best['best_action']
+        return action
 
