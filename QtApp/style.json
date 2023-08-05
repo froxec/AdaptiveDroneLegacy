@@ -95,7 +95,8 @@
 						{
 							"mainInfoPageBtn": "statePage",
 							"estimationPageBtn": "estimationPage",
-							"controlPageBtn": "controlPage"
+							"controlPageBtn": "controlPage",
+							"outputPageBtn": "OutputsPage"
 						}
 					]
 				}
@@ -133,7 +134,8 @@
 		"Buttons": [
 			"controlPageBtn",
 			"estimationPageBtn",
-			"mainInfoPageBtn"
+			"mainInfoPageBtn",
+			"outputPageBtn"
 		],
 		"theme": 2,
 		"Style":[{

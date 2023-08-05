@@ -14,6 +14,11 @@ from Factories.ToolsFactory.GeneralTools import time_control
 from QuadcopterIntegration.PI_TELEMETRY.telemetry import *
 from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManager, TelemetryManagerThread, \
     TelemetryManagerThreadUAV
+from Factories.DataManagementFactory.data_holders import DataHolder
+from Factories.DataManagementFactory.data_managers import ParametersManager
+from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
+from Factories.GaussianProcessFactory.kernels import RBF_Kernel
+from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianProcess
 import serial
 import argparse
 import numpy as np
@@ -38,10 +43,12 @@ def run_controller(controller, x=None):
 
 
 #TESTING OPTIONS
-NORMALIZE = True
+NORMALIZE = False
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
-MPC_MODE = MPCModes.CONSTRAINED
+USE_ESTIMATOR = False
+ADAPTIVE_FREQ = 100
+MPC_MODE = MPCModes.UNCONSTRAINED
 HORIZON = 20
 
 trajectory = SinglePoint([0, 0, 10])
@@ -54,12 +61,14 @@ if __name__ == "__main__":
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=921600, wait_ready=True, rate=100)
 
+    ## parameters holder
+    parameters_holder = DataHolder(parameters)
 
     ## model predictive controller
     if MODEL == 0 or MODEL == 2:
-        prediction_model = LinearizedQuadNoYaw(parameters, Ts = 1 / OUTER_LOOP_FREQ)
+        prediction_model = LinearizedQuadNoYaw(parameters_holder, Ts = 1 / OUTER_LOOP_FREQ)
     if MODEL == 1:
-        prediction_model = LinearTranslationalMotionDynamics(parameters, 1 / OUTER_LOOP_FREQ)
+        prediction_model = LinearTranslationalMotionDynamics(parameters_holder, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
     controller_conf.position_controller.switch_modes(MPC_MODE)
@@ -78,22 +87,54 @@ if __name__ == "__main__":
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
     if isinstance(prediction_model, LinearizedQuadNoYaw):
-        uncertain_model = LinearQuadUncertain(parameters)
+        uncertain_model = LinearQuadUncertain(parameters_holder)
     else:
-        uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
+        uncertain_model = QuadTranslationalDynamicsUncertain(parameters_holder)
     if MODEL == 2:
-        uncertain_model = QuadTranslationalDynamicsUncertain(parameters)
-    l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
-    l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
-    l1_filter = L1_LowPass(bandwidths=bandwidths, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
+        uncertain_model = QuadTranslationalDynamicsUncertain(parameters_holder)
+    l1_predictor = L1_Predictor(uncertain_model, z0, 1 / ADAPTIVE_FREQ, As)
+    l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / ADAPTIVE_FREQ, As)
+    l1_filter = L1_LowPass(bandwidths=bandwidths, fs=ADAPTIVE_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
-    l1_saturator = L1_ControlSaturator([np.Inf, np.pi / 5, np.pi / 5])
+    l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
+                                       upper_bounds=[3*parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
     if USE_ADAPTIVE:
         adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, l1_saturator)
     else:
         adaptive_controller = None
+
+    ## parameters manager
+    parameters_manager = ParametersManager(parameters_holder=parameters_holder,
+                                           predictive_model=position_controller.controller.model,
+                                           input_converter=position_controller.input_converter,
+                                           output_converter=position_controller.output_converter,
+                                           uncertain_predictive_model=l1_predictor.ref_model)
+
+    ## estimation agent
+    SAMPLING_FREQ = OUTER_LOOP_FREQ  # Hz
+    STEP_TIME = 1  # s
+    ATOMIC_TRAJ_SAMPLES_NUM = int(STEP_TIME * SAMPLING_FREQ)
+    samples_num = 100
+    MASS_MIN, MASS_MAX = (0.8, 2.0)
+    domain = (MASS_MIN, MASS_MAX)
+    X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
+    rbf_kernel = RBF_Kernel(length=1)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
+    if USE_ESTIMATOR:
+        estimator_agent = BanditEstimatorThread(parameters_manager,
+                                                prediction_model,
+                                                gp,
+                                                ATOMIC_TRAJ_SAMPLES_NUM)
+    else:
+        estimator_agent = None
+    #output saturation
+    ramp_saturation_slope = np.array([np.Inf, 0.4, 0.4])
     ## control supervisor
-    control_supervisor = ControlSupervisor(vehicle, position_controller, adaptive_controller)
+    control_supervisor = ControlSupervisor(vehicle,
+                                           position_controller,
+                                           adaptive_controller,
+                                           estimator_agent,
+                                           ramp_saturation_slope)
 
     ## telemetry manager
     tm = TelemetryManagerThreadUAV(serialport='/dev/pts/6',
@@ -101,6 +142,7 @@ if __name__ == "__main__":
                           update_freq=10,
                           vehicle=vehicle,
                           position_controller=position_controller,
+                          control_supervisor=control_supervisor,
                           adaptive_augmentation=adaptive_controller)
 
     ## ground control station connection
@@ -114,9 +156,9 @@ if __name__ == "__main__":
     # print("Take off complete")
 
     while True:
+        tm.update()
         if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 5.0:
             control_supervisor.supervise()
         else:
             ("Waiting for drone to reach required attitude.")
-        tm.update()
-        time.sleep(0.01) #this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
+        time.sleep(1/ADAPTIVE_FREQ)# this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT

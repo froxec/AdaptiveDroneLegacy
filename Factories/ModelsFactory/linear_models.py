@@ -1,11 +1,15 @@
 import numpy as np
 from copy import deepcopy
 import control
+from Factories.DataManagementFactory.data_holders import DataHolder
+from typing import Type
 class LinearTranslationalMotionDynamics:
-    def __init__(self, parameters, Ts, xref=0.0, yref=0.0, zref=0.0, max_distances=[50, 50, 50]):
-        self.parameters = deepcopy(parameters)
-        self.m = parameters['m']
-        self.g = parameters['g']
+    def __init__(self, parameters_holder: Type[DataHolder],
+                 Ts, xref=0.0, yref=0.0, zref=0.0, max_distances=[50, 50, 50]):
+        self.parameters_holder = parameters_holder
+        self.parameters = parameters_holder.get_data()
+        self.m = parameters_holder.m
+        self.g = parameters_holder.g
         self.A = np.array([[0, 0, 0, 1, 0, 0],
                            [0, 0, 0, 0, 1, 0],
                            [0, 0, 0, 0, 0, 1],
@@ -74,10 +78,10 @@ class LinearTranslationalMotionDynamics:
         x_next = delta_x_next + self.X_OP
         return x_next
 
-    def update_parameters(self, parameters):
-        self.parameters = deepcopy(parameters)
-        self.g = parameters['g']
-        self.m = parameters['m']
+    def update_parameters(self):
+        self.g = self.parameters_holder.g
+        self.m = self.parameters_holder.m
+        self.parameters = self.parameters_holder.get_data()
         self.B = np.array([[0, 0, 0],
                            [0, 0, 0],
                            [0, 0, 0],
@@ -98,10 +102,10 @@ class LinearTranslationalMotionDynamics:
         self.Cn =  Ny_inv @ self.C @ Nx
         self.Dn =  Ny_inv @ self.D @ Nu
 class LinearizedQuad():
-    def __init__(self, parameters, u4_ss=0, x_ref=0, y_ref=0, z_ref=0):
-        self.parameters = deepcopy(parameters)
-        self.m = parameters['m']
-        self.g = parameters['g']
+    def __init__(self, parameters_holder, u4_ss=0, x_ref=0, y_ref=0, z_ref=0):
+        self.parameters_holder = parameters_holder
+        self.m = parameters_holder.m
+        self.g = parameters_holder.g
         self.u4_ss = u4_ss
         self.A = np.array([[0, 0, 0, 1, 0, 0],
                       [0, 0, 0, 0, 1, 0],
@@ -133,6 +137,9 @@ class LinearizedQuad():
         self.U_OP = np.array([self.m*self.g, 0, 0, u4_ss])
 
     def update(self, u4_ss=0, position_ref=None):
+        self.m = self.parameters_holder.m
+        self.g = self.parameters_holder.g
+        self.parameters = self.parameters_holder.get_data()
         self.B = np.array([[0, 0, 0, 0],
                       [0, 0, 0, 0],
                       [0, 0, 0, 0],
@@ -142,11 +149,11 @@ class LinearizedQuad():
         if position_ref != None:
             self.X_OP = np.array([position_ref[0], position_ref[1], position_ref[2], 0, 0, 0])
             self.Y_OP = self.C @ self.X_OP
-        self.U_OP = np.array([ self.m*self.g, 0, 0, u4_ss])
+        self.U_OP = np.array([self.m*self.g, 0, 0, u4_ss])
 
 class LinearizedQuadNoYaw(LinearizedQuad):
-    def __init__(self, parameters, Ts, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0, max_distances=[50, 50, 50]):
-        super().__init__(parameters, u4_ss=yaw_ss, x_ref=x_ref, y_ref=y_ref, z_ref=z_ref)
+    def __init__(self, parameters_holder, Ts, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0, max_distances=[50, 50, 50]):
+        super().__init__(parameters_holder, u4_ss=yaw_ss, x_ref=x_ref, y_ref=y_ref, z_ref=z_ref)
         self.yaw_ss=yaw_ss
         self.B = np.array([[0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
@@ -163,7 +170,7 @@ class LinearizedQuadNoYaw(LinearizedQuad):
         self.U_OP = np.array([self.m * self.g, 0.0, 0.0, 0.0])
         max_distances = max_distances
         self.Nx = np.diag(np.concatenate([np.array(max_distances), np.ones(3)*5]))
-        self.Nu = np.diag(np.array([self.m*self.g, np.pi/6, np.pi/6]))
+        self.Nu = np.diag(np.array([self.m*self.g, np.pi/5, np.pi/5]))
         self.Ny = np.diag(np.ones(self.C.shape[0]))
         self.normalize_system(self.Nx, self.Nu, self.Ny)
         if Ts is not None:
@@ -172,10 +179,10 @@ class LinearizedQuadNoYaw(LinearizedQuad):
             self.discretize_model(Ts, normalized_model=True)
         else:
             self.Ts = None
-    def update_parameters(self, parameters):
-        self.parameters = deepcopy(parameters)
-        self.g = parameters['g']
-        self.m = parameters['m']
+    def update_parameters(self):
+        self.m = self.parameters_holder.m
+        self.g = self.parameters_holder.g
+        self.parameters = self.parameters_holder.get_data()
         self.B = np.array([[0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
@@ -217,8 +224,8 @@ class LinearizedQuadNoYaw(LinearizedQuad):
         self.Dn = Ny_inv @ self.D @ Nu
 
 class AugmentedLinearizedQuadNoYaw(LinearizedQuadNoYaw):
-    def __init__(self, parameters, Ts, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
-        super().__init__(parameters, Ts, yaw_ss, x_ref, y_ref, z_ref)
+    def __init__(self, parameters_holder, Ts, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
+        super().__init__(parameters_holder, Ts, yaw_ss, x_ref, y_ref, z_ref)
         self.construct_augmented_system()
     def construct_augmented_system(self):
         temp1 = np.concatenate([self.Ad, np.zeros((self.C.shape[1], self.C.shape[0]))], axis=1)
@@ -227,13 +234,13 @@ class AugmentedLinearizedQuadNoYaw(LinearizedQuadNoYaw):
         self.Bd = np.concatenate([self.Bd, np.zeros((self.C.shape[0], self.Bd.shape[1]))], axis=0)
         self.Cd = np.concatenate([self.Cd, np.eye(self.Cd.shape[0])], axis=1)
 
-    def update_parameters(self, parameters):
-        super().update_parameters(parameters)
+    def update_parameters(self):
+        super().update_parameters()
         self.construct_augmented_system()
 
 class LinearizedQuadNoYawWithUncertainty(LinearizedQuad):
-    def __init__(self, parameters, Ts, weight_matrix, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
-        super().__init__(parameters, None, yaw_ss, x_ref, y_ref, z_ref)
+    def __init__(self, parameters_holder, Ts, weight_matrix, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
+        super().__init__(parameters_holder, None, yaw_ss, x_ref, y_ref, z_ref)
         self.Ts = Ts
         self.weight_matrix = weight_matrix
         self.construct_augmented_system()
@@ -247,10 +254,10 @@ class LinearizedQuadNoYawWithUncertainty(LinearizedQuad):
         self.C_aug = np.concatenate([self.C, np.zeros((self.C.shape[0], self.weight_matrix.shape[1]))], axis=1)
         self.D_aug = np.zeros((self.C.shape[0], self.A.shape[0] + self.weight_matrix.shape[1]))
 
-    def update_parameters(self, parameters):
-        self.parameters = deepcopy(parameters)
-        self.g = parameters['g']
-        self.m = parameters['m']
+    def update_parameters(self):
+        self.m = self.parameters_holder.m
+        self.g = self.parameters_holder.g
+        self.parameters = self.parameters_holder.get_data()
         self.B = np.array([[0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],

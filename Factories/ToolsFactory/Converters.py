@@ -1,17 +1,23 @@
 import numpy as np
 from copy import deepcopy
+from typing import Type
+from Factories.DataManagementFactory.data_holders import DataHolder
 class MPC_output_converter():
-    def __init__(self, u_ss, Kt, angular_velocity_range, mode='proprietary'):
+    def __init__(self, parameters_holder: Type[DataHolder], angular_velocity_range, mode='proprietary'):
+        self.parameters_holder = parameters_holder
         self.angular_vel_min = angular_velocity_range[0]
         self.angular_vel_max = angular_velocity_range[1]
-        self.u_ss = u_ss
-        self.thrust_converter = ThrustToAngularVelocity(Kt)
+        self.thrust_converter = ThrustToAngularVelocity(self.parameters_holder.Kt)
         self.angular_vel_normalizer = Normalizer(min=self.angular_vel_min, max=self.angular_vel_max)
         self.nominal_u = None
         self.valid_modes = {'proprietary', 'ardupilot', 'transDynamicsModel'}
         if mode not in self.valid_modes:
             raise ValueError("mode must be one of %r." % self.valid_modes)
         self.mode = mode
+        if self.mode == 'transDynamicsModel':
+            self.u_ss = np.array([0, 0, self.parameters_holder.m * self.parameters_holder.g])
+        elif self.mode == 'proprietary':
+            self.u_ss = np.array([self.parameters_holder.m * self.parameters_holder.g, 0, 0])
         self.epsilon = 1e-15
     def __call__(self, delta_u, throttle=True):
         u = delta_u + self.u_ss
@@ -49,15 +55,26 @@ class MPC_output_converter():
         ## TODO x
         pass
 
-    def update(self, u_ss, Kt):
-        self.u_ss = u_ss
-        self.thrust_converter = ThrustToAngularVelocity(Kt)
+    def update(self):
+        if self.mode == 'transDynamicsModel':
+            self.u_ss = np.array([0, 0, self.parameters_holder.m * self.parameters_holder.g])
+        elif self.mode == 'proprietary':
+            self.u_ss = np.array([self.parameters_holder.m * self.parameters_holder.g, 0, 0])
+        self.thrust_converter = ThrustToAngularVelocity(self.parameters_holder.Kt)
+        print("Output converter parameters updated!")
 
 class MPC_input_converter():
-    def __init__(self, x_ss, u_ss):
+    def __init__(self, x_ss, parameters_holder, mode='proprietary'):
+        self.parameters_holder = parameters_holder
         self.x_ss = x_ss
-        self.u_ss = u_ss
-
+        self.valid_modes = {'proprietary', 'ardupilot', 'transDynamicsModel'}
+        if mode not in self.valid_modes:
+            raise ValueError("mode must be one of %r." % self.valid_modes)
+        self.mode = mode
+        if self.mode == 'transDynamicsModel':
+            self.u_ss = np.array([0, 0, self.parameters_holder.m * self.parameters_holder.g])
+        elif self.mode == 'proprietary':
+            self.u_ss = np.array([self.parameters_holder.m * self.parameters_holder.g, 0, 0])
     def __call__(self, x0, u0):
         if u0 is None:
             u0 = np.array([0, 0, 0])
@@ -65,12 +82,15 @@ class MPC_input_converter():
         delta_u0 = u0 - self.u_ss
         return delta_x0, delta_u0
 
-    def update(self, x_ss=None, u_ss=None):
+    def update(self, x_ss=None, update_u_ss=False):
         if x_ss is not None:
             self.x_ss = x_ss
-        if u_ss is not None:
-            self.u_ss = u_ss
-
+        if update_u_ss:
+            if self.mode == 'transDynamicsModel':
+                self.u_ss = np.array([0, 0, self.parameters_holder.m * self.parameters_holder.g])
+            elif self.mode == 'proprietary':
+                self.u_ss = np.array([self.parameters_holder.m * self.parameters_holder.g, 0, 0])
+            print("Input converter parameters updated!")
 def convert_trajectory(velocity_trajectory, input_trajectory, deltaT):
     ## pitch, roll, yaw are ommited (not required)
     velocity_trajectory = np.flip(velocity_trajectory, axis=0)
@@ -166,19 +186,24 @@ class RampSaturation:
         else:
             self.slope_max = np.array([slope_max])
         self.Ts = Ts
-    def __call__(self, curr, prev):
+        self.prev = None
+    def __call__(self, curr):
+        if self.prev is None:
+            self.prev = curr
         if (curr.flatten().shape[0] != self.slope_max.flatten().shape[0] or
-            prev.flatten().shape[0] != self.slope_max.flatten().shape[0]):
+            self.prev.flatten().shape[0] != self.slope_max.flatten().shape[0]):
             raise ValueError("Length of signal vector and slope limit vector should be equal.. {} != {}".format(curr.flatten().shape, self.slope_max.flatten().shape))
-        derivative = (curr - prev) / self.Ts
+        derivative = (curr - self.prev) / self.Ts
         output = np.zeros_like(derivative)
-        for i in range(derivative.flatten().shape[0]):
+        derivative = derivative.flatten()
+        for i in range(derivative.shape[0]):
             if derivative[i] < -self.slope_max[i]:
-                output[i] = prev[i] - self.slope_max[i] * self.Ts
+                output[i] = self.prev[i] - self.slope_max[i] * self.Ts
             elif derivative[i] > self.slope_max[i]:
-                output[i] = prev[i] + self.slope_max[i] * self.Ts
+                output[i] = self.prev[i] + self.slope_max[i] * self.Ts
             else:
                 output[i] = curr[i]
+        self.prev = output
         return output
 
 if __name__ == "__main__":

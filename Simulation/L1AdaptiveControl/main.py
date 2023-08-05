@@ -12,13 +12,18 @@ from Factories.ControllersFactory.position_controllers.position_controller impor
 from Factories.ModelsFactory.uncertain_models import QuadTranslationalDynamicsUncertain, LinearQuadUncertain
 from Factories.ModelsFactory.external_force_models import WindModel, RandomAdditiveNoiseWind, RandomWalkWind, SinusoidalWind
 from Simulation.plots import plotTrajectory, plotTrajectory3d
-
+from Factories.DataManagementFactory.data_holders import DataHolder
+from Factories.DataManagementFactory.data_managers import ParametersManager
+from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAgent
+from Factories.GaussianProcessFactory.kernels import RBF_Kernel
+from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianProcess
 
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
-MPC_MODE = MPCModes.CONSTRAINED
+USE_ESTIMATOR = True
+MPC_MODE = MPCModes.UNCONSTRAINED
 HORIZON = 20
 
 INNER_LOOP_FREQ = 100
@@ -27,29 +32,32 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([200, 200, 20])
+trajectory = SinglePoint([5, 5, 50])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.5})
+    perturber({'m': 0.0})
+
+    ## parameters holder
+    parameters_holder = DataHolder(perturber.perturbed_parameters)
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[0, 1, 0], strength=5)
+    wind_force = WindModel(direction_vector=[0, 1, 0], strength=6)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
     #wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=3.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
     #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=2)
     ## Model configuration
     x0 = np.zeros(12)
     x0[2] = 20
-    quad_conf = QuadConfiguration(perturber.perturbed_parameters, pendulum_parameters, x0, np.zeros(4), PWM_RANGE,
+    quad_conf = QuadConfiguration(perturber.nominal_parameters, pendulum_parameters, x0, np.zeros(4), PWM_RANGE,
                                   ANGULAR_VELOCITY_RANGE, external_disturbance=wind_force)
     x0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
     u0 = np.zeros(3)
 
     ## Controller configuration
     if MODEL == 0 or MODEL == 2:
-        prediction_model = LinearizedQuadNoYaw(Z550_parameters, 1 / OUTER_LOOP_FREQ)
+        prediction_model = LinearizedQuadNoYaw(parameters_holder, 1 / OUTER_LOOP_FREQ)
     elif MODEL == 1:
-        prediction_model = LinearTranslationalMotionDynamics(Z550_parameters, 1 / OUTER_LOOP_FREQ)
+        prediction_model = LinearTranslationalMotionDynamics(parameters_holder, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
     controller_conf.position_controller.switch_modes(MPC_MODE)
@@ -67,26 +75,54 @@ if __name__ == "__main__":
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
     if isinstance(prediction_model, LinearizedQuadNoYaw):
-        uncertain_model = LinearQuadUncertain(Z550_parameters)
+        uncertain_model = LinearQuadUncertain(parameters_holder)
     else:
-        uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
+        uncertain_model = QuadTranslationalDynamicsUncertain(parameters_holder)
     if MODEL == 2:
-        uncertain_model = QuadTranslationalDynamicsUncertain(Z550_parameters)
+        uncertain_model = QuadTranslationalDynamicsUncertain(parameters_holder)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / INNER_LOOP_FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
     l1_filter = L1_LowPass(bandwidths=bandwidths, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
-    l1_saturator = L1_ControlSaturator([np.Inf, np.pi/5, np.pi/5])
+    l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
+                                       upper_bounds=[parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
     if USE_ADAPTIVE:
         adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, l1_saturator)
     else:
         adaptive_controller = None
 
+    ## parameters manager
+    parameters_manager = ParametersManager(parameters_holder=parameters_holder,
+                                           predictive_model=position_controller.controller.model,
+                                           input_converter=position_controller.input_converter,
+                                           output_converter=position_controller.output_converter,
+                                           uncertain_predictive_model=l1_predictor.ref_model)
+
+    ## estimation agent
+    SAMPLING_FREQ = OUTER_LOOP_FREQ  # Hz
+    STEP_TIME = 1  # s
+    ATOMIC_TRAJ_SAMPLES_NUM = int(STEP_TIME * SAMPLING_FREQ)
+    samples_num = 100
+    MASS_MIN, MASS_MAX = (0.5, 2.0)
+    domain = (MASS_MIN, MASS_MAX)
+    X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
+    rbf_kernel = RBF_Kernel(length=1)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
+    if USE_ESTIMATOR:
+        estimator_agent = BanditEstimatorAgent(parameters_manager=parameters_manager,
+                                                predictive_model=prediction_model,
+                                                gp=gp,
+                                                deltaT=1/INNER_LOOP_FREQ,
+                                                atomic_traj_samples_num=ATOMIC_TRAJ_SAMPLES_NUM)
+    else:
+        estimator_agent = None
+
+
     # Simulation
     ramp_saturation_slope = np.array([np.Inf, 0.78, 0.78])
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, trajectory, position_controller,
                                   controller_conf.attitude_controller,quad_conf.esc,
-                                  INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller)
+                                  INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller, estimator=estimator_agent)
     t, x = simulator.run(30, deltaT, x0[0:12], u0, trajectory)
     simulator.quad.external_disturbance.plot_history()
     if USE_ADAPTIVE:

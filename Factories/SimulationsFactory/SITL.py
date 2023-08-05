@@ -22,7 +22,7 @@ class SoftwareInTheLoop:
                  outer_loop_freq: int,
                  estimator=None,
                  adaptive_controller=None,
-                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf])):
+                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf]),):
         self.INNER_LOOP_FREQ = inner_loop_freq
         self.OUTER_LOOP_FREQ = outer_loop_freq
         self.MODULO_FACTOR = self.INNER_LOOP_FREQ / self.OUTER_LOOP_FREQ
@@ -151,7 +151,7 @@ class SoftwareInTheLoopLegacy:
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:
                 delta_x0, delta_u0 = self.mpc_input_converter(x[i, :6], ref_prev)
-                ref = self.position_controller.predict(delta_x0, setpoint)
+                ref = self.position_controller.predict(delta_x0)
                 ref_converted = self.mpc_output_converter(ref, throttle=False)
                 u_saturated = self.ramp_saturation(ref_converted, u_saturated_prev)
                 if self.adaptive_controller is not None:

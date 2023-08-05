@@ -1,3 +1,5 @@
+import threading
+
 import numpy as np
 
 from Factories.ConfigurationsFactory.configurations import *
@@ -5,18 +7,24 @@ from Factories.ModelsFactory.linear_models import *
 from Factories.GaussianProcessFactory.gaussian_process import *
 from Factories.ToolsFactory.GeneralTools import RollBuffers
 from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function
+from Factories.DataManagementFactory.data_managers import ParametersManager
 from typing import Type
 import plotly.graph_objects as go
+from threading import Thread
+import time
 class BanditEstimatorAgent():
     def __init__(self,
-                 position_controller_conf: Type[PositionControllerConfiguration],
+                 parameters_manager: Type[ParametersManager],
                  predictive_model: Type[LinearizedQuad],
                  gp: Type[EfficientGaussianProcess],
-                 atomic_traj_samples_num: int,
-                 deltaT: int):
-        self.position_controller_conf = position_controller_conf
-        self.predictive_model = predictive_model
+                 deltaT,
+                 atomic_traj_samples_num: int):
+        self.parameters_manager = parameters_manager
+        self.predictive_model = deepcopy(predictive_model)
         self.gp = gp
+        self.nominal_parameters_holder = DataHolder(self.predictive_model.parameters_holder.get_data())
+        self.estimated_parameters_holder = DataHolder(self.predictive_model.parameters_holder.get_data())
+        self.predictive_model.parameters_holder = self.estimated_parameters_holder
         states_num = self.predictive_model.Ad.shape[0]
         controls_num = self.predictive_model.Bd.shape[1]
         self.trajectory_buffer = RollBuffers(['state', 'state_prediction', 'control_input'],
@@ -25,7 +33,6 @@ class BanditEstimatorAgent():
         self.actions_buffer = RollBuffers(['actions'], [(1,)], buffer_size=3)
         self.penalties_buffer = RollBuffers(['penalties'], [(1,)], buffer_size=3)
         self.penalty_min = None
-        self.estimated_parameters = self.predictive_model.parameters
         self.deltaT = deltaT
         self.samples_num = atomic_traj_samples_num
         self.u_prev = None
@@ -43,13 +50,15 @@ class BanditEstimatorAgent():
             self.penalties_buffer.add_sample(['penalties'], [penalty])
             self.penalty_history.append(penalty)
             if not self.converged:
-                self.update_gp(self.estimated_parameters['m'], penalty)
-                self.gp.plot('../images/gp/')
+                import os
+                print(os.getcwd())
+                self.update_gp(self.estimated_parameters_holder.m, penalty)
+                self.gp.plot('./images/gp/')
                 action = self.take_action()
                 print("Action taken {}".format(action))
                 self.actions_buffer.add_sample(['actions'], [action])
-                self.estimated_parameters['m'] = action
-                self.predictive_model.update_parameters(self.estimated_parameters)
+                self.m = action
+                self.predictive_model.update_parameters()
             else:
                 # conditions_changed = self.check_for_conditions_changes()
                 conditions_changed=False
@@ -76,10 +85,7 @@ class BanditEstimatorAgent():
         return action
     def update_parameters(self):
         parameters = self.predictive_model.parameters
-        u_ss = self.predictive_model.U_OP[:3]
-        self.position_controller_conf.position_controller.update_model_parameters(parameters)
-        self.position_controller_conf.input_converter.update(u_ss=u_ss)
-        self.position_controller_conf.output_converter.update(u_ss, parameters['Kt'])
+        self.parameters_manager.update_parameters(parameters)
 
     def add_sample_to_buffer(self, state, state_prediction, control_input):
         self.trajectory_buffer.add_sample(['state', 'state_prediction', 'control_input'], [state, state_prediction, control_input])
@@ -133,3 +139,70 @@ class BanditEstimatorAgent():
         fig = go.Figure()
 
         fig.add_trace(go.Scatter(x=list(range(len(self.penalty_history))), y=self.penalty_history, name='penalty_history'))
+
+class BanditEstimatorThread(BanditEstimatorAgent, Thread):
+    def __init__(self,
+                 parameters_manager: Type[ParametersManager],
+                 predictive_model: Type[LinearizedQuad],
+                 gp: Type[EfficientGaussianProcess],
+                 atomic_traj_samples_num: int):
+        BanditEstimatorAgent.__init__(self,
+                                      parameters_manager=parameters_manager,
+                                      predictive_model=predictive_model,
+                                      gp=gp,
+                                      deltaT=None,
+                                      atomic_traj_samples_num=atomic_traj_samples_num)
+        Thread.__init__(self)
+        self.data_set_event = threading.Event()
+        self.data = {'x': None, 'u': None}
+        self.start()
+
+    def __call__(self, x, u):
+        if self.prediction_prev is None:
+            self.prediction_prev = x
+            self.start = time.time()
+        if self.trajectory_buffer.full['state'] == True:
+            self.deltaT = time.time() - self.start
+            self.start = time.time()
+            # equivalent to environment.step()
+            self.prediction_prev = x[:6]
+            penalty = self.calculate_penalty()
+            penalty = self.postprocess_penalty(penalty)
+            self.penalties_buffer.add_sample(['penalties'], [penalty])
+            self.penalty_history.append(penalty)
+            if not self.converged:
+                self.update_gp(self.estimated_parameters_holder.m, penalty)
+                self.gp.plot('./images/gp/')
+                action = self.take_action()
+                print("Action taken {}".format(action))
+                self.actions_buffer.add_sample(['actions'], [action])
+                self.m = action
+                self.predictive_model.update_parameters()
+            else:
+                # conditions_changed = self.check_for_conditions_changes()
+                conditions_changed=False
+                if conditions_changed:
+                    self.converged = False
+                    self.penalty_min = np.mean(self.penalties_buffer['penalties'])
+                    self.gp.reset()
+            self.trajectory_buffer.flush()
+        if self.u_prev is not None:
+            x_predicted = self.predictive_model.discrete_prediction(self.prediction_prev, self.u_prev)
+            self.add_sample_to_buffer(x[:6], x_predicted, self.u_prev)
+            self.prediction_prev = x_predicted
+        if self.check_for_convergence() and not self.converged:
+            self.update_parameters()
+            self.converged = True
+            self.penalty_min = np.mean(self.penalties_buffer['penalties'])
+            self.actions_buffer.flush()
+        self.u_prev = u
+    def run(self):
+        while True:
+            self._control_execution()
+            self.__call__(self.data['x'], self.data['u'])
+
+
+    def _control_execution(self):
+        self.data_set_event.wait()
+        self.data_set_event.clear()
+

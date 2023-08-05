@@ -130,6 +130,7 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
             u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
         self._set_telemetry(sigma_hat, u_l1, u)
+        print(sigma_hat)
         return u_composite
 
 
@@ -214,19 +215,21 @@ class L1_ControlConverter:
 
 class L1_ControlSaturator:
     def __init__(self,
-                 control_bounds: list):
-        self.control_bounds = control_bounds
+                 lower_bounds: list,
+                 upper_bounds: list):
+        self.lower_bounds = lower_bounds
+        self.upper_bounds = upper_bounds
 
     def __call__(self, u, u_l1):
         composite = [None] * u.shape[0]
         for i in range(u.shape[0]):
             composite[i] = u[i] + u_l1[i]
-            if composite[i] > self.control_bounds[i]:
-                composite[i] = self.control_bounds[i]
-                u_l1[i] = self.control_bounds[i] - u[i]
-            elif composite[i] < -self.control_bounds[i]:
-                composite[i] = -self.control_bounds[i]
-                u_l1[i] = -self.control_bounds[i] - u[i]
+            if composite[i] > self.upper_bounds[i]:
+                composite[i] = self.upper_bounds[i]
+                u_l1[i] = self.upper_bounds[i] - u[i]
+            elif composite[i] < self.lower_bounds[i]:
+                composite[i] = self.lower_bounds[i]
+                u_l1[i] = self.lower_bounds[i] - u[i]
         return np.array(composite), u_l1
 
 if __name__ == "__main__":

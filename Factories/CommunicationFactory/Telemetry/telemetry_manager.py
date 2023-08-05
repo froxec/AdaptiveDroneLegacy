@@ -10,6 +10,7 @@ from Factories.CommunicationFactory.Telemetry.aux_functions import update_teleme
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import L1_Augmentation
+from Factories.ControllersFactory.control_tools.ControlSupervisor import ControlSupervisor
 from threading import Thread
 import warnings
 import time
@@ -57,12 +58,12 @@ class TelemetryManager:
     def update_telemetry_callback(self, topic, data, opts):
         comm = self.COM_ASCII_MAP[topic]
         indices = COMMANDS_TO_TELEMETRY_INDICES[comm]
-        if len(indices) == 1:
-            key = indices[0]
-            self.telemetry[key] = data
-        elif len(indices) == 2:
+        if isinstance(indices, tuple):
             key, id = indices
             self.telemetry[key][id] = data
+        else:
+            key = indices
+            self.telemetry[key] = data
         if hasattr(self, 'telemetry_set_event'):
             self.telemetry_set_event.set()
 
@@ -174,9 +175,10 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                  update_freq: int,
                  vehicle: Type[Vehicle],
                  position_controller: Type[PositionController],
+                 control_supervisor: Type[ControlSupervisor],
                  adaptive_augmentation: Type[L1_Augmentation]=None,
                  subscribed_comms='ALL',
-                 additional_telemetry=['control', 'estimation_and_control']):
+                 additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle']):
         TelemetryManagerThread.__init__(self,
                                   serialport=serialport,
                                   baudrate=baudrate,
@@ -184,24 +186,27 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                                   update_freq=update_freq,
                                   subscribed_comms=subscribed_comms)
         self.position_controller = position_controller
+        self.control_supervisor = control_supervisor
         self.adaptive_augmentation = adaptive_augmentation
         self.additional_telemetry = additional_telemetry
-        if 'estimation_and_control' in additional_telemetry and self.adaptive_augmentation is None:
+        if 'estimation_and_ref' in additional_telemetry and self.adaptive_augmentation is None:
             warnings.warn("'Estimation and control' telemetry requested, but it requires adaptive controller, which"
                           "is None. Requested telemetry won't be added to a stream.")
-            self.additional_telemetry.remove('estimation_and_control')
-        if ('control' in additional_telemetry and 'estimation_and_control' in additional_telemetry):
+            self.additional_telemetry.remove('estimation_and_ref')
+        if ('reference' in additional_telemetry and 'estimation_and_control' in additional_telemetry):
             warnings.warn("'Control' telemetry requested, but 'estimation and control' already satisfies the needs."
                           " Requested telemetry won't be added to a stream.")
-            self.additional_telemetry.remove('control')
+            self.additional_telemetry.remove('reference')
 
 
     def publish_telemetry(self):
         update_telemetry(self.telemetry, self.vehicle)
-        if hasattr(self, 'additional_telemetry') and 'estimation_and_control' in self.additional_telemetry:
+        if hasattr(self, 'additional_telemetry') and 'estimation_and_ref' in self.additional_telemetry:
             self._add_estimation_to_telemetry(self.telemetry)
-        if hasattr(self, 'additional_telemetry') and 'control' in self.additional_telemetry:
+        if hasattr(self, 'additional_telemetry') and 'reference' in self.additional_telemetry:
             self._add_control_to_telemetry(self.telemetry)
+        if hasattr(self, 'additional_telemetry') and 'output_and_throttle' in self.additional_telemetry:
+            self._add_output_to_telemetry(self.telemetry)
         available_telemetry = self.telemetry.keys()
         for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
             if not isinstance(indices, tuple):
@@ -232,6 +237,13 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
         self.telemetry = telemetry
         return self.telemetry
 
+    def _add_output_to_telemetry(self, telemetry):
+        output_and_throttle = self.control_supervisor.telemetry_to_read
+        if output_and_throttle is not None:
+            for key in output_and_throttle.keys():
+                telemetry[key] = output_and_throttle[key]
+        self.telemetry = telemetry
+        return self.telemetry
     def run(self):
         while True:
             self.publish_telemetry()
