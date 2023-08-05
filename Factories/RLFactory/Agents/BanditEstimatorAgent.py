@@ -217,15 +217,16 @@ class BanditEstimatorAcceleration:
         # parameters holders
         self.nominal_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
         self.estimated_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
-        self.predictive_model.parameters_holder = self.estimated_parameters_holder
+        self.prediction_model.parameters_holder = self.estimated_parameters_holder
 
     def __call__(self, acceleration, u_prev):
-        a_hat = self.prediction_model(u_prev)
+        a_hat = self.prediction_model(force_norm=u_prev[0], angles=u_prev[1:])
         penalty = self._calculate_penalty(a_hat, acceleration)
-        self.update_gp(self.prediction_model.m, penalty)
+        self.update_gp(self.estimated_parameters_holder.m, penalty)
+        self.gp.plot('./images/gp/')
         action = self.take_action()
         self.estimated_parameters_holder.m = action
-        self.predictive_model.update_parameters()
+        print(self.prediction_model.parameters_holder.m)
     def update_gp(self, action, reward):
         self.gp(np.array(action).reshape(-1, 1), [reward])
     def _calculate_penalty(self, a_hat, a):
@@ -236,4 +237,5 @@ class BanditEstimatorAcceleration:
         best = self.gp.Thompson_sampling(mode='min', number_of_samples=1)
         action = best['best_action']
         return action
+
 

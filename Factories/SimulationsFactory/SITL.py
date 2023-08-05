@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from Simulation.model import quadcopterModel, loadPendulum, System
-from Factories.RLFactory.Agents import BanditEstimatorAgent
+from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAgent, BanditEstimatorAcceleration
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
 from Factories.ToolsFactory.Converters import RampSaturation
@@ -34,7 +34,10 @@ class SoftwareInTheLoop:
         self.esc = esc
         self.adaptive_controller = adaptive_controller
         self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1 / self.OUTER_LOOP_FREQ)
-        self.system = System(self.quad)
+        if self.estimator is not None:
+            self.system = System(self.quad, return_dstate=True)
+        else:
+            self.system = System(self.quad, return_dstate=True)
 
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time
@@ -49,7 +52,7 @@ class SoftwareInTheLoop:
             if (i % self.MODULO_FACTOR) == 0:
                 ref = self.position_controller(x[i, :6], convert_throttle=False)
                 if self.adaptive_controller is None:
-                    mpc_u = self.position_controller.output_converter.convert_throttle(ref)
+                    u_composite = ref
             if (self.adaptive_controller is not None and
                     isinstance(self.adaptive_controller.predictor.ref_model, QuadTranslationalDynamicsUncertain)):
                 z = x[i, 3:6]
@@ -59,7 +62,6 @@ class SoftwareInTheLoop:
                                                        np.concatenate([u, np.array([0])]),
                                                        np.concatenate([u_prev, np.array([0])]), t_i)
                 u_prev = u
-                mpc_u = self.position_controller.output_converter.convert_throttle(u_composite)
             elif (self.adaptive_controller is not None and
                   isinstance(self.adaptive_controller.predictor.ref_model, LinearQuadUncertain)):
                 delta_x, delta_u = self.position_controller.input_converter(x[i, :6], ref)
@@ -68,16 +70,19 @@ class SoftwareInTheLoop:
                 delta_u_composite = self.adaptive_controller(z, z_prev,
                                                              u, u_prev, t_i)
                 u_prev = u
-                mpc_u = self.position_controller.output_converter(delta_u_composite)
+                u_composite = self.position_controller.output_converter(delta_u_composite, throttle=False)
                 z_prev = z
+            mpc_u = self.position_controller.output_converter.convert_throttle(u_composite)
             attitude_setpoint = np.concatenate([mpc_u[1:], np.array([0.0])])
             throttle = mpc_u[0]
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12],
                                                 throttle)
             motors = self.esc(ESC_PWMs)
-            x[i + 1] = self.system(np.array(motors), deltaT, self.quad)[:12]
-            if self.estimator is not None:
+            x[i + 1], dstate = self.system(np.array(motors), deltaT, self.quad)[:12]
+            if isinstance(self.estimator, BanditEstimatorAgent):
                 self.estimator(x[i + 1, :6], ref_prev)
+            elif isinstance(self.estimator, BanditEstimatorAcceleration):
+                self.estimator(dstate[3:6], np.concatenate([u_composite, np.array([0.0])]))
             if isinstance(self.trajectory, type(TrajectoryWithTerminals())):
                 terminal_ind = self.check_if_reached_terminal(x[i + 1, :6])
                 if terminal_ind is not None:

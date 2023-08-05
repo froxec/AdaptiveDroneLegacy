@@ -14,14 +14,15 @@ from Factories.ModelsFactory.external_force_models import WindModel, RandomAddit
 from Simulation.plots import plotTrajectory, plotTrajectory3d
 from Factories.DataManagementFactory.data_holders import DataHolder
 from Factories.DataManagementFactory.data_managers import ParametersManager
-from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAgent
+from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAgent, BanditEstimatorAcceleration
+from Factories.ModelsFactory.models_for_estimation import NonlinearTranslationalModel
 from Factories.GaussianProcessFactory.kernels import RBF_Kernel
 from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianProcess
 
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = True
+USE_ADAPTIVE = False
 USE_ESTIMATOR = True
 MPC_MODE = MPCModes.UNCONSTRAINED
 HORIZON = 20
@@ -35,7 +36,7 @@ PWM_RANGE = [1120, 1920]
 trajectory = SinglePoint([0, 0, 10])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': 0.6})
 
     ## parameters holder
     parameters_holder = DataHolder(perturber.perturbed_parameters)
@@ -106,14 +107,13 @@ if __name__ == "__main__":
     MASS_MIN, MASS_MAX = (0.5, 2.0)
     domain = (MASS_MIN, MASS_MAX)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
-    rbf_kernel = RBF_Kernel(length=1)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
+    rbf_kernel = RBF_Kernel(length=0.2)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.5)
+    estimator_prediction_model = NonlinearTranslationalModel(parameters_holder)
     if USE_ESTIMATOR:
-        estimator_agent = BanditEstimatorAgent(parameters_manager=parameters_manager,
-                                                predictive_model=prediction_model,
-                                                gp=gp,
-                                                deltaT=1/s,
-                                                atomic_traj_samples_num=ATOMIC_TRAJ_SAMPLES_NUM)
+        estimator_agent = BanditEstimatorAcceleration(parameters_manager=parameters_manager,
+                                                      prediction_model=estimator_prediction_model,
+                                                      gp=gp)
     else:
         estimator_agent = None
 

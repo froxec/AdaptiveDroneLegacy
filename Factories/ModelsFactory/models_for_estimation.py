@@ -13,7 +13,7 @@ class NonlinearTranslationalModel:
 
         fx = force_norm * (c(phi)*s(theta)*c(psi) + s(phi)*s(psi))
         fy = force_norm * (c(phi)*s(psi)*s(theta) - c(psi)*s(phi))
-        fz = force_norm * (c(phi)*c(theta))
+        fz = force_norm * (c(phi)*c(theta)) - self.parameters_holder.m * self.parameters_holder.g
 
         accelerations_hat = (1/self.parameters_holder.m) * np.array([fx, fy, fz])
         return accelerations_hat

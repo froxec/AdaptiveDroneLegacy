@@ -1,6 +1,7 @@
 from math import sin, cos
 import numpy as np
 import copy
+from copy import deepcopy
 
 from Factories.SimulationsFactory.solvers import *
 
@@ -49,15 +50,21 @@ def system(u, deltaT, quadcopter_object, load_pendulum_object=None, solver='RK')
         return np.concatenate([quadcopter_object.state, load_pendulum_object.state])
 
 class System:
-    def __init__(self, model_object, solver='RK'):
+    def __init__(self, model_object, solver='RK', return_dstate=False):
         if solver not in solvers.keys():
             raise ValueError("{} is not valid solver. Choose one of {}".format(solver, solvers.keys()))
         self.solver = solvers[solver](model_object=model_object, parent=self)
+        self.return_dstate = return_dstate
 
     def __call__(self, u, delta_t, model_object):
+        model_before_update = deepcopy(model_object)
         model_object.time += delta_t
         state = self.solver(delta_t=delta_t, model_object=model_object, u=u)
-        return state
+        if self.return_dstate:
+            dstate = model_before_update.updateStateOde(model_before_update.state, u)
+            return state, dstate
+        else:
+            return state, None
 
 
 def rungeKutta4(deltaT, model_object, u=np.array([None])):
