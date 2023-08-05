@@ -81,8 +81,10 @@ def update_telemetry(telemetry, vehicle):
    telemetry['attitude'] = [vehicle.attitude.pitch, 
                             vehicle.attitude.roll,
                             vehicle.attitude.yaw]
+   telemetry['position_global'] = [vehicle.location.global_frame.lat, vehicle.location.global_frame.lon] 
    telemetry['heading'] = vehicle.heading
-   telemetry['flight_mode'] = vehicle.mode
+   telemetry['flight_mode'] = vehicle.mode.name
+  
 
 class GCSCommInterpreter:
    
