@@ -22,7 +22,8 @@ class SoftwareInTheLoop:
                  outer_loop_freq: int,
                  estimator=None,
                  adaptive_controller=None,
-                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf]),):
+                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf]),
+                 acceleration_noise=[0, 0, 0]):
         self.INNER_LOOP_FREQ = inner_loop_freq
         self.OUTER_LOOP_FREQ = outer_loop_freq
         self.MODULO_FACTOR = self.INNER_LOOP_FREQ / self.OUTER_LOOP_FREQ
@@ -37,7 +38,10 @@ class SoftwareInTheLoop:
         if self.estimator is not None:
             self.system = System(self.quad, return_dstate=True)
         else:
-            self.system = System(self.quad, return_dstate=True)
+            self.system = System(self.quad)
+        if not isinstance(acceleration_noise, np.ndarray):
+            acceleration_noise = np.array(acceleration_noise)
+        self.acceleration_noise = acceleration_noise
 
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time
@@ -49,6 +53,7 @@ class SoftwareInTheLoop:
         u_prev = ref_prev
         self.position_controller.change_trajectory(setpoint)
         for i, t_i in enumerate(t[1:], 0):
+            t1 = time.time()
             if (i % self.MODULO_FACTOR) == 0:
                 ref = self.position_controller(x[i, :6], convert_throttle=False)
                 if self.adaptive_controller is None:
@@ -79,10 +84,14 @@ class SoftwareInTheLoop:
                                                 throttle)
             motors = self.esc(ESC_PWMs)
             x[i + 1], dstate = self.system(np.array(motors), deltaT, self.quad)[:12]
+            print(time.time()-t1)
             if isinstance(self.estimator, BanditEstimatorAgent):
                 self.estimator(x[i + 1, :6], ref_prev)
             elif isinstance(self.estimator, BanditEstimatorAcceleration):
-                self.estimator(dstate[3:6], np.concatenate([u_composite, np.array([0.0])]))
+                dstate = dstate[3:6] + np.random.normal(loc=np.zeros_like(self.acceleration_noise),
+                                                        scale=self.acceleration_noise,
+                                                        size=self.acceleration_noise.shape[0])
+                self.estimator(dstate, force_norm=u_composite[0], angles=x[i, 6:9])
             if isinstance(self.trajectory, type(TrajectoryWithTerminals())):
                 terminal_ind = self.check_if_reached_terminal(x[i + 1, :6])
                 if terminal_ind is not None:

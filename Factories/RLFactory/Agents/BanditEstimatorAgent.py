@@ -12,6 +12,7 @@ from typing import Type
 import plotly.graph_objects as go
 from threading import Thread
 import time
+from collections import Counter, deque
 class BanditEstimatorAgent():
     def __init__(self,
                  parameters_manager: Type[ParametersManager],
@@ -209,24 +210,43 @@ class BanditEstimatorAcceleration:
     def __init__(self,
                  parameters_manager: Type[ParametersManager],
                  prediction_model,
-                 gp: Type[EfficientGaussianProcess]):
+                 gp: Type[EfficientGaussianProcess],
+                 convergence_checker,
+                 sleeptime=1):
         self.parameters_manager = parameters_manager
         self.prediction_model = prediction_model
         self.gp = gp
+        self.convergence_checker = convergence_checker
 
         # parameters holders
         self.nominal_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
         self.estimated_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
         self.prediction_model.parameters_holder = self.estimated_parameters_holder
 
-    def __call__(self, acceleration, u_prev):
-        a_hat = self.prediction_model(force_norm=u_prev[0], angles=u_prev[1:])
-        penalty = self._calculate_penalty(a_hat, acceleration)
-        self.update_gp(self.estimated_parameters_holder.m, penalty)
-        self.gp.plot('./images/gp/')
-        action = self.take_action()
-        self.estimated_parameters_holder.m = action
-        print(self.prediction_model.parameters_holder.m)
+        # flags
+        self.converged = False
+        self.parameters_changed = False
+        self.sleeptime = sleeptime
+    def __call__(self, acceleration, force_norm, angles):
+        if not self.converged:
+            t1 = time.time()
+            a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
+            penalty = self._calculate_penalty(a_hat, acceleration)
+            penalty = self._normalize_penalty(penalty, acceleration)
+            self.update_gp(self.estimated_parameters_holder.m, penalty)
+            #self.gp.plot('./images/gp/')
+            action = self.take_action()
+            self.estimated_parameters_holder.m = action
+            self.converged = self.convergence_checker(action)
+            print(time.time()-t1)
+        elif not self.parameters_changed:
+            parameters = self.get_parameters()
+            print("Converged to {}".format(parameters))
+            self.update_parameters(parameters)
+            self.parameters_changed = True
+        else:
+            pass
+
     def update_gp(self, action, reward):
         self.gp(np.array(action).reshape(-1, 1), [reward])
     def _calculate_penalty(self, a_hat, a):
@@ -238,4 +258,33 @@ class BanditEstimatorAcceleration:
         action = best['best_action']
         return action
 
+    def _normalize_penalty(self, penalty, a):
+        penalty = penalty / (np.linalg.norm(a) + 1)
+        return penalty
 
+    def update_parameters(self, parameters):
+        self.parameters_manager.update_parameters(parameters)
+
+    def get_parameters(self):
+        parameters = self.estimated_parameters_holder.get_data()
+        parameters['m'] = self.convergence_checker.average
+        return parameters
+
+if __name__ == "__main__":
+    import plotly.express as px
+
+    n = 100
+    data = np.linspace(0, 10, 11)
+    p = list(range(1, 12))
+    p = np.array(p) / sum(p)
+    print(p)
+    x = deque(maxlen=n)
+    for i in range(n):
+        element = np.random.choice(data, 1, p=p).item()
+        x.appendleft(element)
+    cnt = Counter(x)
+    data_to_plot = {'keys': list(cnt.keys()), 'values': list(cnt.values())}
+    fig = px.bar(data_to_plot, x="keys", y="values")
+    fig.show()
+    avg = np.average(np.array(list(cnt.keys())),weights=np.array(list(cnt.values())))
+    print("Average",  avg)
