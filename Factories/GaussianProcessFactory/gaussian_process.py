@@ -4,9 +4,9 @@ import plotly.graph_objects as go
 import itertools
 from Factories.ToolsFactory.GeneralTools import minmax_rescale
 from scipy.linalg import cholesky, cho_solve
-from collections import deque
+from collections import Counter
 class GaussianProcess():
-    def __init__(self, predict_at, kernel_function, noise_std=0):
+    def __init__(self, predict_at, kernel_function, noise_std=0, max_samples=100):
         self.kernel_function = kernel_function
         self.X = predict_at
         self.cov22 = self.kernel_function(self.X, self.X)
@@ -14,6 +14,7 @@ class GaussianProcess():
         self.sample = None
         self.best_action_idx = None
         self.plots = 0
+        self.max_samples=max_samples
         self.memory = {'obs_x': [],
                        'obs_y': []}
     def __call__(self, obs_x, obs_y):
@@ -104,11 +105,21 @@ class GaussianProcess():
         fig.write_image("../../images/gp/gp_plot{}.jpg".format(self.plots))
         self.plots += 1
 
-
+    def _handle_overflow(self):
+        if len(self.memory['obs_x']) > self.max_samples:
+            ctn = Counter(self.memory['obs_x'])
+            values = list(ctn.keys())
+            counts = list(ctn.values())
+            unique_probabilities = {value: count for value, count in zip(values, list(np.array(counts)/sum(counts)))}
+            p = [unique_probabilities[x]/ctn[x] for x in self.memory['obs_x']]
+            id = np.random.choice(range(len(self.memory['obs_x'])), size=1, p=p)[0]
+            del self.memory['obs_x'][id]
+            del self.memory['obs_y'][id]
 class EfficientGaussianProcess(GaussianProcess):
     def __call__(self, obs_x, obs_y):
         self.memory['obs_x'].extend(obs_x.flatten().tolist())
         self.memory['obs_y'].extend(obs_y)
+        self._handle_overflow()
         obs_x = np.array(self.memory['obs_x']).reshape(-1, 1)
         cov11 = self.kernel_function(obs_x, obs_x) + np.eye(obs_x.shape[0]) * (self.noise_std ** 2 + 3e-7)
         cov12 = self.kernel_function(self.X, obs_x)
@@ -122,6 +133,7 @@ class EfficientGaussianProcess(GaussianProcess):
         self.std = np.sqrt(np.diag(self.cov))
 
         return self.mean, self.cov
+
 class ContextualGaussianProcess(GaussianProcess):
     def __init__(self, predict_at, kernel, noise_std):
         self.X = predict_at

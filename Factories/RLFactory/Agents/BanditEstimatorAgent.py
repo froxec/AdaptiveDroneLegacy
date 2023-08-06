@@ -6,7 +6,7 @@ from Factories.ConfigurationsFactory.configurations import *
 from Factories.ModelsFactory.linear_models import *
 from Factories.GaussianProcessFactory.gaussian_process import *
 from Factories.ToolsFactory.GeneralTools import RollBuffers
-from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function
+from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function, euclidean_distance
 from Factories.DataManagementFactory.data_managers import ParametersManager
 from typing import Type
 import plotly.graph_objects as go
@@ -212,7 +212,11 @@ class BanditEstimatorAcceleration:
                  prediction_model,
                  gp: Type[EfficientGaussianProcess],
                  convergence_checker,
-                 sleeptime=1):
+                 sleeptime=1,
+                 pen_moving_window=None,
+                 actions_moving_window=None,
+                 variance_threshold=0.2,
+                 epsilon_episode_steps=0):
         self.parameters_manager = parameters_manager
         self.prediction_model = prediction_model
         self.gp = gp
@@ -227,13 +231,36 @@ class BanditEstimatorAcceleration:
         self.converged = False
         self.parameters_changed = False
         self.sleeptime = sleeptime
+        self.pen_moving_window = pen_moving_window
+        self.actions_moving_window = actions_moving_window
+        self.variance_threshold = variance_threshold
+        self.epsilon_episode = True
+        self.epsilon_episode_steps = epsilon_episode_steps
+        self.i = 0
+        #memory
+        self.memory = {'penalty': [],
+                       'normalized_penalty': [],
+                       'error_x': deque(maxlen=self.pen_moving_window),
+                       'error_y': deque(maxlen=self.pen_moving_window),
+                       'error_z': deque(maxlen=self.pen_moving_window),
+                       'actions': deque(maxlen=self.actions_moving_window)}
+
     def __call__(self, acceleration, force_norm, angles):
+        if self.i < self.epsilon_episode_steps:
+            print("Epsilon episode.. Calibration..")
+            self._epsilon_episode_step(acceleration, force_norm, angles)
+            self.i += 1
+            return
         if not self.converged:
+            self.memory['actions'].append(self.estimated_parameters_holder.m)
+            print("Action:", self.estimated_parameters_holder.m)
             a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
             penalty = self._calculate_penalty(a_hat, acceleration)
-            penalty = self._normalize_penalty(penalty, acceleration)
+            self.memory['penalty'].append(penalty)
+            # penalty = self._normalize_penalty(penalty, acceleration)
+            # self.memory['normalized_penalty'].append(penalty)
             self.update_gp(self.estimated_parameters_holder.m, penalty)
-            #self.gp.plot('./images/gp/')
+            self.gp.plot('./images/gp/')
             action = self.take_action()
             self.estimated_parameters_holder.m = action
             self.converged = self.convergence_checker(action)
@@ -248,7 +275,26 @@ class BanditEstimatorAcceleration:
     def update_gp(self, action, reward):
         self.gp(np.array(action).reshape(-1, 1), [reward])
     def _calculate_penalty(self, a_hat, a):
-        reward = manhattan_distance(a_hat, a)
+        error_vector = list(a - a_hat)
+        if len(list(self.memory['actions'])) == 1:
+            act_variance = self.variance_threshold + 1
+        else:
+            act_variance = np.var(list(self.memory['actions']), axis=0)
+        if act_variance > self.variance_threshold:
+            self.memory['error_x'].append(error_vector[0])
+            self.memory['error_y'].append(error_vector[1])
+            self.memory['error_z'].append(error_vector[2])
+
+        error_history = np.array([list(self.memory['error_x']),
+                                 list(self.memory['error_y']),
+                                 list(self.memory['error_z'])])
+        self.penalty_mean = np.mean(error_history, axis=1)
+        print(self.penalty_mean)
+        variance = np.var(error_history, axis=1)
+        error_vector_std = (error_vector - self.penalty_mean)
+        reward = np.linalg.norm(error_vector_std)
+
+        #reward = euclidean_distance(a_hat, a)
         return reward
 
     def take_action(self):
@@ -256,9 +302,19 @@ class BanditEstimatorAcceleration:
         action = best['best_action']
         return action
 
-    def _normalize_penalty(self, penalty, a):
+    def _normalize_penalty_max_a(self, penalty, a):
         penalty = penalty / (np.linalg.norm(a) + 1)
         return penalty
+
+    def _epsilon_episode_step(self, acceleration, force_norm, angles):
+        values_pool = self.gp.X.flatten()
+        action = np.random.choice(values_pool, 1)[0]
+        self.estimated_parameters_holder.m = action
+        a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
+        error_vector = list(acceleration - a_hat)
+        self.memory['error_x'].append(error_vector[0])
+        self.memory['error_y'].append(error_vector[1])
+        self.memory['error_z'].append(error_vector[2])
 
     def update_parameters(self, parameters):
         self.parameters_manager.update_parameters(parameters)
@@ -268,6 +324,11 @@ class BanditEstimatorAcceleration:
         parameters['m'] = self.convergence_checker.average
         return parameters
 
+    def plot_history(self, signal_name):
+        fig = go.Figure()
+        data = self.memory[signal_name]
+        fig.add_trace(go.Scatter(x=list(range(len(data))), y=data, name=signal_name))
+        fig.show()
 if __name__ == "__main__":
     import plotly.express as px
 
