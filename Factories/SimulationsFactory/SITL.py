@@ -53,7 +53,6 @@ class SoftwareInTheLoop:
         u_prev = ref_prev
         self.position_controller.change_trajectory(setpoint)
         for i, t_i in enumerate(t[1:], 0):
-            t1 = time.time()
             if (i % self.MODULO_FACTOR) == 0:
                 ref = self.position_controller(x[i, :6], convert_throttle=False)
                 if self.adaptive_controller is None:
@@ -84,7 +83,6 @@ class SoftwareInTheLoop:
                                                 throttle)
             motors = self.esc(ESC_PWMs)
             x[i + 1], dstate = self.system(np.array(motors), deltaT, self.quad)[:12]
-            print(time.time()-t1)
             if isinstance(self.estimator, BanditEstimatorAgent):
                 self.estimator(x[i + 1, :6], ref_prev)
             elif isinstance(self.estimator, BanditEstimatorAcceleration):

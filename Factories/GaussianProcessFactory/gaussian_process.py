@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import itertools
 from Factories.ToolsFactory.GeneralTools import minmax_rescale
 from scipy.linalg import cholesky, cho_solve
+from collections import deque
 class GaussianProcess():
     def __init__(self, predict_at, kernel_function, noise_std=0):
         self.kernel_function = kernel_function

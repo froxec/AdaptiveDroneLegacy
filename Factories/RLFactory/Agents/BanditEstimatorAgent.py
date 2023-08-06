@@ -229,7 +229,6 @@ class BanditEstimatorAcceleration:
         self.sleeptime = sleeptime
     def __call__(self, acceleration, force_norm, angles):
         if not self.converged:
-            t1 = time.time()
             a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
             penalty = self._calculate_penalty(a_hat, acceleration)
             penalty = self._normalize_penalty(penalty, acceleration)
@@ -238,7 +237,6 @@ class BanditEstimatorAcceleration:
             action = self.take_action()
             self.estimated_parameters_holder.m = action
             self.converged = self.convergence_checker(action)
-            print(time.time()-t1)
         elif not self.parameters_changed:
             parameters = self.get_parameters()
             print("Converged to {}".format(parameters))

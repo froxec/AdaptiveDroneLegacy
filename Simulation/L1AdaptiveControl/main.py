@@ -24,7 +24,7 @@ from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceCheck
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = False
-USE_ESTIMATOR = False
+USE_ESTIMATOR = True
 MPC_MODE = MPCModes.UNCONSTRAINED
 HORIZON = 20
 
@@ -34,7 +34,7 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([0, 0, 20])
+trajectory = SinglePoint([0, 50, 20])
 if __name__ == "__main__":
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.6})
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     rbf_kernel = RBF_Kernel(length=0.1)
     gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=1.0)
     estimator_prediction_model = NonlinearTranslationalModel(parameters_holder)
-    convergence_checker = ConvergenceChecker(10, 0.1)
+    convergence_checker = ConvergenceChecker(20, 0.1)
     if USE_ESTIMATOR:
         estimator_agent = BanditEstimatorAcceleration(parameters_manager=parameters_manager,
                                                       prediction_model=estimator_prediction_model,

@@ -55,13 +55,15 @@ class System:
             raise ValueError("{} is not valid solver. Choose one of {}".format(solver, solvers.keys()))
         self.solver = solvers[solver](model_object=model_object, parent=self)
         self.return_dstate = return_dstate
+        self.model_before_update = deepcopy(model_object)
 
     def __call__(self, u, delta_t, model_object):
-        model_before_update = deepcopy(model_object)
+        import time
+        self.model_before_update.__dict__.update(model_object.__dict__)
         model_object.time += delta_t
         state = self.solver(delta_t=delta_t, model_object=model_object, u=u)
         if self.return_dstate:
-            dstate = model_before_update.updateStateOde(model_before_update.state, u)
+            dstate = self.model_before_update.updateStateOde(self.model_before_update.state, u)
             return state, dstate
         else:
             return state, None
