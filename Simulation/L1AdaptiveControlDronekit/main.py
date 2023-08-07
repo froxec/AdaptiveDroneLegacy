@@ -19,6 +19,7 @@ from Factories.DataManagementFactory.data_managers import ParametersManager
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
 from Factories.GaussianProcessFactory.kernels import RBF_Kernel
 from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianProcess
+import dronekit
 import serial
 import argparse
 import numpy as np
@@ -43,7 +44,7 @@ def run_controller(controller, x=None):
 
 
 #TESTING OPTIONS
-NORMALIZE = False
+NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
 USE_ESTIMATOR = False
@@ -137,7 +138,7 @@ if __name__ == "__main__":
                                            ramp_saturation_slope)
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/6',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/4',
                           baudrate=115200,
                           update_freq=10,
                           vehicle=vehicle,

@@ -213,6 +213,7 @@ class BanditEstimatorAcceleration:
                  gp: Type[EfficientGaussianProcess],
                  convergence_checker,
                  sleeptime=1,
+                 mode = 'ACCELERATION',
                  pen_moving_window=None,
                  actions_moving_window=None,
                  variance_threshold=0.2,
@@ -234,9 +235,22 @@ class BanditEstimatorAcceleration:
         self.pen_moving_window = pen_moving_window
         self.actions_moving_window = actions_moving_window
         self.variance_threshold = variance_threshold
-        self.epsilon_episode = True
+        if epsilon_episode_steps == 0:
+            self.epsilon_episode = False
+        else:
+            self.epsilon_episode = True
         self.epsilon_episode_steps = epsilon_episode_steps
         self.i = 0
+
+        #mode
+        self.available_modes = ['ACCELERATION_MEASUREMENT', 'ACCELERATION_CONTROL', 'VELOCITY_MEASUREMENT', 'VELOCITY_CONTROL']
+        if mode not in self.available_modes:
+            raise ValueError("Estimator mode not correct. Should be {}".format(self.available_modes))
+        self.mode = mode
+
+        self.velocity_prev = np.array([0, 0, 0])
+        self.velocity_timer = time.time()
+
         #memory
         self.memory = {'penalty': [],
                        'normalized_penalty': [],
@@ -245,7 +259,12 @@ class BanditEstimatorAcceleration:
                        'error_z': deque(maxlen=self.pen_moving_window),
                        'actions': deque(maxlen=self.actions_moving_window)}
 
-    def __call__(self, acceleration, force_norm, angles):
+    def __call__(self, measurement, force_norm, angles, deltaT=None):
+        mode = self.mode.split('_')
+        if mode[0] == 'VELOCITY':
+            acceleration = self._convert_velocity_to_acceleration(measurement, deltaT)
+        else:
+            acceleration = measurement
         if self.i < self.epsilon_episode_steps:
             print("Epsilon episode.. Calibration..")
             self._epsilon_episode_step(acceleration, force_norm, angles)
@@ -285,13 +304,16 @@ class BanditEstimatorAcceleration:
             self.memory['error_y'].append(error_vector[1])
             self.memory['error_z'].append(error_vector[2])
 
-        error_history = np.array([list(self.memory['error_x']),
-                                 list(self.memory['error_y']),
-                                 list(self.memory['error_z'])])
-        self.penalty_mean = np.mean(error_history, axis=1)
+        if len(list(self.memory['error_x'])) > 0:
+            error_history = np.array([list(self.memory['error_x']),
+                                     list(self.memory['error_y']),
+                                     list(self.memory['error_z'])])
+            self.penalty_mean = np.mean(error_history, axis=1)
+            variance = np.var(error_history, axis=1)
+        else:
+            self.penalty_mean = np.zeros_like(error_vector)
         print(self.penalty_mean)
-        variance = np.var(error_history, axis=1)
-        error_vector_std = (error_vector - self.penalty_mean)
+        error_vector_std = (error_vector - self.penalty_mean) / (variance + 1e-6)
         reward = np.linalg.norm(error_vector_std)
 
         #reward = euclidean_distance(a_hat, a)
@@ -316,6 +338,16 @@ class BanditEstimatorAcceleration:
         self.memory['error_y'].append(error_vector[1])
         self.memory['error_z'].append(error_vector[2])
 
+    def _convert_velocity_to_acceleration(self, velocity, deltaT):
+        if deltaT is None:
+            raise ValueError("deltaT in velocity mode should be passed to estimator..")
+        # current_time = time.time()
+        # velocity_dt = current_time - self.velocity_timer
+        acceleration = (velocity - self.velocity_prev) / deltaT
+        self.velocity_prev = velocity
+        # self.velocity_timer = current_time
+        return acceleration
+
     def update_parameters(self, parameters):
         self.parameters_manager.update_parameters(parameters)
 
@@ -329,6 +361,8 @@ class BanditEstimatorAcceleration:
         data = self.memory[signal_name]
         fig.add_trace(go.Scatter(x=list(range(len(data))), y=data, name=signal_name))
         fig.show()
+
+
 if __name__ == "__main__":
     import plotly.express as px
 
