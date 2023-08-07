@@ -180,27 +180,27 @@ class AngularVelocityToThrust():
 
 
 class RampSaturation:
-    def __init__(self, slope_max, Ts):
-        if isinstance(slope_max, (list, np.ndarray)):
-            self.slope_max = slope_max
-        else:
-            self.slope_max = np.array([slope_max])
+    def __init__(self, slope, Ts):
+        if not isinstance(slope, dict):
+            raise ValueError("slope should be dict with upper_bound, and lower_bound keys")
         self.Ts = Ts
-        self.prev = None
+        self.slope_lb = slope['lower_bound']
+        self.slope_ub = slope['upper_bound']
+        self.prev = np.zeros_like(self.slope_lb)
     def __call__(self, curr):
         if self.prev is None:
             self.prev = curr
-        if (curr.flatten().shape[0] != self.slope_max.flatten().shape[0] or
-            self.prev.flatten().shape[0] != self.slope_max.flatten().shape[0]):
+        if (curr.flatten().shape[0] != self.slope_lb.flatten().shape[0] or
+            self.prev.flatten().shape[0] != self.slope_ub.flatten().shape[0]):
             raise ValueError("Length of signal vector and slope limit vector should be equal.. {} != {}".format(curr.flatten().shape, self.slope_max.flatten().shape))
         derivative = (curr - self.prev) / self.Ts
         output = np.zeros_like(derivative)
         derivative = derivative.flatten()
         for i in range(derivative.shape[0]):
-            if derivative[i] < -self.slope_max[i]:
-                output[i] = self.prev[i] - self.slope_max[i] * self.Ts
-            elif derivative[i] > self.slope_max[i]:
-                output[i] = self.prev[i] + self.slope_max[i] * self.Ts
+            if derivative[i] < self.slope_lb[i]:
+                output[i] = self.prev[i] + self.slope_lb[i] * self.Ts
+            elif derivative[i] > self.slope_ub[i]:
+                output[i] = self.prev[i] + self.slope_ub[i] * self.Ts
             else:
                 output[i] = curr[i]
         self.prev = output

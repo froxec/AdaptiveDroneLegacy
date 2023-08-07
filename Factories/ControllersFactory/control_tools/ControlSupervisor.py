@@ -73,7 +73,10 @@ class ControlSupervisor:
             self.set_attitude(u_composite_converted)
             self._set_telemetry(u_composite, u_composite_converted[0])
             if self.estimator_agent is not None:
-                self.estimator_agent.data = {'x': x, 'u': u_composite}
+                measurement = x[3:6]
+                force = u_composite[0]
+                angles = u_composite[1:]
+                self.estimator_agent.data = {'measurement': measurement, 'force': force, 'angles': angles}
                 self.estimator_agent.data_set_event.set()
 
     def get_state(self):

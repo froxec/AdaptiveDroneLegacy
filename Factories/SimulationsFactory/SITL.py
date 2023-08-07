@@ -7,7 +7,6 @@ from Simulation.model import quadcopterModel, loadPendulum, System
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAgent, BanditEstimatorAcceleration
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
-from Factories.ToolsFactory.Converters import RampSaturation
 from Factories.ModelsFactory.uncertain_models import *
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from typing import Type
@@ -22,7 +21,6 @@ class SoftwareInTheLoop:
                  outer_loop_freq: int,
                  estimator=None,
                  adaptive_controller=None,
-                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf]),
                  acceleration_noise=[0, 0, 0]):
         self.INNER_LOOP_FREQ = inner_loop_freq
         self.OUTER_LOOP_FREQ = outer_loop_freq
@@ -34,7 +32,6 @@ class SoftwareInTheLoop:
         self.trajectory = trajectory
         self.esc = esc
         self.adaptive_controller = adaptive_controller
-        self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1 / self.OUTER_LOOP_FREQ)
         if self.estimator is not None:
             self.system = System(self.quad, return_dstate=True)
         else:
@@ -51,6 +48,7 @@ class SoftwareInTheLoop:
         z_prev = x0[3:6]
         ref_prev = u0
         u_prev = ref_prev
+        u_saturated_prev = u_prev
         self.position_controller.change_trajectory(setpoint)
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:

@@ -24,9 +24,9 @@ from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceCheck
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = False
-USE_ESTIMATOR = True
-ESTIMATOR_MODE = 'VELOCITY_CONTROL'
-MPC_MODE = MPCModes.UNCONSTRAINED
+USE_ESTIMATOR = False
+ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
+MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 20
 QUAD_NOMINAL_MASS = 0.7
 
@@ -36,7 +36,7 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([0, 0, 20])
+trajectory = SinglePoint([0, 100, 50])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     parameters_holder = DataHolder(perturber.perturbed_parameters)
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[0, 1, 0], strength=5)
+    wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
     #wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=3.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
     #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=2)
@@ -66,10 +66,13 @@ if __name__ == "__main__":
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
     controller_conf.position_controller.switch_modes(MPC_MODE)
+    ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
+                             'upper_bound': np.array([2, 0.78, 0.78])}
     position_controller = PositionController(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
                                                    controller_conf.position_controller_output_converter,
-                                                   trajectory)
+                                                   trajectory,
+                                                   ramp_saturation_slope=ramp_saturation_slope)
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
@@ -111,8 +114,8 @@ if __name__ == "__main__":
     MASS_MIN, MASS_MAX = (0.5, 2.0)
     domain = (MASS_MIN, MASS_MAX)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
-    rbf_kernel = RBF_Kernel(length=0.5)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.1, max_samples=100, overflow_handling_mode='IMPORTANCE')
+    rbf_kernel = RBF_Kernel(length=0.1)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.5, max_samples=100, overflow_handling_mode='IMPORTANCE')
     estimator_prediction_model = NonlinearTranslationalModel(parameters_holder)
     convergence_checker = ConvergenceChecker(30, 0.05)
     if USE_ESTIMATOR:
@@ -129,7 +132,6 @@ if __name__ == "__main__":
 
 
     # Simulation
-    ramp_saturation_slope = np.array([np.Inf, 0.78, 0.78])
     simulator = SoftwareInTheLoop(quad_conf.quadcopter, trajectory, position_controller,
                                   controller_conf.attitude_controller,quad_conf.esc,
                                   INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller,
@@ -142,6 +144,6 @@ if __name__ == "__main__":
     if USE_ESTIMATOR:
         estimator_agent.plot_history('penalty')
         # estimator_agent.plot_history('normalized_penalty')
-
+    simulator.position_controller.plot_history('u')
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     #plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])

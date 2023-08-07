@@ -16,9 +16,12 @@ from Factories.CommunicationFactory.Telemetry.telemetry_manager import Telemetry
     TelemetryManagerThreadUAV
 from Factories.DataManagementFactory.data_holders import DataHolder
 from Factories.DataManagementFactory.data_managers import ParametersManager
-from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
 from Factories.GaussianProcessFactory.kernels import RBF_Kernel
 from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianProcess
+from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceChecker
+from Factories.ModelsFactory.models_for_estimation import NonlinearTranslationalModel
+from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
+
 import dronekit
 import serial
 import argparse
@@ -48,11 +51,14 @@ NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
 USE_ESTIMATOR = False
+ESTIMATOR_MODE = 'VELOCITY_CONTROL'  #only available
 ADAPTIVE_FREQ = 100
 MPC_MODE = MPCModes.UNCONSTRAINED
 HORIZON = 20
+QUAD_NOMINAL_MASS = 0.7
 
 trajectory = SinglePoint([0, 0, 10])
+Z550_parameters['m'] = QUAD_NOMINAL_MASS
 parameters = Z550_parameters
 
 if __name__ == "__main__":
@@ -119,17 +125,23 @@ if __name__ == "__main__":
     MASS_MIN, MASS_MAX = (0.8, 2.0)
     domain = (MASS_MIN, MASS_MAX)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
-    rbf_kernel = RBF_Kernel(length=1)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
+    rbf_kernel = RBF_Kernel(length=0.1)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.5, max_samples=100, overflow_handling_mode='IMPORTANCE')
+    estimator_prediction_model = NonlinearTranslationalModel(parameters_holder)
+    convergence_checker = ConvergenceChecker(30, 0.05)
     if USE_ESTIMATOR:
-        estimator_agent = BanditEstimatorThread(parameters_manager,
-                                                prediction_model,
-                                                gp,
-                                                ATOMIC_TRAJ_SAMPLES_NUM)
+        estimator_agent = BanditEstimatorThread(parameters_manager=parameters_manager,
+                                                      prediction_model=estimator_prediction_model,
+                                                      gp=gp,
+                                                      convergence_checker=convergence_checker,
+                                                      pen_moving_window=None,
+                                                      variance_threshold=0,
+                                                      epsilon_episode_steps=0,
+                                                      mode=ESTIMATOR_MODE)
     else:
         estimator_agent = None
     #output saturation
-    ramp_saturation_slope = np.array([np.Inf, 0.4, 0.4])
+    ramp_saturation_slope = np.array([np.Inf, np.Inf, np.Inf])
     ## control supervisor
     control_supervisor = ControlSupervisor(vehicle,
                                            position_controller,
@@ -138,7 +150,7 @@ if __name__ == "__main__":
                                            ramp_saturation_slope)
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/4',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/5',
                           baudrate=115200,
                           update_freq=10,
                           vehicle=vehicle,

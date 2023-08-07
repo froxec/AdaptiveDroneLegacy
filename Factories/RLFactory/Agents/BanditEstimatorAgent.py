@@ -140,71 +140,71 @@ class BanditEstimatorAgent():
         fig.add_trace(go.Scatter(x=list(range(len(self.penalty_history))), y=self.penalty_history, name='penalty_history'))
 
 
-class BanditEstimatorThread(BanditEstimatorAgent, Thread):
-    def __init__(self,
-                 parameters_manager: Type[ParametersManager],
-                 predictive_model: Type[LinearizedQuad],
-                 gp: Type[EfficientGaussianProcess],
-                 atomic_traj_samples_num: int):
-        BanditEstimatorAgent.__init__(self,
-                                      parameters_manager=parameters_manager,
-                                      predictive_model=predictive_model,
-                                      gp=gp,
-                                      deltaT=None,
-                                      atomic_traj_samples_num=atomic_traj_samples_num)
-        Thread.__init__(self)
-        self.data_set_event = threading.Event()
-        self.data = {'x': None, 'u': None}
-        self.start()
-
-    def __call__(self, x, u):
-        if self.prediction_prev is None:
-            self.prediction_prev = x
-            self.start = time.time()
-        if self.trajectory_buffer.full['state'] == True:
-            self.deltaT = time.time() - self.start
-            self.start = time.time()
-            # equivalent to environment.step()
-            self.prediction_prev = x[:6]
-            penalty = self.calculate_penalty()
-            penalty = self.postprocess_penalty(penalty)
-            self.penalties_buffer.add_sample(['penalties'], [penalty])
-            self.penalty_history.append(penalty)
-            if not self.converged:
-                self.update_gp(self.estimated_parameters_holder.m, penalty)
-                self.gp.plot('./images/gp/')
-                action = self.take_action()
-                print("Action taken {}".format(action))
-                self.actions_buffer.add_sample(['actions'], [action])
-                self.estimated_parameters_holder.m = action
-                self.predictive_model.update_parameters()
-            else:
-                # conditions_changed = self.check_for_conditions_changes()
-                conditions_changed=False
-                if conditions_changed:
-                    self.converged = False
-                    self.penalty_min = np.mean(self.penalties_buffer['penalties'])
-                    self.gp.reset()
-            self.trajectory_buffer.flush()
-        if self.u_prev is not None:
-            x_predicted = self.predictive_model.discrete_prediction(self.prediction_prev, self.u_prev)
-            self.add_sample_to_buffer(x[:6], x_predicted, self.u_prev)
-            self.prediction_prev = x_predicted
-        if self.check_for_convergence() and not self.converged:
-            self.update_parameters()
-            self.converged = True
-            self.penalty_min = np.mean(self.penalties_buffer['penalties'])
-            self.actions_buffer.flush()
-        self.u_prev = u
-    def run(self):
-        while True:
-            self._control_execution()
-            self.__call__(self.data['x'], self.data['u'])
-
-
-    def _control_execution(self):
-        self.data_set_event.wait()
-        self.data_set_event.clear()
+# class BanditEstimatorThread(BanditEstimatorAgent, Thread):
+#     def __init__(self,
+#                  parameters_manager: Type[ParametersManager],
+#                  predictive_model: Type[LinearizedQuad],
+#                  gp: Type[EfficientGaussianProcess],
+#                  atomic_traj_samples_num: int):
+#         BanditEstimatorAgent.__init__(self,
+#                                       parameters_manager=parameters_manager,
+#                                       predictive_model=predictive_model,
+#                                       gp=gp,
+#                                       deltaT=None,
+#                                       atomic_traj_samples_num=atomic_traj_samples_num)
+#         Thread.__init__(self)
+#         self.data_set_event = threading.Event()
+#         self.data = {'x': None, 'u': None}
+#         self.start()
+#
+#     def __call__(self, x, u):
+#         if self.prediction_prev is None:
+#             self.prediction_prev = x
+#             self.start = time.time()
+#         if self.trajectory_buffer.full['state'] == True:
+#             self.deltaT = time.time() - self.start
+#             self.start = time.time()
+#             # equivalent to environment.step()
+#             self.prediction_prev = x[:6]
+#             penalty = self.calculate_penalty()
+#             penalty = self.postprocess_penalty(penalty)
+#             self.penalties_buffer.add_sample(['penalties'], [penalty])
+#             self.penalty_history.append(penalty)
+#             if not self.converged:
+#                 self.update_gp(self.estimated_parameters_holder.m, penalty)
+#                 self.gp.plot('./images/gp/')
+#                 action = self.take_action()
+#                 print("Action taken {}".format(action))
+#                 self.actions_buffer.add_sample(['actions'], [action])
+#                 self.estimated_parameters_holder.m = action
+#                 self.predictive_model.update_parameters()
+#             else:
+#                 # conditions_changed = self.check_for_conditions_changes()
+#                 conditions_changed=False
+#                 if conditions_changed:
+#                     self.converged = False
+#                     self.penalty_min = np.mean(self.penalties_buffer['penalties'])
+#                     self.gp.reset()
+#             self.trajectory_buffer.flush()
+#         if self.u_prev is not None:
+#             x_predicted = self.predictive_model.discrete_prediction(self.prediction_prev, self.u_prev)
+#             self.add_sample_to_buffer(x[:6], x_predicted, self.u_prev)
+#             self.prediction_prev = x_predicted
+#         if self.check_for_convergence() and not self.converged:
+#             self.update_parameters()
+#             self.converged = True
+#             self.penalty_min = np.mean(self.penalties_buffer['penalties'])
+#             self.actions_buffer.flush()
+#         self.u_prev = u
+#     def run(self):
+#         while True:
+#             self._control_execution()
+#             self.__call__(self.data['x'], self.data['u'])
+#
+#
+#     def _control_execution(self):
+#         self.data_set_event.wait()
+#         self.data_set_event.clear()
 
 class BanditEstimatorAcceleration:
     def __init__(self,
@@ -269,19 +269,14 @@ class BanditEstimatorAcceleration:
             acceleration = self._convert_velocity_to_acceleration(measurement, deltaT)
         else:
             acceleration = measurement
-        if self.i < self.epsilon_episode_steps:
-            print("Epsilon episode.. Calibration..")
-            self._epsilon_episode_step(acceleration, force_norm, angles)
-            self.i += 1
-            return
         if not self.converged:
             self.memory['actions'].append(self.estimated_parameters_holder.m)
             print("Action:", self.estimated_parameters_holder.m)
             a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
             penalty = self._calculate_penalty(a_hat, acceleration)
             self.memory['penalty'].append(penalty)
-            penalty = self._normalize_penalty_max_a(penalty, acceleration)
-            self.memory['normalized_penalty'].append(penalty)
+            # penalty = self._normalize_penalty_max_a(penalty, acceleration)
+            # self.memory['normalized_penalty'].append(penalty)
             self.update_gp(self.estimated_parameters_holder.m, penalty)
             self.gp.plot('./images/gp/')
             self.action = self.take_action()
@@ -298,16 +293,8 @@ class BanditEstimatorAcceleration:
     def update_gp(self, action, reward):
         self.gp(np.array(action).reshape(-1, 1), [reward])
     def _calculate_penalty(self, a_hat, a):
-        if len(list(self.memory['penalty'])) > 0:
-            self.penalty_mean = np.mean(list(self.memory['penalty'])[:self.epsilon_episode_steps])
-            self.penalty_variance = np.var(list(self.memory['penalty'])[:self.epsilon_episode_steps])
-        else:
-            self.penalty_mean = 0.0
-        print(self.penalty_mean)
         penalty = manhattan_distance(a, a_hat)
-        penalty_std = penalty
-        #reward = euclidean_distance(a_hat, a)
-        return penalty_std
+        return penalty
 
     def take_action(self):
         best = self.gp.Thompson_sampling(mode='min', number_of_samples=1)
@@ -317,14 +304,6 @@ class BanditEstimatorAcceleration:
     def _normalize_penalty_max_a(self, penalty, a):
         penalty = penalty / (np.linalg.norm(a) + 1)
         return penalty
-
-    def _epsilon_episode_step(self, acceleration, force_norm, angles):
-        values_pool = self.gp.X.flatten()
-        action = np.random.choice(values_pool, 1)[0]
-        self.estimated_parameters_holder.m = action
-        a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
-        penalty = np.linalg.norm(acceleration - a_hat)
-        self.memory['penalty'].append(penalty)
 
     def _convert_velocity_to_acceleration(self, velocity, deltaT):
         if deltaT is None:
@@ -350,6 +329,88 @@ class BanditEstimatorAcceleration:
         fig.add_trace(go.Scatter(x=list(range(len(data))), y=data, name=signal_name))
         fig.show()
 
+class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
+    def __init__(self,
+                 parameters_manager: Type[ParametersManager],
+                 prediction_model,
+                 gp: Type[EfficientGaussianProcess],
+                 convergence_checker,
+                 sleeptime=1,
+                 mode='ACCELERATION',
+                 pen_moving_window=None,
+                 actions_moving_window=None,
+                 variance_threshold=0.2,
+                 epsilon_episode_steps=0):
+        super().__init__(parameters_manager=parameters_manager,
+                 prediction_model=prediction_model,
+                 gp=gp,
+                 convergence_checker=convergence_checker,
+                 sleeptime=sleeptime,
+                 mode=mode,
+                 pen_moving_window=pen_moving_window,
+                 actions_moving_window=actions_moving_window,
+                 variance_threshold=variance_threshold,
+                 epsilon_episode_steps=epsilon_episode_steps)
+        Thread.__init__(self)
+        self.start()
+        self.data_set = threading.Event()
+
+        # data
+        self.data = {'measurement': None,
+                     'force': None,
+                     'angles': None}
+        self.measurement = None
+        self.force = None
+        self.angles = None
+
+        #time_control
+        self.time = time.time()
+    def run(self):
+        while True:
+            measurement, force_norm, angles = self.get_data()
+            self.estimate_parameters(measurement, force_norm, angles)
+
+    def estimate_parameters(self, measurement, force_norm, angles):
+        mode = self.mode.split('_')
+        if mode[0] == 'VELOCITY':
+            if self.velocity_prev is None:
+                self.velocity_prev = measurement
+                return
+            current_time = time.time()
+            deltaT = current_time - self.time
+            self.time = current_time
+            acceleration = self._convert_velocity_to_acceleration(measurement, deltaT)
+        else:
+            acceleration = measurement
+        if self.i < self.epsilon_episode_steps:
+            print("Epsilon episode.. Calibration..")
+            self._epsilon_episode_step(acceleration, force_norm, angles)
+            self.i += 1
+            return
+        if not self.converged:
+            self.memory['actions'].append(self.estimated_parameters_holder.m)
+            print("Action:", self.estimated_parameters_holder.m)
+            a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
+            penalty = self._calculate_penalty(a_hat, acceleration)
+            self.memory['penalty'].append(penalty)
+            # penalty = self._normalize_penalty_max_a(penalty, acceleration)
+            # self.memory['normalized_penalty'].append(penalty)
+            self.update_gp(self.estimated_parameters_holder.m, penalty)
+            self.gp.plot('./images/gp/')
+            self.action = self.take_action()
+            self.estimated_parameters_holder.m = self.action
+            self.converged = self.convergence_checker(self.action)
+        elif not self.parameters_changed:
+            parameters = self.get_parameters()
+            print("Converged to {}".format(parameters))
+            self.update_parameters(parameters)
+            self.parameters_changed = True
+        else:
+            pass
+
+    def get_data(self):
+        self.data_set.wait()
+        return self.measurement, self.force, self.angles
 
 if __name__ == "__main__":
     import plotly.express as px
