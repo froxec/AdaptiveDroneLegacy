@@ -13,8 +13,7 @@ class ControlSupervisor:
                  vehicle: Type[Vehicle],
                  position_controller: Type[PositionControllerThread],
                  adaptive_controller: Type[L1_AugmentationThread]=None,
-                 estimator_agent: Type[BanditEstimatorThread]=None,
-                 ramp_saturation_slope=None):
+                 estimator_agent: Type[BanditEstimatorThread]=None):
         self.position_controller = position_controller
         self.adaptive_controller = adaptive_controller
         self.estimator_agent = estimator_agent
@@ -23,10 +22,6 @@ class ControlSupervisor:
             self.Ts = self.adaptive_controller.predictor.Ts
         else:
             self.Ts = 1/self.position_controller.controller.freq
-        if ramp_saturation_slope is not None:
-            self.ramp_saturation = RampSaturation(ramp_saturation_slope, self.Ts)
-        else:
-            self.ramp_saturation = None
         self.mpc_ref = None
         self.z_prev = np.zeros(3)
         self.u_prev = np.zeros(3)
@@ -49,11 +44,12 @@ class ControlSupervisor:
             #print("Got MPC reference {}".format(self.mpc_ref))
             u_composite = self.mpc_ref
         if self.adaptive_controller is not None and self.mpc_ref is not None and self.adaptive_controller.ready_event.is_set():
-            z = x[3:6]
             if isinstance(self.adaptive_controller.predictor.ref_model, LinearQuadUncertain):
-                _, delta_u = self.position_controller.input_converter(x, self.mpc_ref)
+                delta_x, delta_u = self.position_controller.input_converter(x, self.mpc_ref)
                 u = delta_u
+                z = delta_x[3:6]
             else:
+                z = x[3:6]
                 u = self.mpc_ref
             self.adaptive_controller.set_data([z, self.z_prev, u, self.u_prev, None])
             self.adaptive_controller.ready_event.clear()
@@ -61,12 +57,12 @@ class ControlSupervisor:
             self.u_prev = u
         if self.adaptive_controller is not None and self.adaptive_controller.control_set.is_set():
             u_composite = self.adaptive_controller.u_composite
-            # if isinstance(self.adaptive_controller.predictor.ref_model, LinearQuadUncertain):
-            #     u_composite = self.position_controller.output_converter(u_composite, throttle=False)
+            print("Delta u composite", u_composite)
+            if isinstance(self.adaptive_controller.predictor.ref_model, LinearQuadUncertain):
+                u_composite = self.position_controller.output_converter(u_composite, throttle=False)
+            print("u_composite", u_composite)
             self.adaptive_controller.control_set.clear()
         if u_composite is not None:
-            if self.ramp_saturation is not None:
-                u_composite = self.ramp_saturation(u_composite)
             u_composite_throttle_converted = self.position_controller.output_converter.convert_throttle(u_composite)
             u_composite_converted = self.command_convert(u_composite_throttle_converted)
             #print("Control", u_composite_converted)

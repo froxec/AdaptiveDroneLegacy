@@ -130,7 +130,6 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
             u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
         self._set_telemetry(sigma_hat, u_l1, u)
-        print(sigma_hat)
         return u_composite
 
 
@@ -217,8 +216,10 @@ class L1_ControlSaturator:
     def __init__(self,
                  lower_bounds: list,
                  upper_bounds: list):
-        self.lower_bounds = lower_bounds
-        self.upper_bounds = upper_bounds
+        self.lower_bounds_nominal = lower_bounds
+        self.upper_bounds_nominal = upper_bounds
+        self.lower_bounds = self.lower_bounds_nominal
+        self.upper_bounds = self.upper_bounds_nominal
 
     def __call__(self, u, u_l1):
         composite = [None] * u.shape[0]

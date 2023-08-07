@@ -2,6 +2,7 @@ import numpy as np
 from copy import deepcopy
 from typing import Type
 from Factories.DataManagementFactory.data_holders import DataHolder
+from Factories.ControllersFactory.control_tools.SaturationManager import SaturationManager
 class MPC_output_converter():
     def __init__(self, parameters_holder: Type[DataHolder], angular_velocity_range, mode='proprietary'):
         self.parameters_holder = parameters_holder
@@ -186,8 +187,11 @@ class RampSaturation:
         self.Ts = Ts
         self.slope_lb = slope['lower_bound']
         self.slope_ub = slope['upper_bound']
-        self.prev = np.zeros_like(self.slope_lb)
+        self.prev = None
+        trigger = {'lower': False, 'upper': False}
+        self.triggered = [trigger for _ in range(self.slope_lb.shape[0])]
     def __call__(self, curr):
+        self._reset_triggers()
         if self.prev is None:
             self.prev = curr
         if (curr.flatten().shape[0] != self.slope_lb.flatten().shape[0] or
@@ -199,11 +203,29 @@ class RampSaturation:
         for i in range(derivative.shape[0]):
             if derivative[i] < self.slope_lb[i]:
                 output[i] = self.prev[i] + self.slope_lb[i] * self.Ts
+                self.triggered[i]['lower'] = True
             elif derivative[i] > self.slope_ub[i]:
                 output[i] = self.prev[i] + self.slope_ub[i] * self.Ts
+                self.triggered[i]['upper'] = True
             else:
                 output[i] = curr[i]
         self.prev = output
+        self.output = output
+        return output
+
+    def _reset_triggers(self):
+        for i in range(len(self.triggered)):
+            self.triggered[i]['lower'] = False
+            self.triggered[i]['upper'] = False
+
+class RampSaturationWithManager(RampSaturation):
+    def __init__(self, slope, Ts, output_saturation):
+        super().__init__(slope, Ts)
+        self.output_saturation = output_saturation
+        self.manager = SaturationManager(self, self.output_saturation)
+    def __call__(self, curr):
+        output = super().__call__(curr)
+        self.manager()
         return output
 
 if __name__ == "__main__":

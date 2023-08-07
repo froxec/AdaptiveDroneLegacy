@@ -21,6 +21,7 @@ from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianP
 from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceChecker
 from Factories.ModelsFactory.models_for_estimation import NonlinearTranslationalModel
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
+from Factories.ToolsFactory.Converters import RampSaturationWithManager
 
 import dronekit
 import serial
@@ -53,7 +54,7 @@ USE_ADAPTIVE = True
 USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL'  #only available
 ADAPTIVE_FREQ = 100
-MPC_MODE = MPCModes.UNCONSTRAINED
+MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 20
 QUAD_NOMINAL_MASS = 0.7
 
@@ -79,11 +80,6 @@ if __name__ == "__main__":
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
     controller_conf.position_controller.switch_modes(MPC_MODE)
-    position_controller = PositionControllerThread(controller_conf.position_controller,
-                           controller_conf.position_controller_input_converter,
-                           controller_conf.position_controller_output_converter,
-                           trajectory)
-
     x0 = np.array(dronekit_commands.get_state(vehicle))
     ## adaptive controller
     z0 = x0[3:6]
@@ -109,6 +105,16 @@ if __name__ == "__main__":
         adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, l1_saturator)
     else:
         adaptive_controller = None
+
+    ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
+                             'upper_bound': np.array([2, 0.78, 0.78])}
+    ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
+                                                output_saturation=l1_saturator)
+    position_controller = PositionControllerThread(controller_conf.position_controller,
+                                                   controller_conf.position_controller_input_converter,
+                                                   controller_conf.position_controller_output_converter,
+                                                   trajectory,
+                                                   ramp_saturation=ramp_saturation)
 
     ## parameters manager
     parameters_manager = ParametersManager(parameters_holder=parameters_holder,
@@ -140,14 +146,11 @@ if __name__ == "__main__":
                                                       mode=ESTIMATOR_MODE)
     else:
         estimator_agent = None
-    #output saturation
-    ramp_saturation_slope = np.array([np.Inf, np.Inf, np.Inf])
     ## control supervisor
     control_supervisor = ControlSupervisor(vehicle,
                                            position_controller,
                                            adaptive_controller,
-                                           estimator_agent,
-                                           ramp_saturation_slope)
+                                           estimator_agent)
 
     ## telemetry manager
     tm = TelemetryManagerThreadUAV(serialport='/dev/pts/5',

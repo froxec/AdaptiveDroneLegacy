@@ -72,8 +72,8 @@ class SoftwareInTheLoop:
                 delta_u_composite = self.adaptive_controller(z, z_prev,
                                                              u, u_prev, t_i)
                 u_prev = u
-                u_composite = self.position_controller.output_converter(delta_u_composite, throttle=False)
                 z_prev = z
+                u_composite = self.position_controller.output_converter(delta_u_composite, throttle=False)
             mpc_u = self.position_controller.output_converter.convert_throttle(u_composite)
             attitude_setpoint = np.concatenate([mpc_u[1:], np.array([0.0])])
             throttle = mpc_u[0]
@@ -156,6 +156,7 @@ class SoftwareInTheLoopLegacy:
         self.esc = esc
         self.adaptive_controller = adaptive_controller
         self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1/self.OUTER_LOOP_FREQ)
+        #needs refactor
         self.system = System(self.quad)
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time

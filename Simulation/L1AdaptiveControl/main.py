@@ -19,11 +19,12 @@ from Factories.ModelsFactory.models_for_estimation import NonlinearTranslational
 from Factories.GaussianProcessFactory.kernels import RBF_Kernel
 from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianProcess
 from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceChecker
+from Factories.ToolsFactory.Converters import RampSaturationWithManager
 
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = False
+USE_ADAPTIVE = True
 USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
@@ -66,19 +67,12 @@ if __name__ == "__main__":
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
     controller_conf.position_controller.switch_modes(MPC_MODE)
-    ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
-                             'upper_bound': np.array([2, 0.78, 0.78])}
-    position_controller = PositionController(controller_conf.position_controller,
-                                                   controller_conf.position_controller_input_converter,
-                                                   controller_conf.position_controller_output_converter,
-                                                   trajectory,
-                                                   ramp_saturation_slope=ramp_saturation_slope)
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
     if MODEL == 0:
-        As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [1, 0.2, 0.2]
+        As = np.diag([-5, -5, -5])
+        bandwidths = [0.1, 0.1, 0.1]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -98,6 +92,15 @@ if __name__ == "__main__":
         adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, l1_saturator)
     else:
         adaptive_controller = None
+
+    ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
+                             'upper_bound': np.array([2, 0.78, 0.78])}
+    ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ, output_saturation=l1_saturator)
+    position_controller = PositionController(controller_conf.position_controller,
+                                             controller_conf.position_controller_input_converter,
+                                             controller_conf.position_controller_output_converter,
+                                             trajectory,
+                                             ramp_saturation=ramp_saturation)
 
     ## parameters manager
     parameters_manager = ParametersManager(parameters_holder=parameters_holder,

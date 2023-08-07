@@ -5,7 +5,6 @@ from Factories.ToolsFactory.Converters import MPC_input_converter, MPC_output_co
 from Factories.CommunicationFactory.interfaces import ControllerInterface
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Trajectory, SinglePoint
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
-from Factories.ToolsFactory.Converters import RampSaturation
 from typing import Type
 import numpy as np
 from threading import Thread
@@ -22,13 +21,13 @@ class PositionController():
                  output_converter: Type[MPC_output_converter], 
                  trajectory: Type[Trajectory], 
                  interface: Type[ControllerInterface]=None,
-                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf])                 ) -> None:
+                 ramp_saturation=None) -> None:
         self.input_converter = input_converter
         self.controller = controller
         self.output_converter = output_converter
         self.trajectory = trajectory
         self.interface = interface
-        self.ramp_saturation = RampSaturation(slope=ramp_saturation_slope, Ts=1 / self.controller.freq)
+        self.ramp_saturation = ramp_saturation
 
         #trajectory tracking
         self.current_waypoint_id = 0
@@ -116,11 +115,14 @@ class PositionControllerThread(PositionController, Thread):
                  controller: Type[ModelPredictiveControl],
                  input_converter: Type[MPC_input_converter],
                  output_converter: Type[MPC_output_converter],
-                 trajectory: Type[Trajectory]) -> None:
-        PositionController.__init__(self, controller,
-                                         input_converter,
-                                         output_converter,
-                                         trajectory)
+                 trajectory: Type[Trajectory],
+                 ramp_saturation=None) -> None:
+        PositionController.__init__(self,
+                                    controller,
+                                    input_converter,
+                                    output_converter,
+                                    trajectory,
+                                    ramp_saturation=ramp_saturation)
         Thread.__init__(self)
         self.x = None
         self.u_ref = None
@@ -161,6 +163,7 @@ class PositionControllerThread(PositionController, Thread):
         u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)
+        u_next = self.ramp_saturation(u_next)
         self._set_telemetry(u_next)
         return u_next
 
