@@ -25,7 +25,7 @@ NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = False
 USE_ESTIMATOR = True
-ESTIMATOR_MODE = 'VELOCITY_CONTROL'
+ESTIMATOR_MODE = 'ACCELERATION_CONTROL'
 MPC_MODE = MPCModes.UNCONSTRAINED
 HORIZON = 20
 QUAD_NOMINAL_MASS = 0.8
@@ -40,13 +40,13 @@ trajectory = SinglePoint([0, 0, 5])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.8})
+    perturber({'m': 0.0})
 
     ## parameters holder
     parameters_holder = DataHolder(perturber.perturbed_parameters)
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[0, 1, 0], strength=5)
+    wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
     #wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=3.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
     #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=2)
@@ -111,8 +111,8 @@ if __name__ == "__main__":
     MASS_MIN, MASS_MAX = (0.5, 2.0)
     domain = (MASS_MIN, MASS_MAX)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
-    rbf_kernel = RBF_Kernel(length=0.05)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.5)
+    rbf_kernel = RBF_Kernel(length=0.5)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.1)
     estimator_prediction_model = NonlinearTranslationalModel(parameters_holder)
     convergence_checker = ConvergenceChecker(40, 0.1)
     if USE_ESTIMATOR:
@@ -122,7 +122,7 @@ if __name__ == "__main__":
                                                       convergence_checker=convergence_checker,
                                                       pen_moving_window=None,
                                                       variance_threshold=0,
-                                                      epsilon_episode_steps=0,
+                                                      epsilon_episode_steps=50,
                                                       mode=ESTIMATOR_MODE)
     else:
         estimator_agent = None

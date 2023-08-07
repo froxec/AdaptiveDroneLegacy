@@ -254,9 +254,6 @@ class BanditEstimatorAcceleration:
         #memory
         self.memory = {'penalty': [],
                        'normalized_penalty': [],
-                       'error_x': deque(maxlen=self.pen_moving_window),
-                       'error_y': deque(maxlen=self.pen_moving_window),
-                       'error_z': deque(maxlen=self.pen_moving_window),
                        'actions': deque(maxlen=self.actions_moving_window)}
 
     def __call__(self, measurement, force_norm, angles, deltaT=None):
@@ -281,6 +278,7 @@ class BanditEstimatorAcceleration:
             self.update_gp(self.estimated_parameters_holder.m, penalty)
             self.gp.plot('./images/gp/')
             action = self.take_action()
+            #action = 0.8
             self.estimated_parameters_holder.m = action
             self.converged = self.convergence_checker(action)
         elif not self.parameters_changed:
@@ -295,29 +293,17 @@ class BanditEstimatorAcceleration:
         self.gp(np.array(action).reshape(-1, 1), [reward])
     def _calculate_penalty(self, a_hat, a):
         error_vector = list(a - a_hat)
-        if len(list(self.memory['actions'])) == 1:
-            act_variance = self.variance_threshold + 1
-        else:
-            act_variance = np.var(list(self.memory['actions']), axis=0)
-        if act_variance > self.variance_threshold:
-            self.memory['error_x'].append(error_vector[0])
-            self.memory['error_y'].append(error_vector[1])
-            self.memory['error_z'].append(error_vector[2])
 
-        if len(list(self.memory['error_x'])) > 0:
-            error_history = np.array([list(self.memory['error_x']),
-                                     list(self.memory['error_y']),
-                                     list(self.memory['error_z'])])
-            self.penalty_mean = np.mean(error_history, axis=1)
-            variance = np.var(error_history, axis=1)
+        if len(list(self.memory['penalty'])) > 0:
+            self.penalty_mean = np.mean(list(self.memory['penalty'])[:self.epsilon_episode_steps])
+            self.penalty_variance = np.var(list(self.memory['penalty'])[:self.epsilon_episode_steps])
         else:
             self.penalty_mean = np.zeros_like(error_vector)
         print(self.penalty_mean)
-        error_vector_std = (error_vector - self.penalty_mean) / (variance + 1e-6)
-        reward = np.linalg.norm(error_vector_std)
-
+        penalty = np.linalg.norm(error_vector)
+        penalty_std = (penalty - self.penalty_mean) / self.penalty_variance
         #reward = euclidean_distance(a_hat, a)
-        return reward
+        return penalty_std
 
     def take_action(self):
         best = self.gp.Thompson_sampling(mode='min', number_of_samples=1)
@@ -333,10 +319,8 @@ class BanditEstimatorAcceleration:
         action = np.random.choice(values_pool, 1)[0]
         self.estimated_parameters_holder.m = action
         a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
-        error_vector = list(acceleration - a_hat)
-        self.memory['error_x'].append(error_vector[0])
-        self.memory['error_y'].append(error_vector[1])
-        self.memory['error_z'].append(error_vector[2])
+        penalty = np.linalg.norm(acceleration - a_hat)
+        self.memory['penalty'].append(penalty)
 
     def _convert_velocity_to_acceleration(self, velocity, deltaT):
         if deltaT is None:
