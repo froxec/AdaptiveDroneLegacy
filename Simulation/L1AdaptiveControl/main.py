@@ -28,7 +28,7 @@ USE_ESTIMATOR = True
 ESTIMATOR_MODE = 'VELOCITY_CONTROL'
 MPC_MODE = MPCModes.UNCONSTRAINED
 HORIZON = 20
-QUAD_NOMINAL_MASS = 0.8
+QUAD_NOMINAL_MASS = 0.7
 
 INNER_LOOP_FREQ = 100
 deltaT = 1 / INNER_LOOP_FREQ
@@ -111,10 +111,10 @@ if __name__ == "__main__":
     MASS_MIN, MASS_MAX = (0.5, 2.0)
     domain = (MASS_MIN, MASS_MAX)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
-    rbf_kernel = RBF_Kernel(length=0.1)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.5, max_samples=30, overflow_handling_mode='IMPORTANCE')
+    rbf_kernel = RBF_Kernel(length=0.5)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.1, max_samples=100, overflow_handling_mode='IMPORTANCE')
     estimator_prediction_model = NonlinearTranslationalModel(parameters_holder)
-    convergence_checker = ConvergenceChecker(15, 0.05)
+    convergence_checker = ConvergenceChecker(30, 0.05)
     if USE_ESTIMATOR:
         estimator_agent = BanditEstimatorAcceleration(parameters_manager=parameters_manager,
                                                       prediction_model=estimator_prediction_model,

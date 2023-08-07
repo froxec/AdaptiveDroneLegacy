@@ -280,8 +280,8 @@ class BanditEstimatorAcceleration:
             a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
             penalty = self._calculate_penalty(a_hat, acceleration)
             self.memory['penalty'].append(penalty)
-            # penalty = self._normalize_penalty(penalty, acceleration)
-            # self.memory['normalized_penalty'].append(penalty)
+            penalty = self._normalize_penalty_max_a(penalty, acceleration)
+            self.memory['normalized_penalty'].append(penalty)
             self.update_gp(self.estimated_parameters_holder.m, penalty)
             self.gp.plot('./images/gp/')
             self.action = self.take_action()
@@ -298,8 +298,6 @@ class BanditEstimatorAcceleration:
     def update_gp(self, action, reward):
         self.gp(np.array(action).reshape(-1, 1), [reward])
     def _calculate_penalty(self, a_hat, a):
-        error_vector = list(a - a_hat)
-
         if len(list(self.memory['penalty'])) > 0:
             self.penalty_mean = np.mean(list(self.memory['penalty'])[:self.epsilon_episode_steps])
             self.penalty_variance = np.var(list(self.memory['penalty'])[:self.epsilon_episode_steps])
