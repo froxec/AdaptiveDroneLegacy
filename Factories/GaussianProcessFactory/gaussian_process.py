@@ -6,7 +6,7 @@ from Factories.ToolsFactory.GeneralTools import minmax_rescale
 from scipy.linalg import cholesky, cho_solve
 from collections import Counter
 class GaussianProcess():
-    def __init__(self, predict_at, kernel_function, noise_std=0, max_samples=100):
+    def __init__(self, predict_at, kernel_function, noise_std=0, max_samples=100, overflow_handling_mode='OLDEST'):
         self.kernel_function = kernel_function
         self.X = predict_at
         self.cov22 = self.kernel_function(self.X, self.X)
@@ -17,6 +17,11 @@ class GaussianProcess():
         self.max_samples=max_samples
         self.memory = {'obs_x': [],
                        'obs_y': []}
+        self.available_handling_modes = ['OLDEST', 'IMPORTANCE']
+        if overflow_handling_mode not in self.available_handling_modes:
+            raise ValueError("{} handling mode not supported. Supported modes are {}".format(overflow_handling_mode,
+                                                                                             self.available_handling_modes))
+        self.overflow_handling_mode = overflow_handling_mode
     def __call__(self, obs_x, obs_y):
         self.memory['obs_x'].extend(obs_x.flatten().tolist())
         self.memory['obs_y'].extend(obs_y)
@@ -107,14 +112,18 @@ class GaussianProcess():
 
     def _handle_overflow(self):
         if len(self.memory['obs_x']) > self.max_samples:
-            ctn = Counter(self.memory['obs_x'])
-            values = list(ctn.keys())
-            counts = list(ctn.values())
-            unique_probabilities = {value: count for value, count in zip(values, list(np.array(counts)/sum(counts)))}
-            p = [unique_probabilities[x]/ctn[x] for x in self.memory['obs_x']]
-            id = np.random.choice(range(len(self.memory['obs_x'])), size=1, p=p)[0]
-            del self.memory['obs_x'][id]
-            del self.memory['obs_y'][id]
+            if self.overflow_handling_mode == 'IMPORTANCE':
+                ctn = Counter(self.memory['obs_x'])
+                values = list(ctn.keys())
+                counts = list(ctn.values())
+                unique_probabilities = {value: count for value, count in zip(values, list(np.array(counts)/sum(counts)))}
+                p = [unique_probabilities[x]/ctn[x] for x in self.memory['obs_x']]
+                id = np.random.choice(range(len(self.memory['obs_x'])), size=1, p=p)[0]
+                del self.memory['obs_x'][id]
+                del self.memory['obs_y'][id]
+            elif self.overflow_handling_mode == 'OLDEST':
+                del self.memory['obs_x'][0]
+                del self.memory['obs_y'][0]
 class EfficientGaussianProcess(GaussianProcess):
     def __call__(self, obs_x, obs_y):
         self.memory['obs_x'].extend(obs_x.flatten().tolist())

@@ -248,17 +248,24 @@ class BanditEstimatorAcceleration:
             raise ValueError("Estimator mode not correct. Should be {}".format(self.available_modes))
         self.mode = mode
 
-        self.velocity_prev = np.array([0, 0, 0])
+        self.velocity_prev = None
         self.velocity_timer = time.time()
 
         #memory
         self.memory = {'penalty': [],
                        'normalized_penalty': [],
                        'actions': deque(maxlen=self.actions_moving_window)}
+        #action init
+        values_pool = self.gp.X.flatten()
+        self.action = np.random.choice(values_pool, 1)[0]
+        self.estimated_parameters_holder.m = self.action
 
     def __call__(self, measurement, force_norm, angles, deltaT=None):
         mode = self.mode.split('_')
         if mode[0] == 'VELOCITY':
+            if self.velocity_prev is None:
+                self.velocity_prev = measurement
+                return
             acceleration = self._convert_velocity_to_acceleration(measurement, deltaT)
         else:
             acceleration = measurement
@@ -277,10 +284,9 @@ class BanditEstimatorAcceleration:
             # self.memory['normalized_penalty'].append(penalty)
             self.update_gp(self.estimated_parameters_holder.m, penalty)
             self.gp.plot('./images/gp/')
-            action = self.take_action()
-            #action = 0.8
-            self.estimated_parameters_holder.m = action
-            self.converged = self.convergence_checker(action)
+            self.action = self.take_action()
+            self.estimated_parameters_holder.m = self.action
+            self.converged = self.convergence_checker(self.action)
         elif not self.parameters_changed:
             parameters = self.get_parameters()
             print("Converged to {}".format(parameters))
@@ -298,10 +304,10 @@ class BanditEstimatorAcceleration:
             self.penalty_mean = np.mean(list(self.memory['penalty'])[:self.epsilon_episode_steps])
             self.penalty_variance = np.var(list(self.memory['penalty'])[:self.epsilon_episode_steps])
         else:
-            self.penalty_mean = np.zeros_like(error_vector)
+            self.penalty_mean = 0.0
         print(self.penalty_mean)
-        penalty = np.linalg.norm(error_vector)
-        penalty_std = (penalty - self.penalty_mean) / self.penalty_variance
+        penalty = manhattan_distance(a, a_hat)
+        penalty_std = penalty
         #reward = euclidean_distance(a_hat, a)
         return penalty_std
 
