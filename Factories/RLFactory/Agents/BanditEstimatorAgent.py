@@ -352,19 +352,16 @@ class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
                  variance_threshold=variance_threshold,
                  epsilon_episode_steps=epsilon_episode_steps)
         Thread.__init__(self)
-        self.start()
-        self.data_set = threading.Event()
-
+        self.data_set_event = threading.Event()
+        self.procedure_finished = threading.Event()
         # data
         self.data = {'measurement': None,
                      'force': None,
                      'angles': None}
-        self.measurement = None
-        self.force = None
-        self.angles = None
 
         #time_control
         self.time = time.time()
+        self.start()
     def run(self):
         while True:
             measurement, force_norm, angles = self.get_data()
@@ -396,7 +393,7 @@ class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
             # penalty = self._normalize_penalty_max_a(penalty, acceleration)
             # self.memory['normalized_penalty'].append(penalty)
             self.update_gp(self.estimated_parameters_holder.m, penalty)
-            self.gp.plot('./images/gp/')
+            self.gp.plot('./images/gp_rt/')
             self.action = self.take_action()
             self.estimated_parameters_holder.m = self.action
             self.converged = self.convergence_checker(self.action)
@@ -406,11 +403,12 @@ class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
             self.update_parameters(parameters)
             self.parameters_changed = True
         else:
-            pass
+            self.procedure_finished.set()
+            time.sleep(1)
 
     def get_data(self):
-        self.data_set.wait()
-        return self.measurement, self.force, self.angles
+        self.data_set_event.wait()
+        return self.data['measurement'], self.data['force'], self.data['angles']
 
 if __name__ == "__main__":
     import plotly.express as px

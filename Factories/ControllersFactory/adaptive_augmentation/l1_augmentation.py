@@ -224,9 +224,6 @@ class L1_ControlSaturator:
 
     def __call__(self, u, u_l1):
         composite = [None] * u.shape[0]
-        print(self.upper_bounds, self.lower_bounds)
-        print("Nominal")
-        print(self.upper_bounds_nominal, self.lower_bounds_nominal)
         for i in range(u.shape[0]):
             composite[i] = u[i] + u_l1[i]
             if composite[i] > self.upper_bounds[i]:

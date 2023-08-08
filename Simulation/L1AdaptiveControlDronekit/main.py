@@ -51,7 +51,7 @@ def run_controller(controller, x=None):
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
-USE_ESTIMATOR = False
+USE_ESTIMATOR = True
 ESTIMATOR_MODE = 'VELOCITY_CONTROL'  #only available
 ADAPTIVE_FREQ = 100
 MPC_MODE = MPCModes.CONSTRAINED
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         adaptive_controller = None
 
     ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
-                             'upper_bound': np.array([2, 0.78, 0.78])}
+                             'upper_bound': np.array([np.Inf, 0.78, 0.78])}
     ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
                                                 output_saturation=l1_saturator)
     #ramp_saturation = RampSaturation(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ)
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     STEP_TIME = 1  # s
     ATOMIC_TRAJ_SAMPLES_NUM = int(STEP_TIME * SAMPLING_FREQ)
     samples_num = 100
-    MASS_MIN, MASS_MAX = (0.8, 2.0)
+    MASS_MIN, MASS_MAX = (0.2, 2.0)
     domain = (MASS_MIN, MASS_MAX)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
     rbf_kernel = RBF_Kernel(length=0.1)
@@ -154,7 +154,7 @@ if __name__ == "__main__":
                                            estimator_agent)
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/4',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/8',
                           baudrate=115200,
                           update_freq=10,
                           vehicle=vehicle,

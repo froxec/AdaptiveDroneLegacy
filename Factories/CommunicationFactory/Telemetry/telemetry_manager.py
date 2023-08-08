@@ -119,6 +119,9 @@ class TelemetryManager:
                     break
                 time.sleep(0.5)
 
+    def update_controllers_callback(self, topic, data, opts):
+        raise NotImplementedError
+
     def publish(self, comm, value):
         if value is None:
             return
@@ -244,6 +247,39 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                 telemetry[key] = output_and_throttle[key]
         self.telemetry = telemetry
         return self.telemetry
+
+    def auxiliary_command_callback(self, topic, data, opts):
+        super().auxiliary_command_callback(topic, data, opts)
+        command = AUXILIARY_COMMANDS_MAPPING[data]
+        if command == 'START_ESTIMATION_PROCEDURE':
+            print("TELEM_MANAGER: Turning on estimation procedure..")
+            self.control_supervisor.estimation_on = True
+
+    def update_controllers_callback(self, topic, data, opts):
+        comm = COMMANDS_ASCII_MAPPING[topic]
+        comm_split = comm.split("_")
+        if comm_split[0] == 'POSITION':
+            if data == 1:
+                print("TELEM_MANAGER: POSITION_CONTROLLER ON")
+                self.control_supervisor.position_controller_on = True
+                self.vehicle.mode = VehicleMode('GUIDED')
+            elif data == 0:
+                print("TELEM_MANAGER: POSITION_CONTROLLER OFF")
+                self.control_supervisor.position_controller_on = False
+        if comm_split[0] == 'ADAPTIVE':
+            if data == 1:
+                print("TELEM_MANAGER: ADAPTIVE_CONTROLLER ON")
+                self.control_supervisor.adaptive_controller_on = True
+            elif data == 0:
+                print("TELEM_MANAGER: ADAPTIVE_CONTROLLER OFF")
+                self.control_supervisor.adaptive_controller_on = False
+        if comm_split[0] == 'ESTIMATOR':
+            if data == 1:
+                print("TELEM_MANAGER: ESTIMATOR ON")
+                self.control_supervisor.estimation_on = True
+            elif data == 0:
+                print("TELEM_MANAGER: ESTIMATOR OFF")
+                self.control_supervisor.estimation_on = False
     def run(self):
         while True:
             self.publish_telemetry()

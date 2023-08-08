@@ -11,3 +11,5 @@ def update_telemetry(telemetry, vehicle):
    telemetry['heading'] = vehicle.heading
    mode_name = vehicle.mode.name
    telemetry['flight_mode'] = FLIGHT_MODES_MAPPING[mode_name]
+   telemetry['bat_voltage'] = vehicle.battery.voltage
+   telemetry['bat_current'] = vehicle.battery.current

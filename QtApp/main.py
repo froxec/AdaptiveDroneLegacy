@@ -27,9 +27,13 @@ from datetime import datetime
 import time
 import itertools
 from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManagerThreadGCS
-from Factories.CommunicationFactory.Telemetry.mappings import AUXILIARY_COMMANDS_MAPPING
+from Factories.CommunicationFactory.Telemetry.mappings import AUXILIARY_COMMANDS_MAPPING, FLIGHT_MODES_MAPPING
+from Factories.DataManagementFactory.data_writer import DataWriterThread
+from Factories.DataManagementFactory.data_writer_configurations import DATA_TO_WRITE_GCS, FIELDNAMES_TELEMETRY_NAMES_MAPPING
 class MainWindow(QMainWindow):
-    def __init__(self, telemetry_manager, parent=None):
+    def __init__(self,
+                 telemetry_manager,
+                 parent=None):
         QMainWindow.__init__(self)
 
         # memorize serial connection
@@ -112,7 +116,32 @@ class MainWindow(QMainWindow):
         self.window.returnToLaunchBtn.clicked.connect(lambda: self.auxiliary_command('RETURN_TO_LAUNCH'))
         self.window.landButton.clicked.connect(lambda: self.auxiliary_command('LAND'))
         self.window.takeoffBtn.clicked.connect(lambda: self.auxiliary_command('TAKEOFF'))
-        #show
+
+        # CONTROLLERS ON OFF
+        self.window.MPC_ON_OFF_BTN.setCheckable(True)
+        self.window.ADA_ON_OFF_BTN.setCheckable(True)
+        self.window.ESTIM_ON_OFF_BTN.setCheckable(True)
+        self.window.MPC_ON_OFF_BTN.clicked.connect(lambda: self.on_off_controllers('MPC'))
+        self.window.ADA_ON_OFF_BTN.clicked.connect(lambda: self.on_off_controllers('ADAPTIVE'))
+        self.window.ESTIM_ON_OFF_BTN.clicked.connect(lambda: self.on_off_controllers('ESTIMATOR'))
+        self.window.MPC_ON_OFF_BTN.setText("OFF")
+        self.window.MPC_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
+        self.window.ADA_ON_OFF_BTN.setText("OFF")
+        self.window.ADA_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
+        self.window.ESTIM_ON_OFF_BTN.setText("OFF")
+        self.window.ESTIM_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
+
+        # data writer
+        self.data_writer = DataWriterThread(DATA_TO_WRITE_GCS, path='../logs/')
+        self.window.saveDataBtn.setCheckable(True)
+        self.window.saveDataBtn.clicked.connect(lambda: self.serve_data_writer())
+        self.window.saveDataBtn.setText("Saving OFF")
+        self.window.saveDataBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
+        self.window.dataWritingStatus.setText("DATA NO WRITING")
+        self.window.dataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
+        # STATUS
+        self.window.batteryPixmap.setStyleSheet("color: white")
+        # show
         self.show()
 
     @Slot()
@@ -155,7 +184,35 @@ class MainWindow(QMainWindow):
         #     data = self.create_byte_map(60)
         #     self.webView.setHtml(data.getvalue().decode())
         if self.telemetry['flight_mode'] is not None:
-            self.window.flightModeStatus.setText(str(self.telemetry['flight_mode']))
+            self.window.flightModeStatus.setText(str(FLIGHT_MODES_MAPPING[self.telemetry['flight_mode']]) + " " + "MODE")
+        if self.telemetry['bat_voltage'] is not None:
+            self.window.batteryVoltage.setText(
+                ("{:.2f}" + " " + "V").format(self.telemetry['bat_voltage']))
+        if self.telemetry['bat_current'] is not None:
+            self.window.batteryCurrent.setText(
+                ("{:.2f}" + " " + "A").format(self.telemetry['bat_current']))
+        if self.data_writer.writing_event.is_set():
+            data = {}
+            for data_field in self.data_writer.data_fields:
+                if data_field == 'TIME':
+                    data[data_field] = datetime.now()
+                    continue
+                indices = FIELDNAMES_TELEMETRY_NAMES_MAPPING[data_field]
+                if isinstance(indices, tuple):
+                    key, id = indices
+                    data[data_field] = self.telemetry[key][id]
+                else:
+                    data[data_field] = self.telemetry[indices]
+
+            self.data_writer.data = data
+            self.data_writer.data_set.set()
+            if self.data_writer.writing_ok:
+                self.window.dataWritingStatus.setText("DATA WRITING OK")
+                self.window.dataWritingStatus.setStyleSheet("QLabel {background-color: lightgreen}")
+            else:
+                self.window.dataWritingStatus.setText("DATA NO WRITING")
+                self.window.dataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
+
 
     @Slot()
     def change_setpoint(self):
@@ -167,6 +224,50 @@ class MainWindow(QMainWindow):
     def auxiliary_command(self, comm_name):
         comm_code = AUXILIARY_COMMANDS_MAPPING[comm_name]
         self.telemetry_manager.publish('AUXILIARY_COMMAND', comm_code)
+
+    @Slot()
+    def on_off_controllers(self, controller_type):
+        if controller_type == "MPC":
+            if self.window.MPC_ON_OFF_BTN.isChecked():
+                self.window.MPC_ON_OFF_BTN.setText("ON")
+                self.window.MPC_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightgreen}")
+                self.telemetry_manager.publish('POSITION_CONTROLLER_ON_OFF', 1)
+            else:
+                self.window.MPC_ON_OFF_BTN.setText("OFF")
+                self.window.MPC_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
+                self.telemetry_manager.publish('POSITION_CONTROLLER_ON_OFF', 0)
+        elif controller_type == "ADAPTIVE":
+            if self.window.ADA_ON_OFF_BTN.isChecked():
+                self.window.ADA_ON_OFF_BTN.setText("ON")
+                self.window.ADA_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightgreen}")
+                self.telemetry_manager.publish('ADAPTIVE_CONTROLLER_ON_OFF', 1)
+            else:
+                self.window.ADA_ON_OFF_BTN.setText("OFF")
+                self.window.ADA_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
+                self.telemetry_manager.publish('ADAPTIVE_CONTROLLER_ON_OFF', 0)
+        elif controller_type == "ESTIMATOR":
+            if self.window.ESTIM_ON_OFF_BTN.isChecked():
+                self.window.ESTIM_ON_OFF_BTN.setText("ON")
+                self.window.ESTIM_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightgreen}")
+                self.telemetry_manager.publish('ESTIMATOR_ON_OFF', 1)
+            else:
+                self.window.ESTIM_ON_OFF_BTN.setText("OFF")
+                self.window.ESTIM_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
+                self.telemetry_manager.publish('ESTIMATOR_ON_OFF', 0)
+
+    @Slot()
+    def serve_data_writer(self):
+        if self.window.saveDataBtn.isChecked():
+            self.window.saveDataBtn.setText("DATA SAVING")
+            self.window.saveDataBtn.setStyleSheet("QPushButton {background-color: lightgreen}")
+            filename = self.window.dataFilenameTextbox.toPlainText()
+            self.data_writer.filename = filename
+            self.data_writer.writing_event.set()
+            #self.telemetry_manager.publish('POSITION_CONTROLLER_ON_OFF', 1)
+        else:
+            self.window.saveDataBtn.setText("SAVING OFF")
+            self.window.saveDataBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
+            self.data_writer.writing_event.clear()
 
     def change_flight_mode(self, mode):
         self.serial_connection.write(commands[mode])

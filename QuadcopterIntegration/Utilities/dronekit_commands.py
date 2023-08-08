@@ -84,6 +84,8 @@ def update_telemetry(telemetry, vehicle):
    telemetry['position_global'] = [vehicle.location.global_frame.lat, vehicle.location.global_frame.lon] 
    telemetry['heading'] = vehicle.heading
    telemetry['flight_mode'] = vehicle.mode.name
+   telemetry['bat_voltage'] = vehicle.battery.voltage
+   telemetry['bat_current'] = vehicle.battery.current
   
 
 class GCSCommInterpreter:
