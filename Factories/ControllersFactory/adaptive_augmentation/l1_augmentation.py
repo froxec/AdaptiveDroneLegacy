@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import threading
 from threading import Thread
+from copy import deepcopy
 from Factories.ToolsFactory.Converters import RampSaturation
 import time
 class L1_Augmentation:
@@ -218,11 +219,14 @@ class L1_ControlSaturator:
                  upper_bounds: list):
         self.lower_bounds_nominal = lower_bounds
         self.upper_bounds_nominal = upper_bounds
-        self.lower_bounds = self.lower_bounds_nominal
-        self.upper_bounds = self.upper_bounds_nominal
+        self.lower_bounds = deepcopy(self.lower_bounds_nominal)
+        self.upper_bounds = deepcopy(self.upper_bounds_nominal)
 
     def __call__(self, u, u_l1):
         composite = [None] * u.shape[0]
+        print(self.upper_bounds, self.lower_bounds)
+        print("Nominal")
+        print(self.upper_bounds_nominal, self.lower_bounds_nominal)
         for i in range(u.shape[0]):
             composite[i] = u[i] + u_l1[i]
             if composite[i] > self.upper_bounds[i]:

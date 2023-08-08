@@ -110,6 +110,7 @@ if __name__ == "__main__":
                              'upper_bound': np.array([2, 0.78, 0.78])}
     ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
                                                 output_saturation=l1_saturator)
+    #ramp_saturation = RampSaturation(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
                                                    controller_conf.position_controller_output_converter,
@@ -153,7 +154,7 @@ if __name__ == "__main__":
                                            estimator_agent)
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/5',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/4',
                           baudrate=115200,
                           update_freq=10,
                           vehicle=vehicle,
