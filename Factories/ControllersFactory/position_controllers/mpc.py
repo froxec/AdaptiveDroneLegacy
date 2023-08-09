@@ -137,8 +137,8 @@ class ModelPredictiveControl():
             lb_constraints = -np.array([0.8, 1, 1])
             ub_constraints = np.array([1, 1, 1])
         else:
-            lb_constraints = np.array([-0.8*self.model.parameters['m'] * self.model.parameters['g'], np.pi / 6, np.pi / 6])
-            ub_constraints = np.array([self.model.parameters['m']*self.model.parameters['g'], np.pi/6, np.pi/6])
+            lb_constraints = np.array([-0.8*self.model.m * self.model.g, np.pi / 6, np.pi / 6])
+            ub_constraints = np.array([self.model.m*self.model.g, np.pi/6, np.pi/6])
         lb = np.tile(lb_constraints, self.pred_horizon)
         ub = np.tile(ub_constraints, self.pred_horizon)
         return lb, ub
@@ -152,10 +152,6 @@ class ModelPredictiveControl():
     def switch_modes(self,
                      mode: Type[MPCModes]):
         self.mode = mode
-
-    def update_model_parameters(self, parameters):
-        ## TODO update converters
-        self.model.update_parameters(parameters)
 
     def change_setpoint(self, setpoint):
         self.setpoint=setpoint

@@ -1,8 +1,6 @@
-from Factories.ConfigurationsFactory.configurations import QuadConfiguration, \
-    ControllerConfiguration, ControllerWithCompensatorConfiguration, \
-    GekkoConfiguration, positionControllerWrapper, CustomMPCConfig
+from Factories.ConfigurationsFactory.configurations import QuadConfiguration, positionControllerWrapper, CustomMPCConfig
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAgent
-from Factories.SimulationsFactory.SITL import SoftwareInTheLoopLegacy
+from Factories.SimulationsFactory.SITL import SoftwareInTheLoop
 from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw, AugmentedLinearizedQuadNoYaw
 from Factories.ConfigurationsFactory.modes import MPCModes
@@ -14,6 +12,9 @@ from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Spi
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
 from Factories.GaussianProcessFactory.gaussian_process import *
 from Factories.GaussianProcessFactory.kernels import *
+from Factories.DataManagementFactory.data_holders import DataHolder
+from Factories.DataManagementFactory.data_managers import ParametersManager
+from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 
 FPS = 30
 PAUSE_INCREMENT = 1e-5
@@ -41,21 +42,33 @@ if __name__ == '__main__':
     perturber = ParametersPerturber(Z550_parameters)
     perturber({'m': 0.2})
     print(perturber.perturbed_parameters)
-    prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters, 1 / OUTER_LOOP_FREQ)
-    prediction_model2 = AugmentedLinearizedQuadNoYaw(perturber.perturbed_parameters, 1 / OUTER_LOOP_FREQ)
+
+    parameters_holder = DataHolder(perturber.perturbed_parameters)
+
+    prediction_model = LinearizedQuadNoYaw(parameters_holder, 1 / OUTER_LOOP_FREQ)
+    #prediction_model2 = AugmentedLinearizedQuadNoYaw(perturber.perturbed_parameters, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=10)
-
     controller_conf.position_controller.switch_modes(MPCModes.UNCONSTRAINED)
     position_controller_conf = positionControllerWrapper(controller_conf)
-    prediction_model = LinearizedQuadNoYaw(perturber.perturbed_parameters, 1/SAMPLING_FREQ)
+    position_controller = PositionController(controller_conf.position_controller,
+                                                   controller_conf.position_controller_input_converter,
+                                                   controller_conf.position_controller_output_converter,
+                                                   trajectory)
+
+    ## parameters manager
+    parameters_manager = ParametersManager(parameters_holder=parameters_holder,
+                                           predictive_model=position_controller.controller.model,
+                                           input_converter=position_controller.input_converter,
+                                           output_converter=position_controller.output_converter)
     rbf_kernel = RBF_Kernel(length=1)
     gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.0)
-    mass_estimator = BanditEstimatorAgent(position_controller_conf, prediction_model, gp, ATOMIC_TRAJ_SAMPLES_NUM, deltaT=1/SAMPLING_FREQ)
+    estimator_agent = BanditEstimatorAgent(parameters_manager, prediction_model, gp, deltaT=1/SAMPLING_FREQ, atomic_traj_samples_num=ATOMIC_TRAJ_SAMPLES_NUM)
 
-    simulator = SoftwareInTheLoopLegacy(quad_conf.quadcopter, quad_conf.load, trajectory, controller_conf.position_controller, controller_conf.attitude_controller,
-                                        [controller_conf.position_controller_input_converter, controller_conf.position_controller_output_converter]
-                                        , quad_conf.esc, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, thrust_compensator=None, estimator=mass_estimator)
+    simulator = SoftwareInTheLoop(quad_conf.quadcopter, trajectory, position_controller,
+                                  controller_conf.attitude_controller, quad_conf.esc,
+                                  INNER_LOOP_FREQ, OUTER_LOOP_FREQ,
+                                  estimator=estimator_agent)
     state0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
     u0 = np.array([0, 0, 0])
 

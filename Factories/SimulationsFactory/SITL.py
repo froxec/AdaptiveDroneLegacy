@@ -4,10 +4,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from Simulation.model import quadcopterModel, loadPendulum, System
-from Factories.RLFactory.Agents import BanditEstimatorAgent
+from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAgent, BanditEstimatorAcceleration
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import *
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
-from Factories.ToolsFactory.Converters import RampSaturation
 from Factories.ModelsFactory.uncertain_models import *
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from typing import Type
@@ -22,7 +21,7 @@ class SoftwareInTheLoop:
                  outer_loop_freq: int,
                  estimator=None,
                  adaptive_controller=None,
-                 ramp_saturation_slope=np.array([np.Inf, np.Inf, np.Inf])):
+                 acceleration_noise=[0, 0, 0]):
         self.INNER_LOOP_FREQ = inner_loop_freq
         self.OUTER_LOOP_FREQ = outer_loop_freq
         self.MODULO_FACTOR = self.INNER_LOOP_FREQ / self.OUTER_LOOP_FREQ
@@ -33,8 +32,13 @@ class SoftwareInTheLoop:
         self.trajectory = trajectory
         self.esc = esc
         self.adaptive_controller = adaptive_controller
-        self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1 / self.OUTER_LOOP_FREQ)
-        self.system = System(self.quad)
+        if self.estimator is not None:
+            self.system = System(self.quad, return_dstate=True)
+        else:
+            self.system = System(self.quad)
+        if not isinstance(acceleration_noise, np.ndarray):
+            acceleration_noise = np.array(acceleration_noise)
+        self.acceleration_noise = acceleration_noise
 
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time
@@ -44,12 +48,13 @@ class SoftwareInTheLoop:
         z_prev = x0[3:6]
         ref_prev = u0
         u_prev = ref_prev
+        u_saturated_prev = u_prev
         self.position_controller.change_trajectory(setpoint)
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:
                 ref = self.position_controller(x[i, :6], convert_throttle=False)
                 if self.adaptive_controller is None:
-                    mpc_u = self.position_controller.output_converter.convert_throttle(ref)
+                    u_composite = ref
             if (self.adaptive_controller is not None and
                     isinstance(self.adaptive_controller.predictor.ref_model, QuadTranslationalDynamicsUncertain)):
                 z = x[i, 3:6]
@@ -59,7 +64,6 @@ class SoftwareInTheLoop:
                                                        np.concatenate([u, np.array([0])]),
                                                        np.concatenate([u_prev, np.array([0])]), t_i)
                 u_prev = u
-                mpc_u = self.position_controller.output_converter.convert_throttle(u_composite)
             elif (self.adaptive_controller is not None and
                   isinstance(self.adaptive_controller.predictor.ref_model, LinearQuadUncertain)):
                 delta_x, delta_u = self.position_controller.input_converter(x[i, :6], ref)
@@ -68,16 +72,30 @@ class SoftwareInTheLoop:
                 delta_u_composite = self.adaptive_controller(z, z_prev,
                                                              u, u_prev, t_i)
                 u_prev = u
-                mpc_u = self.position_controller.output_converter(delta_u_composite)
                 z_prev = z
+                u_composite = self.position_controller.output_converter(delta_u_composite, throttle=False)
+            mpc_u = self.position_controller.output_converter.convert_throttle(u_composite)
             attitude_setpoint = np.concatenate([mpc_u[1:], np.array([0.0])])
             throttle = mpc_u[0]
             ESC_PWMs = self.attitude_controller(attitude_setpoint, self.quad.state[6:9], self.quad.state[9:12],
                                                 throttle)
             motors = self.esc(ESC_PWMs)
-            x[i + 1] = self.system(np.array(motors), deltaT, self.quad)[:12]
-            if self.estimator is not None:
+            x[i + 1], dstate = self.system(np.array(motors), deltaT, self.quad)[:12]
+            if isinstance(self.estimator, BanditEstimatorAgent):
                 self.estimator(x[i + 1, :6], ref_prev)
+            elif isinstance(self.estimator, BanditEstimatorAcceleration):
+                mode = self.estimator.mode.split('_')
+                if mode[1] == 'CONTROL':
+                    angles = attitude_setpoint
+                elif mode[1] == 'MEASUREMENT':
+                    angles = x[i, 6:9]
+                if mode[0] == 'ACCELERATION':
+                    dstate = dstate[3:6] + np.random.normal(loc=np.zeros_like(self.acceleration_noise),
+                                                            scale=self.acceleration_noise,
+                                                            size=self.acceleration_noise.shape[0])
+                    self.estimator(dstate, force_norm=u_composite[0], angles=angles)
+                elif mode[0] == 'VELOCITY':
+                    self.estimator(x[i, 3:6], force_norm=u_composite[0], angles=angles, deltaT=1/self.INNER_LOOP_FREQ)
             if isinstance(self.trajectory, type(TrajectoryWithTerminals())):
                 terminal_ind = self.check_if_reached_terminal(x[i + 1, :6])
                 if terminal_ind is not None:
@@ -138,6 +156,7 @@ class SoftwareInTheLoopLegacy:
         self.esc = esc
         self.adaptive_controller = adaptive_controller
         self.ramp_saturation = RampSaturation(slope_max=ramp_saturation_slope, Ts=1/self.OUTER_LOOP_FREQ)
+        #needs refactor
         self.system = System(self.quad)
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time
@@ -151,7 +170,7 @@ class SoftwareInTheLoopLegacy:
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:
                 delta_x0, delta_u0 = self.mpc_input_converter(x[i, :6], ref_prev)
-                ref = self.position_controller.predict(delta_x0, setpoint)
+                ref = self.position_controller.predict(delta_x0)
                 ref_converted = self.mpc_output_converter(ref, throttle=False)
                 u_saturated = self.ramp_saturation(ref_converted, u_saturated_prev)
                 if self.adaptive_controller is not None:

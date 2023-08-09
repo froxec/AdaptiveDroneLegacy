@@ -8,6 +8,8 @@ from Factories.ToolsFactory.GeneralTools import euclidean_distance
 from typing import Type
 import numpy as np
 from threading import Thread
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 class PositionController():
     '''
@@ -18,16 +20,19 @@ class PositionController():
                  input_converter: Type[MPC_input_converter],
                  output_converter: Type[MPC_output_converter], 
                  trajectory: Type[Trajectory], 
-                 interface: Type[ControllerInterface]=None) -> None:
+                 interface: Type[ControllerInterface]=None,
+                 ramp_saturation=None) -> None:
         self.input_converter = input_converter
         self.controller = controller
         self.output_converter = output_converter
         self.trajectory = trajectory
         self.interface = interface
+        self.ramp_saturation = ramp_saturation
 
         #trajectory tracking
         self.current_waypoint_id = 0
         self.setpoint = None
+        self.history = {'u': []}
 
     def __call__(self, x=None, convert_throttle=True):
         return self.get_control(x, convert_throttle=convert_throttle)
@@ -53,6 +58,8 @@ class PositionController():
             u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)
+        u_next = self.ramp_saturation(u_next)
+        self.history['u'].append(u_next)
         return u_next
 
     def change_trajectory(self, trajectory):
@@ -88,16 +95,34 @@ class PositionController():
         else:
             return False
 
+    def plot_history(self, signal_name):
+        if signal_name not in self.history.keys():
+            raise ValueError("{} not tracked.. signal_name should be one of {}".format(signal_name,
+                                                                                       self.history.keys()))
+        fig = make_subplots(rows=3, cols=1, x_title='Czas [s]',
+                            subplot_titles=('{}[0]'.format(signal_name), '{}[1]'.format(signal_name),
+                                            '{}[2]'.format(signal_name)))
+        data = np.array(self.history[signal_name])
+        x = list(range(data.shape[0]))
+
+        fig.add_trace(go.Scatter(x=x, y=data[:, 0]), row=1, col=1)
+        fig.add_trace(go.Scatter(x=x, y=data[:, 1]), row=2, col=1)
+        fig.add_trace(go.Scatter(x=x, y=data[:, 2]), row=3, col=1)
+        fig.show()
+
 class PositionControllerThread(PositionController, Thread):
     def __init__(self,
                  controller: Type[ModelPredictiveControl],
                  input_converter: Type[MPC_input_converter],
                  output_converter: Type[MPC_output_converter],
-                 trajectory: Type[Trajectory]) -> None:
-        PositionController.__init__(self, controller,
-                                         input_converter,
-                                         output_converter,
-                                         trajectory)
+                 trajectory: Type[Trajectory],
+                 ramp_saturation=None) -> None:
+        PositionController.__init__(self,
+                                    controller,
+                                    input_converter,
+                                    output_converter,
+                                    trajectory,
+                                    ramp_saturation=ramp_saturation)
         Thread.__init__(self)
         self.x = None
         self.u_ref = None
@@ -108,6 +133,10 @@ class PositionControllerThread(PositionController, Thread):
         self._watchdog_active = threading.Event()
         self._watchdog = threading.Timer(1 / self.controller.freq, self._watchdog_activation)
         self.start()
+
+        # telemetry
+        self.telemetry_to_read = None
+
     def run(self):
         import time
         t1 = time.time()
@@ -138,6 +167,8 @@ class PositionControllerThread(PositionController, Thread):
         u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)
+        u_next = self.ramp_saturation(u_next)
+        self._set_telemetry(u_next)
         return u_next
 
     def _control_execution(self):
@@ -161,3 +192,7 @@ class PositionControllerThread(PositionController, Thread):
         x = self.x
         self.data_set.clear()
         return x
+
+    def _set_telemetry(self, u):
+        self.telemetry_to_read = {'u': u}
+        return self.telemetry_to_read

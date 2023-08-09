@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import threading
 from threading import Thread
+from copy import deepcopy
 from Factories.ToolsFactory.Converters import RampSaturation
 import time
 class L1_Augmentation:
@@ -66,6 +67,7 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         self.ready_event.set()
         self._watchdog_active = threading.Event()
         self._watchdog = threading.Timer(self.predictor.Ts, self._watchdog_activation)
+        self.telemetry_to_read = None
         self.start()
 
     def run(self):
@@ -108,6 +110,12 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         self.data_set.clear()
         return z, z_prev, u, u_prev, time
 
+    def _set_telemetry(self, sigma_hat, u_l1, u):
+        self.telemetry_to_read = {'sigma_hat': sigma_hat,
+                                  'u_l1': u_l1,
+                                  'u': u}
+        return self.telemetry_to_read
+
     def adapt(self, z, z_prev, u, u_prev, deltaT=None):
         if deltaT is not None:
             self.Ts = deltaT
@@ -123,6 +131,7 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
         self._time += self.predictor.Ts
+        self._set_telemetry(sigma_hat, u_l1, u)
         return u_composite
 
 
@@ -207,19 +216,23 @@ class L1_ControlConverter:
 
 class L1_ControlSaturator:
     def __init__(self,
-                 control_bounds: list):
-        self.control_bounds = control_bounds
+                 lower_bounds: list,
+                 upper_bounds: list):
+        self.lower_bounds_nominal = lower_bounds
+        self.upper_bounds_nominal = upper_bounds
+        self.lower_bounds = deepcopy(self.lower_bounds_nominal)
+        self.upper_bounds = deepcopy(self.upper_bounds_nominal)
 
     def __call__(self, u, u_l1):
         composite = [None] * u.shape[0]
         for i in range(u.shape[0]):
             composite[i] = u[i] + u_l1[i]
-            if composite[i] > self.control_bounds[i]:
-                composite[i] = self.control_bounds[i]
-                u_l1[i] = self.control_bounds[i] - u[i]
-            elif composite[i] < -self.control_bounds[i]:
-                composite[i] = -self.control_bounds[i]
-                u_l1[i] = -self.control_bounds[i] - u[i]
+            if composite[i] > self.upper_bounds[i]:
+                composite[i] = self.upper_bounds[i]
+                u_l1[i] = self.upper_bounds[i] - u[i]
+            elif composite[i] < self.lower_bounds[i]:
+                composite[i] = self.lower_bounds[i]
+                u_l1[i] = self.lower_bounds[i] - u[i]
         return np.array(composite), u_l1
 
 if __name__ == "__main__":
