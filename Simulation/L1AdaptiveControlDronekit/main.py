@@ -100,7 +100,7 @@ if __name__ == "__main__":
     ## telemetry manager
     tm = TelemetryManagerThreadUAV(serialport='/dev/ttyS0',
                           baudrate=115200,
-                          update_freq=10,
+                          update_freq=1,
                           vehicle=vehicle,
                           position_controller=position_controller)
 
