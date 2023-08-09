@@ -28,6 +28,7 @@ import time
 import itertools
 from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManagerThreadGCS
 from Factories.CommunicationFactory.Telemetry.mappings import AUXILIARY_COMMANDS_MAPPING, FLIGHT_MODES_MAPPING
+from Factories.CommunicationFactory.Telemetry.lidia_telemetry_sender import LidiaTelemetrySender
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.data_writer_configurations import DATA_TO_WRITE_GCS, FIELDNAMES_TELEMETRY_NAMES_MAPPING
 class MainWindow(QMainWindow):
@@ -71,7 +72,11 @@ class MainWindow(QMainWindow):
         # self.webView.setHtml(data.getvalue().decode())
         # self.webView.setParent(self.window.map_frame)
 
-
+        # Flight instruments
+        self.lidia_telemetry = LidiaTelemetrySender()
+        self.webView = QWebEngineView()
+        self.webView.setParent(self.window.flight_instrumentsContainer)
+        #self.webView.load(QtCore.QUrl("http://localhost:5555/pfd"))
         # RT plots embedding
         self.live_plot_widgets = [self.window.x_plot, self.window.y_plot, self.window.z_plot,
                              self.window.Vx_plot, self.window.Vy_plot, self.window.Vz_plot,
@@ -212,7 +217,7 @@ class MainWindow(QMainWindow):
             else:
                 self.window.dataWritingStatus.setText("DATA NO WRITING")
                 self.window.dataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
-
+        self.lidia_telemetry(self.telemetry)
 
     @Slot()
     def change_setpoint(self):
@@ -311,11 +316,12 @@ class MainWindow(QMainWindow):
                     if data is not None:
                         connector.cb_append_data_point(data, x-start)
                 self.telemetry_manager.telemetry_set_event.clear()
-            sleep(0.1)
+            time.sleep(0.1)
+
 
 
 if __name__ == "__main__":
-    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/5',
+    tm = TelemetryManagerThreadGCS(serialport='/dev/ttyUSB0',
                                    baudrate=115200,
                                    update_freq=10)
     app = QApplication(sys.argv)

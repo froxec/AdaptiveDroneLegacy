@@ -154,7 +154,7 @@ if __name__ == "__main__":
                                            estimator_agent)
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/8',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB1',
                           baudrate=115200,
                           update_freq=10,
                           vehicle=vehicle,
