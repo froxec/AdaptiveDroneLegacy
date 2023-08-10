@@ -1,0 +1,4 @@
+lora working well bench test:
+airspeed 62.5 kbps
+baudrate 115200
+packetsize 240
