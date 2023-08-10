@@ -71,3 +71,20 @@ class DataWriterThread(DataWriter, Thread):
             print("DATA_WRITER: DATA DIDN'T SAVE!!!")
             return False
 
+class TestsDataWriter(DataWriter):
+    def __init__(self, datafields, path, filename):
+        DataWriter.__init__(self, datafields, path)
+        self.filename = self.path + datetime.now().strftime("%m-%d-%Y-%H:%M:%S") + '_' + filename + '.csv'
+        self.open_file()
+    def open_file(self, filename):
+        self.file = open(filename, 'a')
+        self.writer = DictWriter(self.file, fieldnames=self.data_fields)
+        self.writer.writeheader()
+        self.file.flush()
+
+    def data_write(self, data):
+        self.writer.writerow(data)
+        self.file.flush()
+
+
+

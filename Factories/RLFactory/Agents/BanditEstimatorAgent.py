@@ -217,7 +217,10 @@ class BanditEstimatorAcceleration:
                  pen_moving_window=None,
                  actions_moving_window=None,
                  variance_threshold=0.2,
-                 epsilon_episode_steps=0):
+                 epsilon_episode_steps=0,
+                 max_steps=np.Inf,
+                 testing_mode=False,
+                 save_images=False):
         self.parameters_manager = parameters_manager
         self.prediction_model = prediction_model
         self.gp = gp
@@ -232,6 +235,7 @@ class BanditEstimatorAcceleration:
         self.converged = False
         self.parameters_changed = False
         self.sleeptime = sleeptime
+        self.save_images = save_images
         self.pen_moving_window = pen_moving_window
         self.actions_moving_window = actions_moving_window
         self.variance_threshold = variance_threshold
@@ -241,12 +245,16 @@ class BanditEstimatorAcceleration:
             self.epsilon_episode = True
         self.epsilon_episode_steps = epsilon_episode_steps
         self.i = 0
+        self.current_step = 0
+        self.max_steps = max_steps
+        self.process_finished = False
 
         #mode
         self.available_modes = ['ACCELERATION_MEASUREMENT', 'ACCELERATION_CONTROL', 'VELOCITY_MEASUREMENT', 'VELOCITY_CONTROL']
         if mode not in self.available_modes:
             raise ValueError("Estimator mode not correct. Should be {}".format(self.available_modes))
         self.mode = mode
+        self.testing_mode = testing_mode
 
         self.velocity_prev = None
         self.velocity_timer = time.time()
@@ -278,7 +286,8 @@ class BanditEstimatorAcceleration:
             # penalty = self._normalize_penalty_max_a(penalty, acceleration)
             # self.memory['normalized_penalty'].append(penalty)
             self.update_gp(self.estimated_parameters_holder.m, penalty)
-            self.gp.plot('./images/gp/')
+            if self.save_images:
+                self.gp.plot('./images/gp/')
             self.action = self.take_action()
             self.estimated_parameters_holder.m = self.action
             self.converged = self.convergence_checker(self.action)
@@ -289,7 +298,9 @@ class BanditEstimatorAcceleration:
             self.parameters_changed = True
         else:
             pass
-
+        self.current_step += 1
+        if self.current_step > self.max_steps or self.converged:
+            self.process_finished = True
     def update_gp(self, action, reward):
         self.gp(np.array(action).reshape(-1, 1), [reward])
     def _calculate_penalty(self, a_hat, a):
