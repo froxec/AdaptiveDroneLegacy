@@ -22,6 +22,7 @@ from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceCheck
 from Factories.ModelsFactory.models_for_estimation import NonlinearTranslationalModel
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
+from Factories.CommunicationFactory.Telemetry.subscriptions import *
 
 import dronekit
 import serial
@@ -155,13 +156,30 @@ if __name__ == "__main__":
                                            estimator_agent)
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/ttyS0',
-                          baudrate=115200,
-                          update_freq=10,
-                          vehicle=vehicle,
-                          position_controller=position_controller,
-                          control_supervisor=control_supervisor,
-                          adaptive_augmentation=adaptive_controller)
+    tm = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB0',
+                                   baudrate=115200,
+                                   update_freq=5,
+                                   vehicle=vehicle,
+                                   position_controller=position_controller,
+                                   control_supervisor=control_supervisor,
+                                   adaptive_augmentation=adaptive_controller,
+                                   subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
+                                   lora_address=2,
+                                   lora_freq=868,
+                                   remote_lora_address=40,
+                                   remote_lora_freq=868)
+
+    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB1',
+                                            baudrate=115200,
+                                            update_freq=10,
+                                            vehicle=vehicle,
+                                            position_controller=position_controller,
+                                            control_supervisor=control_supervisor,
+                                            adaptive_augmentation=adaptive_controller,
+                                            subscribed_comms=UAV_COMMAND_AGENT_SUBS,
+                                            send_telemetry=False,
+                                            lora_address=1,
+                                            lora_freq=880)
 
     ## ground control station connection
     # gcs = serial.Serial('/dev/pts/5', baudrate=115200, timeout=0.05)

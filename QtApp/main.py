@@ -21,7 +21,7 @@ from Factories.CommunicationFactory.Telemetry.telemetry_manager import Telemetry
 from Factories.CommunicationFactory.Telemetry.mappings import AUXILIARY_COMMANDS_MAPPING, FLIGHT_MODES_MAPPING
 from Factories.CommunicationFactory.Telemetry.lidia_telemetry_sender import LidiaTelemetrySender
 from Factories.DataManagementFactory.data_writer import DataWriterThread
-from Factories.DataManagementFactory.DataWriterConfigurations.data_writer_configurations import DATA_TO_WRITE_GCS, FIELDNAMES_TELEMETRY_NAMES_MAPPING
+from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_GCS, FIELDNAMES_TELEMETRY_NAMES_MAPPING
 class MainWindow(QMainWindow):
     def __init__(self,
                  telemetry_manager,
@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
 
         # readings update timer
         self.readings_timer = QTimer()
-        self.readings_timer.setInterval(500)
+        self.readings_timer.setInterval(100)
         self.readings_timer.start()
         self.readings_timer.timeout.connect(self.update_readings)
 
@@ -65,9 +65,9 @@ class MainWindow(QMainWindow):
 
         # Flight instruments
         self.lidia_telemetry = LidiaTelemetrySender()
-        self.webView = QWebEngineView()
-        self.webView.setParent(self.window.flight_instrumentsContainer)
-        #self.webView.load(QtCore.QUrl("http://localhost:5555/pfd"))
+        # self.webView = QWebEngineView()
+        # self.webView.setParent(self.window.flight_instrumentsContainer)
+        # self.webView.setUrl(QtCore.QUrl("http://localhost:5555/pfd"))
         # RT plots embedding
         self.live_plot_widgets = [self.window.x_plot, self.window.y_plot, self.window.z_plot,
                              self.window.Vx_plot, self.window.Vy_plot, self.window.Vz_plot,
@@ -312,9 +312,13 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    tm = TelemetryManagerThreadGCS(serialport='/dev/ttyUSB0',
+    tm = TelemetryManagerThreadGCS(serialport='/dev/ttyUSB2',
                                    baudrate=115200,
-                                   update_freq=10)
+                                   update_freq=10,
+                                   lora_address=40,
+                                   lora_freq=868,
+                                   remote_lora_address=1,
+                                   remote_lora_freq=880)
     app = QApplication(sys.argv)
     window = MainWindow(tm)
     Thread(target=window.update_plots, args=window.data_connectors).start()

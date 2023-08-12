@@ -6,10 +6,10 @@ import time
 
 if __name__ == "__main__":
     transport = SerialTransport()
-    tlm = Pytelemetry(transport)
-    transport.connect({'port':'/dev/ttyS0', 'baudrate':115200})
+    tlm = Pytelemetry(transport, addr=40, freq=868)
+    transport.connect({'port':'/dev/ttyUSB0', 'baudrate':115200})
 
-    tlm.publish(chr(10), 1, 'int8')
+    tlm.publish(chr(10), 20, 'int8', 2, 868)
     
     def printer(topic, data, opts):
         print(topic, " : ", data)
