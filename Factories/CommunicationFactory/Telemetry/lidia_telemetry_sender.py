@@ -9,7 +9,7 @@ TELEMETRY_MAPPING['ned'] = 'position_local'
 TELEMETRY_MAPPING['att'] = 'attitude'
 TELEMETRY_MAPPING['v_ned'] = 'velocity'
 class LidiaTelemetrySender:
-    def __init__(self, address_port=("localhost", 5000)):
+    def __init__(self, address_port=("localhost", 5500)):
         self.telemetry_lidia = telemetry_default
         self.telemetry_to_update_names = ['ned', 'att', 'v_ned']
         self.address_port = address_port

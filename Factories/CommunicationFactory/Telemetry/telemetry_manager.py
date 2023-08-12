@@ -19,12 +19,20 @@ class TelemetryManager:
                  serialport: str,
                  baudrate: int,
                  vehicle: Type[Vehicle] = None,
-                 subscribed_comms='ALL'):
+                 subscribed_comms='ALL',
+                 lora_address = None,
+                 lora_freq = None,
+                 remote_lora_address=None,
+                 remote_lora_freq=None):
         self.serialport = serialport
         self.baudrate = baudrate
         self.transport = SerialTransport()
-        self.tlm = Pytelemetry(self.transport)
+        self.tlm = Pytelemetry(self.transport, lora_address, lora_freq)
         self.transport.connect({'port': serialport, 'baudrate': self.baudrate})
+        self.lora_info = {'lora_address': lora_address,
+                          'lora_freq': lora_freq,
+                          'remote_lora_address': remote_lora_address,
+                          'remote_lora_freq': remote_lora_freq}
         self.COM_ASCII_MAP = COMMANDS_ASCII_MAPPING
         self.subscriptions_mapping = SUBSCRIPTIONS_MAPPING
         self._subscription_mapping_isvalid(self.subscriptions_mapping)
@@ -132,7 +140,7 @@ class TelemetryManager:
             comm_no_suffix = comm_decoupled[0]
         data_type = COMMANDS_DATATYPES_MAPPING[comm_no_suffix]
         comm_asci = self.COM_ASCII_MAP[comm]
-        self.tlm.publish(comm_asci, value, data_type)
+        self.tlm.publish(comm_asci, value, data_type, self.lora_info['remote_lora_address'], self.lora_info['remote_lora_freq'])
     def update(self):
         self.tlm.update()
 
@@ -156,12 +164,20 @@ class TelemetryManagerThread(TelemetryManager, Thread):
                  baudrate: int,
                  update_freq: int,
                  vehicle: Type[Vehicle] = None,
-                 subscribed_comms='ALL'):
+                 subscribed_comms='ALL',
+                 lora_address=None,
+                 lora_freq=None,
+                 remote_lora_address=None,
+                 remote_lora_freq=None):
         TelemetryManager.__init__(self,
                                   serialport=serialport,
                                   baudrate=baudrate,
                                   vehicle=vehicle,
-                                  subscribed_comms=subscribed_comms)
+                                  subscribed_comms=subscribed_comms,
+                                  lora_address=lora_address,
+                                  lora_freq=lora_freq,
+                                  remote_lora_address=remote_lora_address,
+                                  remote_lora_freq=remote_lora_freq)
         Thread.__init__(self)
         self.update_freq = update_freq
         self.start()
@@ -181,17 +197,18 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                  control_supervisor: Type[ControlSupervisor],
                  adaptive_augmentation: Type[L1_Augmentation]=None,
                  subscribed_comms='ALL',
-                 additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle']):
-        TelemetryManagerThread.__init__(self,
-                                  serialport=serialport,
-                                  baudrate=baudrate,
-                                  vehicle=vehicle,
-                                  update_freq=update_freq,
-                                  subscribed_comms=subscribed_comms)
+                 additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle'],
+                 send_telemetry=True,
+                 lora_address=None,
+                 lora_freq=None,
+                 remote_lora_address=None,
+                 remote_lora_freq=None):
+
         self.position_controller = position_controller
         self.control_supervisor = control_supervisor
         self.adaptive_augmentation = adaptive_augmentation
         self.additional_telemetry = additional_telemetry
+        self.send_telemetry = send_telemetry
         if 'estimation_and_ref' in additional_telemetry and self.adaptive_augmentation is None:
             warnings.warn("'Estimation and control' telemetry requested, but it requires adaptive controller, which"
                           "is None. Requested telemetry won't be added to a stream.")
@@ -201,6 +218,16 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                           " Requested telemetry won't be added to a stream.")
             self.additional_telemetry.remove('reference')
 
+        TelemetryManagerThread.__init__(self,
+                                  serialport=serialport,
+                                  baudrate=baudrate,
+                                  vehicle=vehicle,
+                                  update_freq=update_freq,
+                                  subscribed_comms=subscribed_comms,
+                                  lora_address=lora_address,
+                                  lora_freq=lora_freq,
+                                  remote_lora_address=remote_lora_address,
+                                  remote_lora_freq=remote_lora_freq)
 
     def publish_telemetry(self):
         update_telemetry(self.telemetry, self.vehicle)
@@ -282,7 +309,8 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                 self.control_supervisor.estimation_on = False
     def run(self):
         while True:
-            self.publish_telemetry()
+            if self.send_telemetry:
+                self.publish_telemetry()
             self.update()
             time.sleep(1 / self.update_freq)
 
@@ -292,13 +320,21 @@ class TelemetryManagerThreadGCS(TelemetryManagerThread):
                  baudrate: int,
                  update_freq: int,
                  vehicle: Type[Vehicle] = None,
-                 subscribed_comms='ALL'):
+                 subscribed_comms='ALL',
+                 lora_address=None,
+                 lora_freq=None,
+                 remote_lora_address=None,
+                 remote_lora_freq=None):
         TelemetryManagerThread.__init__(self,
                                   serialport=serialport,
                                   baudrate=baudrate,
                                   vehicle=vehicle,
                                   update_freq=update_freq,
-                                  subscribed_comms=subscribed_comms)
+                                  subscribed_comms=subscribed_comms,
+                                  lora_address=lora_address,
+                                  lora_freq=lora_freq,
+                                  remote_lora_address=remote_lora_address,
+                                  remote_lora_freq=remote_lora_freq)
         self.telemetry_set_event = threading.Event()
     def run(self):
         while True:
