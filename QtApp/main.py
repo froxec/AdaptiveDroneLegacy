@@ -1,4 +1,3 @@
-import os
 import sys
 import threading
 
@@ -9,28 +8,20 @@ from PySide6.QtUiTools import QUiLoader
 from Custom_Widgets.Widgets import *
 from PySide6.QtCore import Slot, QTimer
 from QuadcopterIntegration.Utilities.comm_definitions import commands
-from QuadcopterIntegration.Utilities.gcs_comm_functions import readThread
 import folium
 from folium import plugins
 from pglive.sources.data_connector import DataConnector
 from pglive.sources.live_plot import LiveLinePlot
 from pglive.sources.live_plot_widget import LivePlotWidget
-from pglive.sources.live_axis import LiveAxis
-from pglive.kwargs import Axis
-from collections import deque
 import io
-import serial
-from math import sin
-from time import sleep
 from threading import Thread
 from datetime import datetime
 import time
-import itertools
 from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManagerThreadGCS
 from Factories.CommunicationFactory.Telemetry.mappings import AUXILIARY_COMMANDS_MAPPING, FLIGHT_MODES_MAPPING
 from Factories.CommunicationFactory.Telemetry.lidia_telemetry_sender import LidiaTelemetrySender
 from Factories.DataManagementFactory.data_writer import DataWriterThread
-from Factories.DataManagementFactory.data_writer_configurations import DATA_TO_WRITE_GCS, FIELDNAMES_TELEMETRY_NAMES_MAPPING
+from Factories.DataManagementFactory.DataWriterConfigurations.data_writer_configurations import DATA_TO_WRITE_GCS, FIELDNAMES_TELEMETRY_NAMES_MAPPING
 class MainWindow(QMainWindow):
     def __init__(self,
                  telemetry_manager,

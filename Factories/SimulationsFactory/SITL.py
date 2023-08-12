@@ -84,18 +84,27 @@ class SoftwareInTheLoop:
             if isinstance(self.estimator, BanditEstimatorAgent):
                 self.estimator(x[i + 1, :6], ref_prev)
             elif isinstance(self.estimator, BanditEstimatorAcceleration):
-                mode = self.estimator.mode.split('_')
-                if mode[1] == 'CONTROL':
-                    angles = attitude_setpoint
-                elif mode[1] == 'MEASUREMENT':
-                    angles = x[i, 6:9]
-                if mode[0] == 'ACCELERATION':
-                    dstate = dstate[3:6] + np.random.normal(loc=np.zeros_like(self.acceleration_noise),
-                                                            scale=self.acceleration_noise,
-                                                            size=self.acceleration_noise.shape[0])
-                    self.estimator(dstate, force_norm=u_composite[0], angles=angles)
-                elif mode[0] == 'VELOCITY':
-                    self.estimator(x[i, 3:6], force_norm=u_composite[0], angles=angles, deltaT=1/self.INNER_LOOP_FREQ)
+                if self.estimator.process_finished:
+                    if self.estimator.testing_mode:
+                        print("SITL break at {} estimators step. Estimator in TESTING mode with MAX_STEPS {}".format(
+                            self.estimator.current_step, self.estimator.max_steps
+                        ))
+                        break
+                    else:
+                        pass
+                else:
+                    mode = self.estimator.mode.split('_')
+                    if mode[1] == 'CONTROL':
+                        angles = attitude_setpoint
+                    elif mode[1] == 'MEASUREMENT':
+                        angles = x[i, 6:9]
+                    if mode[0] == 'ACCELERATION':
+                        dstate = dstate[3:6] + np.random.normal(loc=np.zeros_like(self.acceleration_noise),
+                                                                scale=self.acceleration_noise,
+                                                                size=self.acceleration_noise.shape[0])
+                        self.estimator(dstate, force_norm=u_composite[0], angles=angles)
+                    elif mode[0] == 'VELOCITY':
+                        self.estimator(x[i, 3:6], force_norm=u_composite[0], angles=angles, deltaT=1/self.INNER_LOOP_FREQ)
             if isinstance(self.trajectory, type(TrajectoryWithTerminals())):
                 terminal_ind = self.check_if_reached_terminal(x[i + 1, :6])
                 if terminal_ind is not None:
