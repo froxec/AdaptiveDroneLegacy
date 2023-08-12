@@ -57,8 +57,9 @@ ADAPTIVE_FREQ = 100
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 20
 QUAD_NOMINAL_MASS = 0.7
+SIM_IP = 'udp:192.168.0.27:8500'
 
-trajectory = SinglePoint([0, 0, 10])
+trajectory = SinglePoint([0, 50, 10])
 Z550_parameters['m'] = QUAD_NOMINAL_MASS
 parameters = Z550_parameters
 
@@ -156,7 +157,7 @@ if __name__ == "__main__":
     ## telemetry manager
     tm = TelemetryManagerThreadUAV(serialport='/dev/ttyS0',
                           baudrate=115200,
-                          update_freq=1,
+                          update_freq=10,
                           vehicle=vehicle,
                           position_controller=position_controller,
                           control_supervisor=control_supervisor,
