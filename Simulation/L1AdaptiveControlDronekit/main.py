@@ -1,3 +1,5 @@
+import os
+
 from Factories.ModelsFactory.model_parameters import arducopter_parameters, Z550_parameters
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint, SpiralTrajectory
 from Factories.ModelsFactory.linear_models import AugmentedLinearizedQuadNoYaw, LinearizedQuadNoYaw, LinearTranslationalMotionDynamics
@@ -23,12 +25,14 @@ from Factories.ModelsFactory.models_for_estimation import NonlinearTranslational
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
 from Factories.CommunicationFactory.Telemetry.subscriptions import *
+from Factories.DataManagementFactory.data_writer import DataWriterThread
+from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
 
 import dronekit
 import serial
 import argparse
 import numpy as np
-
+import subprocess
 def mpc_command_convert(u, thrust_min, thrust_max):
     thrust = u[0]
     u = -u
@@ -47,7 +51,10 @@ def run_controller(controller, x=None):
         u = controller(x)
         return u
 
-
+#RUN_MAVLINK_LOGS?
+RUN_MAVLINK_LOGS = True
+#DRONE ADDR
+DRONE_ADDR = "localhost:8000"
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
@@ -65,7 +72,7 @@ parameters = Z550_parameters
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--connect', default='localhost:8000')
+    parser.add_argument('--connect', default='localhost:8005')
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=921600, wait_ready=True, rate=100)
@@ -79,7 +86,7 @@ if __name__ == "__main__":
     if MODEL == 1:
         prediction_model = LinearTranslationalMotionDynamics(parameters_holder, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
+                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE, MPC_IMPLEMENTATION='SPARSE')
     controller_conf.position_controller.switch_modes(MPC_MODE)
     x0 = np.array(dronekit_commands.get_state(vehicle))
     ## adaptive controller
@@ -154,27 +161,31 @@ if __name__ == "__main__":
                                            adaptive_controller,
                                            estimator_agent)
 
+    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs/')
+
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB0',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/7',
                                    baudrate=115200,
                                    update_freq=5,
                                    vehicle=vehicle,
                                    position_controller=position_controller,
                                    control_supervisor=control_supervisor,
                                    adaptive_augmentation=adaptive_controller,
-                                   subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
+                                   data_writer=data_writer,
+                                   subscribed_comms='ALL', #subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
                                    lora_address=2,
                                    lora_freq=868,
                                    remote_lora_address=40,
                                    remote_lora_freq=868)
 
-    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB1',
+    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/pts/7',
                                             baudrate=115200,
                                             update_freq=10,
                                             vehicle=vehicle,
                                             position_controller=position_controller,
                                             control_supervisor=control_supervisor,
                                             adaptive_augmentation=adaptive_controller,
+                                            data_writer=data_writer,
                                             subscribed_comms=UAV_COMMAND_AGENT_SUBS,
                                             send_telemetry=False,
                                             lora_address=1,
@@ -196,4 +207,8 @@ if __name__ == "__main__":
             control_supervisor.supervise()
         else:
             ("Waiting for drone to reach required attitude.")
+        if data_writer.writing_event.is_set():
+            if tm.telemetry is not None:
+                data_writer.data = tm.telemetry
+                data_writer.data_set.set()
         time.sleep(1/ADAPTIVE_FREQ)# this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT

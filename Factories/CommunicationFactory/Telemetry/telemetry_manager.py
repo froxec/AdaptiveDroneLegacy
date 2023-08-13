@@ -112,12 +112,10 @@ class TelemetryManager:
         if command == 'LAND':
             self.vehicle.mode = VehicleMode('LAND')
         if command == 'TAKEOFF':
+            if self.vehicle.armed == False or self.vehicle.mode != VehicleMode("GUIDED"):
+                print("TAKEOFF_COMM: COMMAND REJECTED: PLEASE CHECK VEHICLE IS ARMED AND IN GUIDED MODE!")
+                return
             target_attitude = 5
-            self.vehicle.mode = VehicleMode("GUIDED")
-            self.vehicle.armed = True
-            while not self.vehicle.armed:
-                print(" Waiting for arming...")
-                time.sleep(0.5)
             self.vehicle.simple_takeoff(target_attitude)
             while True:
                 print(" Altitude: ", self.vehicle.location.global_relative_frame.alt)
@@ -128,6 +126,9 @@ class TelemetryManager:
                 time.sleep(0.5)
 
     def update_controllers_callback(self, topic, data, opts):
+        raise NotImplementedError
+
+    def data_write_callback(self, topic, data, opts):
         raise NotImplementedError
 
     def publish(self, comm, value):
@@ -196,6 +197,7 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
                  position_controller: Type[PositionController],
                  control_supervisor: Type[ControlSupervisor],
                  adaptive_augmentation: Type[L1_Augmentation]=None,
+                 data_writer=None,
                  subscribed_comms='ALL',
                  additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle'],
                  send_telemetry=True,
@@ -207,6 +209,7 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
         self.position_controller = position_controller
         self.control_supervisor = control_supervisor
         self.adaptive_augmentation = adaptive_augmentation
+        self.data_writer = data_writer
         self.additional_telemetry = additional_telemetry
         self.send_telemetry = send_telemetry
         if 'estimation_and_ref' in additional_telemetry and self.adaptive_augmentation is None:
@@ -237,6 +240,8 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
             self._add_control_to_telemetry(self.telemetry)
         if hasattr(self, 'additional_telemetry') and 'output_and_throttle' in self.additional_telemetry:
             self._add_output_to_telemetry(self.telemetry)
+        if self.data_writer is not None:
+            self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
         available_telemetry = self.telemetry.keys()
         for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
             if not isinstance(indices, tuple):
@@ -275,6 +280,7 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
         self.telemetry = telemetry
         return self.telemetry
 
+
     def auxiliary_command_callback(self, topic, data, opts):
         super().auxiliary_command_callback(topic, data, opts)
         command = AUXILIARY_COMMANDS_MAPPING[data]
@@ -289,7 +295,6 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
             if data == 1:
                 print("TELEM_MANAGER: POSITION_CONTROLLER ON")
                 self.control_supervisor.position_controller_on = True
-                self.vehicle.mode = VehicleMode('GUIDED')
             elif data == 0:
                 print("TELEM_MANAGER: POSITION_CONTROLLER OFF")
                 self.control_supervisor.position_controller_on = False
@@ -307,6 +312,19 @@ class TelemetryManagerThreadUAV(TelemetryManagerThread):
             elif data == 0:
                 print("TELEM_MANAGER: ESTIMATOR OFF")
                 self.control_supervisor.estimation_on = False
+
+    def data_write_callback(self, topic, data, opts):
+        if self.data_writer is None:
+            raise "TELEM_MANAGER: write request, data_writer is None"
+        commands = data.split("_")
+        if len(commands) == 1 and commands[0] == "R":
+            self.data_writer.writing_event.clear()
+            print("TELEM_MANAGER: REQUESTED TO STOP WRITING DATA")
+        elif commands[0] == "S":
+            filename = commands[1]
+            self.data_writer.filename = filename
+            self.data_writer.writing_event.set()
+            print("TELEM_MANAGER: REQUESTED WRITING DATA TO FILE {}".format(filename))
     def run(self):
         while True:
             if self.send_telemetry:

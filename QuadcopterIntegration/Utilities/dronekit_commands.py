@@ -3,8 +3,11 @@ from dronekit import VehicleMode
 from pymavlink import mavutil
 import time
 def initialize_drone(vehicle):
-    vehicle.mode = VehicleMode("GUIDED")
     vehicle.parameters['GUID_OPTIONS'] = int(8)
+    vehicle.parameters['FENCE_ENABLE'] = 1
+    vehicle.parameters['FENCE_ALT_MAX'] = 15
+    vehicle.parameters['FENCE_ALT_MIN'] = 3
+    vehicle.parameters['FENCE_RADIUS'] = 30
 
     # commands below dont affect the behaviour..
     # message_rates = [
@@ -114,31 +117,31 @@ class GCSCommInterpreter:
             print("Disarming...")
             self.vehicle.disarm()
 # Function to arm and then takeoff to a user specified altitude
-def arm_and_takeoff(vehicle, aTargetAltitude):
-
-  print("Basic pre-arm checks")
-  # Don't let the user try to arm until autopilot is ready
-  while not vehicle.is_armable:
-    print(" Waiting for vehicle to initialise...")
-    time.sleep(1)
-        
-  print("Arming motors")
-  # Copter should arm in GUIDED mode
-  vehicle.mode    = VehicleMode("GUIDED")
-  vehicle.armed   = True
-
-  while not vehicle.armed:
-    print(" Waiting for arming...")
-    time.sleep(1)
-
-  print("Taking off!")
-  vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude
-
-  # Check that vehicle has reached takeoff altitude
-  while True:
-    print(" Altitude: ", vehicle.location.global_relative_frame.alt)
-    #Break and return from function just below target altitude.        
-    if vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95: 
-      print("Reached target altitude")
-      break
-    time.sleep(1)
+# def arm_and_takeoff(vehicle, aTargetAltitude):
+#
+#   print("Basic pre-arm checks")
+#   # Don't let the user try to arm until autopilot is ready
+#   while not vehicle.is_armable:
+#     print(" Waiting for vehicle to initialise...")
+#     time.sleep(1)
+#
+#   print("Arming motors")
+#   # Copter should arm in GUIDED mode
+#   vehicle.mode    = VehicleMode("GUIDED")
+#   vehicle.armed   = True
+#
+#   while not vehicle.armed:
+#     print(" Waiting for arming...")
+#     time.sleep(1)
+#
+#   print("Taking off!")
+#   vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude
+#
+#   # Check that vehicle has reached takeoff altitude
+#   while True:
+#     print(" Altitude: ", vehicle.location.global_relative_frame.alt)
+#     #Break and return from function just below target altitude.
+#     if vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95:
+#       print("Reached target altitude")
+#       break
+#     time.sleep(1)

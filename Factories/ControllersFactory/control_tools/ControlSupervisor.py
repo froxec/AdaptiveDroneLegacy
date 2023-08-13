@@ -38,13 +38,13 @@ class ControlSupervisor:
     def supervise(self):
         #print("State", x)
         if not self._check_for_min_altitude():
-            return
+            self.position_controller_on = False
         if self.position_controller_on:
             self.run_controllers()
         else:
-            if self.vehicle.mode.name != VehicleMode("GUIDED").name:
-                print("CONTROL_SUPERVISOR: MODE GUIDED")
-                self.vehicle.mode = VehicleMode("GUIDED")
+            if self.vehicle.mode.name != VehicleMode("RTL").name:
+                print("CONTROL_SUPERVISOR: CONTROLLER TURNED OFF: MODE RTL")
+                self.vehicle.mode = VehicleMode("RTL")
 
     def get_state(self):
         x = np.array(dronekit_commands.get_state(self.vehicle))
@@ -104,7 +104,8 @@ class ControlSupervisor:
         dronekit_commands.set_attitude(self.vehicle, u[1], u[2], 0, u[0])
 
     def _check_for_min_altitude(self):
-        if not self.vehicle.armed and self.vehicle.location.global_relative_frame.alt < self.min_altitude * 0.8:
+        alt = self.get_state()[2]
+        if alt < self.min_altitude * 0.9:
             print("Current alt {}. Supervisor waiting to reach minimum altitude...".format(self.vehicle.location.global_relative_frame.alt))
             return False
         else:
