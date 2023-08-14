@@ -58,16 +58,15 @@ ADAPTIVE_FREQ = 100
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 20
 QUAD_NOMINAL_MASS = 0.7
-SIM_IP = 'udp:192.168.0.27:8500'
-REAL_QUAD_IP = '/dev/ttyAMA1'
-IP = REAL_QUAD_IP
+SIM_IP = '/dev/ttyAMA1'
+
 trajectory = SinglePoint([0, 50, 10])
 Z550_parameters['m'] = QUAD_NOMINAL_MASS
 parameters = Z550_parameters
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--connect', default=IP)
+    parser.add_argument('--connect', default=SIM_IP)
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=921600, wait_ready=True, rate=100)
@@ -170,7 +169,7 @@ if __name__ == "__main__":
                                    remote_lora_address=40,
                                    remote_lora_freq=868)
 
-    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB1',
+    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB0',
                                             baudrate=115200,
                                             update_freq=10,
                                             vehicle=vehicle,
