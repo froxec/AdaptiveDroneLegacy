@@ -12,15 +12,29 @@ class ConstrainedMPC:
                  freq,
                  pred_horizon,
                  normalize_system=False,
-                 x_bounds={'lower': np.array([-np.Inf, -np.Inf, -np.Inf, -3, -3, -3]),
-                           'upper': np.array([np.Inf, np.Inf, np.Inf, 3, 3, 3])},
-                 u_bounds={'lower': np.array([-np.Inf, -np.pi/6, -np.pi/6]),
-                           'upper': np.array([np.Inf, np.pi/6, np.pi/6])}):
+                 x_bounds={'lower': np.array([-1000, -1000, -1000, -100, -100, -100]),
+                           'upper': np.array([1000, 1000, 1000, 100, 100, 100])},
+                 u_bounds={'lower': np.array([-1000, -np.pi/6, -np.pi/6]),
+                           'upper': np.array([1000, np.pi/6, np.pi/6])},
+                 delta_u_bounds = {'lower': np.array([-8, -np.pi/6, -np.pi/6]),
+                                   'upper': np.array([8, np.pi/6, np.pi/6])}):
         self.model = model
         self.freq = freq
         self.pred_horizon = pred_horizon
-        self.x_bounds = x_bounds
-        self.u_bounds = u_bounds
+        if not normalize_system:
+            self.x_bounds = x_bounds
+            self.u_bounds = u_bounds
+            self.delta_u_bounds = delta_u_bounds
+        else:
+            x_bounds['lower'], u_bounds['lower'] = self._normalize_state(x_bounds['lower'], u_bounds['lower'])
+            x_bounds['upper'], u_bounds['upper'] = self._normalize_state(x_bounds['upper'], u_bounds['upper'])
+            _, delta_u_bounds['lower'] = self._normalize_state(u=delta_u_bounds['lower'])
+            _, delta_u_bounds['upper'] = self._normalize_state(u=delta_u_bounds['upper'])
+            self.x_bounds = x_bounds
+            self.u_bounds = u_bounds
+            self.delta_u_bounds = delta_u_bounds
+        self.n = self.model.A.shape[0]
+        self.m = self.model.B.shape[1]
         if isinstance(model, LinearizedQuadNoYaw):
             if normalize_system:
                 parameters_type = 'LINEARIZED_NORMALIZED'
@@ -34,12 +48,13 @@ class ConstrainedMPC:
         self.Q_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base']) + np.ones(6)*1e-6
         self.P_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['P_base'])
         self.Q = np.diag(np.tile(self.Q_base, pred_horizon))
-        self.P = np.diag(np.tile(self.P_base, pred_horizon-1))
+        self.P = np.diag(np.tile(self.P_base, pred_horizon))
         self.mode = self.mode = MPCModes.CONSTRAINED
         self.setpoint = None
         self.normalize_state = normalize_system
         self.epsilon = 1e-6
         self.H, self.f = self.calculate_cost_matrices(self.Q, self.P)
+        self.calculacte_nonequality_constraints()
     def calculate_cost_matrices(self, Q, R):
         top_right = np.zeros((Q.shape[0], R.shape[1]))
         bottom_left = np.zeros((R.shape[0], Q.shape[1]))
@@ -61,36 +76,68 @@ class ConstrainedMPC:
         I_map = np.eye(self.pred_horizon, k=1, dtype=int)[:-1, :]
         left = np.kron(A_map, A) + np.kron(I_map, -I)
         right = np.kron(np.eye(self.pred_horizon - 1, dtype=int), B)
+        u0_columns = np.zeros((left.shape[0], self.m))
+        right = np.concatenate([u0_columns, right], axis=1)
         self.Aeq = np.concatenate([left, right], axis=1)
         self.beq = np.zeros(self.Aeq.shape[0])
         return self.Aeq, self.beq
 
-    def set_boundaries(self, x0):
+    def calculacte_nonequality_constraints(self):
+        I = np.identity(self.m)
+        left = np.zeros((self.m*(self.pred_horizon-1), self.n*self.pred_horizon))
+        I_map = np.eye(self.pred_horizon ,dtype=int)[:-1, :]
+        I_neg_map = np.eye(self.pred_horizon, k=1, dtype=int)[:-1, :]
+        right = np.kron(I_map, I) + np.kron(I_neg_map, -I)
+        top_G = np.concatenate([left, right], axis=1)
+        bottom_G = -top_G
+        G = np.concatenate([top_G, bottom_G], axis=0)
+        discrete_delta_u_lb = self.delta_u_bounds['lower'] * (1/self.freq)
+        discrete_delta_u_ub = self.delta_u_bounds['upper'] * (1/self.freq)
+        top_b = np.tile(discrete_delta_u_ub, self.pred_horizon - 1)
+        bottom_b = -np.tile(discrete_delta_u_lb, self.pred_horizon-1)
+        h = np.concatenate([top_b, bottom_b], axis=0)
+        self.G = G
+        self.h = h
+        return G, h
+
+    def set_boundaries(self, x0, u0):
         lb_top = np.tile(self.x_bounds['lower'], self.pred_horizon)
-        lb_bottom = np.tile(self.u_bounds['lower'], self.pred_horizon - 1)
+        lb_top[0:6] = x0[:]
+        lb_bottom = np.tile(self.u_bounds['lower'], self.pred_horizon)
+        lb_bottom[0:3] = u0[:]
         ub_top = np.tile(self.x_bounds['upper'], self.pred_horizon)
-        ub_bottom = np.tile(self.u_bounds['upper'], self.pred_horizon - 1)
+        ub_top[0:6] = x0[:]
+        ub_bottom = np.tile(self.u_bounds['upper'], self.pred_horizon)
+        ub_bottom[0:3] = u0[:]
         lb = np.concatenate([lb_top, lb_bottom])
         ub = np.concatenate([ub_top, ub_bottom])
-        lb[0:6] = x0[:]
-        ub[0:6] = x0[:]
         self.lb = lb
         self.ub = ub
         return self.lb, self.ub
-    def predict(self, delta_x):
-        t1 = time.time()
+    def predict(self, delta_x, delta_u):
         x = delta_x
+        u = delta_u
         if self.normalize_state:
-            x = self._normalize_state(x)
+            x, u = self._normalize_state(x, u)
         self.calculate_equality_constraints() # might be calculated only on parameters change
-        lb, ub = self.set_boundaries(x)
-        solution = solve_qp(self.H, self.f, A=self.Aeq, b=self.beq, lb=lb, ub=ub, solver='osqp')
-        return solution[self.pred_horizon*self.model.A.shape[0]:self.pred_horizon*self.model.A.shape[0]+3]
+        lb, ub = self.set_boundaries(x, u)
+        solution = solve_qp(self.H, self.f, G=self.G, h=self.h, A=self.Aeq, b=self.beq, lb=lb, ub=ub, solver='osqp')
+        u_k = solution[self.pred_horizon*self.model.A.shape[0]+3:self.pred_horizon*self.model.A.shape[0]+6]# first control is dummy
+        if self.normalize_state:
+            u_k = self._denormalize_control(u_k)
+        return u_k
 
 
-    def _normalize_state(self, x):
-        x = np.diag(1/np.diagonal(self.model.Nx)) @ x
-        return x
+    def _normalize_state(self, x=None, u=None):
+        if x is not None:
+            x = np.diag(1/np.diagonal(self.model.Nx)) @ x
+        if u is not None:
+            u = np.diag(1/np.diagonal(self.model.Nu)) @ u
+        return x, u
+
+    def _denormalize_control(self, u):
+        u = self.model.Nu @ u
+        return u
 
     def switch_modes(self,
                      mode: Type[MPCModes]):
@@ -111,4 +158,5 @@ if __name__ == "__main__":
                          OUTER_LOOP_FREQ,
                          30)
     x0 = np.array([0, 0, 10, 0, 0, 0])
-    mpc.predict(x0)
+    u0 = np.array((0, 0, 0))
+    mpc.predict(x0, u0)

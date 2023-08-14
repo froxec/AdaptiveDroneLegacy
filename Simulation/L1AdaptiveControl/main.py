@@ -37,7 +37,7 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 5, 50])
+trajectory = SinglePoint([100, 100, 50])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
@@ -57,7 +57,6 @@ if __name__ == "__main__":
     quad_conf = QuadConfiguration(perturber.nominal_parameters, pendulum_parameters, x0, np.zeros(4), PWM_RANGE,
                                   ANGULAR_VELOCITY_RANGE, external_disturbance=wind_force)
     x0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
-    u0 = np.zeros(3)
 
     ## Controller configuration
     if MODEL == 0 or MODEL == 2:
@@ -67,6 +66,7 @@ if __name__ == "__main__":
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE, MPC_IMPLEMENTATION='SPARSE')
     controller_conf.position_controller.switch_modes(MPC_MODE)
+    u0 = controller_conf.position_controller_input_converter.u_ss
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]

@@ -52,9 +52,10 @@ class SoftwareInTheLoop:
         self.position_controller.change_trajectory(setpoint)
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:
-                ref = self.position_controller(x[i, :6], convert_throttle=False)
+                ref = self.position_controller(x[i, :6], ref_prev, convert_throttle=False)
                 if self.adaptive_controller is None:
                     u_composite = ref
+                ref_prev = ref
             if (self.adaptive_controller is not None and
                     isinstance(self.adaptive_controller.predictor.ref_model, QuadTranslationalDynamicsUncertain)):
                 z = x[i, 3:6]
