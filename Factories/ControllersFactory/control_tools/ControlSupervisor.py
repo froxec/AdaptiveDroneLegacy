@@ -4,6 +4,7 @@ from QuadcopterIntegration.Utilities import dronekit_commands
 from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain, QuadTranslationalDynamicsUncertain
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
 from Factories.ToolsFactory.Converters import RampSaturation
+from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from dronekit import *
 from typing import Type
 import numpy as np
@@ -32,6 +33,7 @@ class ControlSupervisor:
         self.position_controller_on = False
         self.adaptive_controller_on = False
         self.estimation_on = False
+        self.velocity_filter = LowPassLiveFilter([5, 5, 5], fs=100, signals_num=3)
 
     def __call__(self):
         return self.supervise()
@@ -54,6 +56,7 @@ class ControlSupervisor:
     def run_controllers(self):
         u_composite = None
         x = self.get_state()
+        x[3:6] = self.velocity_filter(x[3:6])
         if self.position_controller.ready_event.is_set():
             self.position_controller.x = x
             self.position_controller.u = self.mpc_ref_prev
@@ -102,7 +105,7 @@ class ControlSupervisor:
                 angles = np.concatenate([u_composite[1:], np.array([0.0])])
                 self.estimator_agent.data = {'measurement': measurement, 'force': force, 'angles': angles}
                 self.estimator_agent.data_set_event.set()
-
+        time.sleep(self.Ts)
     def set_attitude(self, u):
         dronekit_commands.set_attitude(self.vehicle, u[1], u[2], 0, u[0])
 

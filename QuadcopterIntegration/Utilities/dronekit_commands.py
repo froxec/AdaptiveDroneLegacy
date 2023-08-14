@@ -5,7 +5,7 @@ import time
 def initialize_drone(vehicle):
     vehicle.parameters['GUID_OPTIONS'] = int(8)
     vehicle.parameters['FENCE_ENABLE'] = 1
-    vehicle.parameters['FENCE_ALT_MAX'] = 30
+    vehicle.parameters['FENCE_ALT_MAX'] = 80
     vehicle.parameters['FENCE_ALT_MIN'] = 3
     vehicle.parameters['FENCE_RADIUS'] = 30
 

@@ -12,15 +12,15 @@ class ConstrainedMPC:
                  freq,
                  pred_horizon,
                  normalize_system=False,
-                 x_bounds={'lower': np.array([-1000, -1000, -1000, -1, -1, -1]),
-                           'upper': np.array([1000, 1000, 1000, 1, 1, 1])},
+                 x_bounds={'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
+                           'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
                  u_bounds={'lower': np.array([-1000, -np.pi/6, -np.pi/6]),
                            'upper': np.array([1000, np.pi/6, np.pi/6])},
-                 delta_x_bounds={'lower': np.array([-10, -1000, -1000, -0.5, -0.1, -0.5]),
-                                   'upper': np.array([10, 1000, 1000, 0.1, 0.1, 0.5])},
-                 delta_u_bounds = {'lower': np.array([-8, -np.pi/6, -np.pi/6]),
-                                   'upper': np.array([8, np.pi/6, np.pi/6])},
-                 soft_constraints=False):
+                 delta_x_bounds={'lower': np.array([-3, -3, -3, -0.5, -0.5, -0.5]),
+                                   'upper': np.array([3, 3, 3, 0.5, 0.5, 0.5])},
+                 delta_u_bounds = {'lower': np.array([-2, -np.pi/6, -np.pi/6]),
+                                   'upper': np.array([2, np.pi/6, np.pi/6])},
+                 soft_constraints=True):
         self.model = model
         self.freq = freq
         self.pred_horizon = pred_horizon
@@ -53,7 +53,7 @@ class ConstrainedMPC:
                 parameters_type = 'TRANSLATIONAL_DYNAMICS'
         self.Q_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base']) + np.ones(6)*1e-6
         self.P_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['P_base'])
-        self.Qn_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base']) + np.ones(6)*1e-6
+        self.Qn_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base'])*1 + np.ones(6)*1e-6
         self.R_base = np.ones(self.n) * 1000
         self.Q = np.diag(np.concatenate([np.tile(self.Q_base, pred_horizon-1), self.Qn_base]))
         self.P = np.diag(np.tile(self.P_base, pred_horizon))
