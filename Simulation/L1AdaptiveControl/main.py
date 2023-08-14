@@ -41,7 +41,7 @@ trajectory = SinglePoint([5, 5, 50])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 1.0})
+    perturber({'m': 0.0})
 
     ## parameters holder
     parameters_holder = DataHolder(perturber.perturbed_parameters)

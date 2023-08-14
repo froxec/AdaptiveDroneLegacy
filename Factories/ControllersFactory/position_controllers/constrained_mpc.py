@@ -12,17 +12,19 @@ class ConstrainedMPC:
                  freq,
                  pred_horizon,
                  normalize_system=False,
-                 x_bounds={'lower': np.array([-1000, -1000, -1000, -100, -100, -100]),
-                           'upper': np.array([1000, 1000, 1000, 100, 100, 100])},
+                 x_bounds={'lower': np.array([-1000, -1000, -1000, -1, -1, -1]),
+                           'upper': np.array([1000, 1000, 1000, 1, 1, 1])},
                  u_bounds={'lower': np.array([-1000, -np.pi/6, -np.pi/6]),
                            'upper': np.array([1000, np.pi/6, np.pi/6])},
-                 delta_x_bounds={'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
-                                   'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
+                 delta_x_bounds={'lower': np.array([-10, -1000, -1000, -0.5, -0.1, -0.5]),
+                                   'upper': np.array([10, 1000, 1000, 0.1, 0.1, 0.5])},
                  delta_u_bounds = {'lower': np.array([-8, -np.pi/6, -np.pi/6]),
-                                   'upper': np.array([8, np.pi/6, np.pi/6])}):
+                                   'upper': np.array([8, np.pi/6, np.pi/6])},
+                 soft_constraints=False):
         self.model = model
         self.freq = freq
         self.pred_horizon = pred_horizon
+        self.soft_constraints = soft_constraints
         if not normalize_system:
             self.x_bounds = x_bounds
             self.u_bounds = u_bounds
@@ -60,14 +62,23 @@ class ConstrainedMPC:
         self.setpoint = None
         self.normalize_state = normalize_system
         self.epsilon = 1e-6
-        self.H, self.f = self.calculate_cost_matrices(self.Q, self.P)
+        if self.soft_constraints:
+            self.H, self.f = self.calculate_cost_matrices(self.Q, self.P, self.R)
+        else:
+            self.H, self.f = self.calculate_cost_matrices(self.Q, self.P)
         self.calculacte_nonequality_constraints()
-    def calculate_cost_matrices(self, Q, R):
+    def calculate_cost_matrices(self, Q, R, P=None):
         top_right = np.zeros((Q.shape[0], R.shape[1]))
         bottom_left = np.zeros((R.shape[0], Q.shape[1]))
         top = np.concatenate([Q, top_right], axis=1)
         bottom = np.concatenate([bottom_left, R], axis=1)
         self.H = np.concatenate([top, bottom], axis=0)
+        if P is not None:
+            soft_left = np.zeros((P.shape[0], self.H.shape[1]))
+            soft_top = np.zeros((self.H.shape[0], P.shape[1]))
+            H_top = np.concatenate([self.H, soft_top], axis=1)
+            H_bottom = np.concatenate([soft_left, P], axis=1)
+            self.H = np.concatenate([H_top, H_bottom], axis=0)
         self.f = np.zeros(self.H.shape[0])
         return self.H, self.f
 
@@ -87,6 +98,9 @@ class ConstrainedMPC:
         right = np.concatenate([u0_columns, right], axis=1)
         self.Aeq = np.concatenate([left, right], axis=1)
         self.beq = np.zeros(self.Aeq.shape[0])
+        if self.soft_constraints:
+            right_fill = np.zeros((self.Aeq.shape[0], self.R.shape[1]))
+            self.Aeq = np.concatenate([self.Aeq, right_fill], axis=1)
         return self.Aeq, self.beq
 
     def calculacte_nonequality_constraints(self):
@@ -94,7 +108,7 @@ class ConstrainedMPC:
         left = np.zeros((self.m*(self.pred_horizon-1), self.n*self.pred_horizon))
         I_map = np.eye(self.pred_horizon ,dtype=int)[:-1, :]
         I_neg_map = np.eye(self.pred_horizon, k=1, dtype=int)[:-1, :]
-        right = np.kron(I_map, I) + np.kron(I_neg_map, -I)
+        right = np.kron(I_map, -I) + np.kron(I_neg_map, I)
         top_G = np.concatenate([left, right], axis=1)
         bottom_G = -top_G
         G = np.concatenate([top_G, bottom_G], axis=0)
@@ -103,7 +117,7 @@ class ConstrainedMPC:
         top_b = np.tile(discrete_delta_u_ub, self.pred_horizon - 1)
         bottom_b = -np.tile(discrete_delta_u_lb, self.pred_horizon-1)
         h = np.concatenate([top_b, bottom_b], axis=0)
-        #G, h = self.add_state_ramp_constraints(G, h)
+        G, h = self.add_state_ramp_constraints(G, h)
         self.G = G
         self.h = h
         return G, h
@@ -121,6 +135,9 @@ class ConstrainedMPC:
         ub = np.concatenate([ub_top, ub_bottom])
         self.lb = lb
         self.ub = ub
+        if self.soft_constraints:
+            self.lb = np.concatenate([self.lb, -np.ones(self.R.shape[0])*np.Inf])
+            self.ub = np.concatenate([self.ub, np.ones(self.R.shape[0])*np.Inf])
         return self.lb, self.ub
     def predict(self, delta_x, delta_u):
         x = delta_x
@@ -129,7 +146,7 @@ class ConstrainedMPC:
             x, u = self._normalize_state(x, u)
         self.calculate_equality_constraints() # might be calculated only on parameters change
         lb, ub = self.set_boundaries(x, u)
-        solution = solve_qp(self.H, self.f, G=self.G, h=self.h, A=self.Aeq, b=self.beq, lb=lb, ub=ub, solver='osqp')
+        solution = solve_qp(self.H, self.f, G=self.G, h=self.h, A=self.Aeq, b=self.beq, lb=lb, ub=ub, solver='osqp') #lb and ub must be here, for state feedback
         u_k = solution[self.pred_horizon*self.model.A.shape[0]+3:self.pred_horizon*self.model.A.shape[0]+6]# first control is dummy
         if self.normalize_state:
             u_k = self._denormalize_control(u_k)
@@ -139,7 +156,7 @@ class ConstrainedMPC:
         I = np.identity(self.n)
         I_map = np.eye(self.pred_horizon, dtype=int)[:-1, :]
         I_neg_map = np.eye(self.pred_horizon,  k=1, dtype=int)[:-1, :]
-        left = np.kron(I_map, I) + np.kron(I_neg_map, I)
+        left = np.kron(I_map, -I) + np.kron(I_neg_map, I)
         right = np.zeros((left.shape[0], self.m*self.pred_horizon))
         top_G = np.concatenate([left, right], axis=1)
         bottom_G = -top_G
@@ -149,6 +166,15 @@ class ConstrainedMPC:
         top_h = np.tile(discrete_delta_x_ub, self.pred_horizon - 1)
         bottom_h = -np.tile(discrete_delta_x_lb, self.pred_horizon - 1)
         h_new = np.concatenate([top_h, bottom_h], axis=0)
+        if self.soft_constraints:
+            G_top_fill = np.zeros((G.shape[0], self.R.shape[1]))
+            G = np.concatenate([G, G_top_fill], axis=1)
+            I = np.identity(self.n)
+            I_map = np.eye(self.pred_horizon, dtype=int)[:-1, :]
+            G_new_soft_constraints_top = np.kron(I_map, I)
+            G_new_soft_constraints_bottom = np.kron(I_map, -I)
+            G_new_soft_constraints = np.concatenate([G_new_soft_constraints_top, G_new_soft_constraints_bottom], axis=0)
+            G_new = np.concatenate([G_new, G_new_soft_constraints], axis=1)
         G = np.concatenate([G, G_new], axis=0)
         h = np.concatenate([h, h_new], axis=0)
         return G, h
