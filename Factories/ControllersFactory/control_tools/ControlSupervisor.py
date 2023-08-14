@@ -4,6 +4,7 @@ from QuadcopterIntegration.Utilities import dronekit_commands
 from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain, QuadTranslationalDynamicsUncertain
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
 from Factories.ToolsFactory.Converters import RampSaturation
+from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from dronekit import *
 from typing import Type
 import numpy as np
@@ -26,11 +27,13 @@ class ControlSupervisor:
         self.mpc_ref = None
         self.z_prev = np.zeros(3)
         self.u_prev = np.zeros(3)
+        self.mpc_ref_prev = self.position_controller.input_converter.u_ss
         self.telemetry_to_read = None
         self.min_altitude = min_altitude
         self.position_controller_on = False
         self.adaptive_controller_on = False
         self.estimation_on = False
+        self.velocity_filter = LowPassLiveFilter([5, 5, 5], fs=100, signals_num=3)
 
     def __call__(self):
         return self.supervise()
@@ -38,13 +41,13 @@ class ControlSupervisor:
     def supervise(self):
         #print("State", x)
         if not self._check_for_min_altitude():
-            return
+            self.position_controller_on = False
         if self.position_controller_on:
             self.run_controllers()
         else:
-            if self.vehicle.mode.name != VehicleMode("GUIDED").name:
-                print("CONTROL_SUPERVISOR: MODE GUIDED")
-                self.vehicle.mode = VehicleMode("GUIDED")
+            if self.vehicle.mode.name != VehicleMode("RTL").name:
+                print("CONTROL_SUPERVISOR: CONTROLLER TURNED OFF: MODE RTL")
+                self.vehicle.mode = VehicleMode("RTL")
 
     def get_state(self):
         x = np.array(dronekit_commands.get_state(self.vehicle))
@@ -53,8 +56,10 @@ class ControlSupervisor:
     def run_controllers(self):
         u_composite = None
         x = self.get_state()
+        x[3:6] = self.velocity_filter(x[3:6])
         if self.position_controller.ready_event.is_set():
             self.position_controller.x = x
+            self.position_controller.u = self.mpc_ref_prev
             self.position_controller.data_set.set()
             self.position_controller.ready_event.clear()
         if self.position_controller.control_set.is_set():
@@ -62,6 +67,7 @@ class ControlSupervisor:
             self.position_controller.control_set.clear()
             #print("Got MPC reference {}".format(self.mpc_ref))
             u_composite = self.mpc_ref
+            self.mpc_ref_prev = self.mpc_ref
         if (self.adaptive_controller is not None
                 and self.adaptive_controller_on
                 and self.mpc_ref is not None
@@ -99,12 +105,13 @@ class ControlSupervisor:
                 angles = np.concatenate([u_composite[1:], np.array([0.0])])
                 self.estimator_agent.data = {'measurement': measurement, 'force': force, 'angles': angles}
                 self.estimator_agent.data_set_event.set()
-
+        time.sleep(self.Ts)
     def set_attitude(self, u):
         dronekit_commands.set_attitude(self.vehicle, u[1], u[2], 0, u[0])
 
     def _check_for_min_altitude(self):
-        if not self.vehicle.armed and self.vehicle.location.global_relative_frame.alt < self.min_altitude * 0.8:
+        alt = self.get_state()[2]
+        if alt < self.min_altitude * 0.9:
             print("Current alt {}. Supervisor waiting to reach minimum altitude...".format(self.vehicle.location.global_relative_frame.alt))
             return False
         else:

@@ -5,6 +5,7 @@ COMMAND_NAMES = [
     'SET_SPIRAL_SETPOINT:X', 'SET_SPIRAL_SETPOINT:Y', 'SET_SPIRAL_SETPOINT:Z',
     'AUXILIARY_COMMAND',
     'HEARTBEAT',
+    'DATA_WRITE',
     'POSITION_CONTROLLER_ON_OFF',
     'ADAPTIVE_CONTROLLER_ON_OFF',
     'ESTIMATOR_ON_OFF',
@@ -13,6 +14,7 @@ COMMAND_NAMES = [
     'TELEMETRY_THROTTLE_REF',
     'TELEMETRY_BATTERY_VOLTAGE',
     'TELEMETRY_BATTERY_CURRENT',
+    'TELEMETRY_WRITING_OK',
     'TELEMETRY_POSITION_LOC:X', 'TELEMETRY_POSITION_LOC:Y', 'TELEMETRY_POSITION_LOC:Z',
     'TELEMETRY_POSITION_GLOB:X', 'TELEMETRY_POSITION_GLOB:Y', 'TELEMETRY_POSITION_GLOB:Z',
     'TELEMETRY_VELOCITY:X', 'TELEMETRY_VELOCITY:Y', 'TELEMETRY_VELOCITY:Z',
@@ -37,6 +39,7 @@ SUBSCRIPTIONS_MAPPING = {
     'AUXILIARY_COMMAND': ['auxiliary_command_callback'],
     'SET_SPIRAL_SETPOINT': ['change_setpoint_callback'],
     'HEARTBEAT': ['printer_callback'],
+    'DATA_WRITE': ['data_write_callback'],
     'POSITION_CONTROLLER_ON_OFF': ['update_controllers_callback'],
     'ADAPTIVE_CONTROLLER_ON_OFF': ['update_controllers_callback'],
     'ESTIMATOR_ON_OFF': ['update_controllers_callback'],
@@ -52,7 +55,8 @@ SUBSCRIPTIONS_MAPPING = {
     'TELEMETRY_FLIGHT_MODE': ['update_telemetry_callback'],
     'TELEMETRY_THROTTLE_REF': ['update_telemetry_callback'],
     'TELEMETRY_BATTERY_VOLTAGE': ['update_telemetry_callback'],
-    'TELEMETRY_BATTERY_CURRENT': ['update_telemetry_callback']
+    'TELEMETRY_BATTERY_CURRENT': ['update_telemetry_callback'],
+    'TELEMETRY_WRITING_OK': ['update_telemetry_callback']
 }
 
 # COMMANDS DATATYPES MAPPING
@@ -61,6 +65,7 @@ COMMANDS_DATATYPES_MAPPING = {
     'AUXILIARY_COMMAND': 'int8',
     'SET_SPIRAL_SETPOINT': 'float32',
     'HEARTBEAT': 'int8',
+    'DATA_WRITE': 'string',
     'POSITION_CONTROLLER_ON_OFF': 'int8',
     'ADAPTIVE_CONTROLLER_ON_OFF': 'int8',
     'ESTIMATOR_ON_OFF': 'int8',
@@ -76,7 +81,8 @@ COMMANDS_DATATYPES_MAPPING = {
     'TELEMETRY_FLIGHT_MODE': 'int8',
     'TELEMETRY_THROTTLE_REF': 'float32',
     'TELEMETRY_BATTERY_VOLTAGE': 'float32',
-    'TELEMETRY_BATTERY_CURRENT': 'float32'
+    'TELEMETRY_BATTERY_CURRENT': 'float32',
+    'TELEMETRY_WRITING_OK': 'int8'
 }
 
 # COMMANDS TO TELEMETRY NAMES MAPPING
@@ -109,7 +115,8 @@ COMMANDS_TO_TELEMETRY_INDICES = {
     'TELEMETRY_FLIGHT_MODE': 'flight_mode',
     'TELEMETRY_THROTTLE_REF': 'throttle',
     'TELEMETRY_BATTERY_VOLTAGE': 'bat_voltage',
-    'TELEMETRY_BATTERY_CURRENT': 'bat_current'
+    'TELEMETRY_BATTERY_CURRENT': 'bat_current',
+    'TELEMETRY_WRITING_OK': 'telem_writing_ok'
 }
 
 # MAPPING FLIGHT_MODES TO VALUES INT8

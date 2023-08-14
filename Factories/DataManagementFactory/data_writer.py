@@ -3,6 +3,7 @@ from datetime import datetime
 from csv import DictWriter
 from threading import Thread
 import time
+from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import FIELDNAMES_TELEMETRY_NAMES_MAPPING
 class DataWriter:
     def __init__(self, datafields, path):
         self.data_fields = datafields
@@ -33,8 +34,20 @@ class DataWriterThread(DataWriter, Thread):
     def _get_data(self):
         self.data_set.wait()
         data = self.data
+        data_to_write = {}
+        for data_field in self.data_fields:
+            if data_field == 'TIME':
+                data_to_write[data_field] = datetime.now()
+                continue
+            indices = FIELDNAMES_TELEMETRY_NAMES_MAPPING[data_field]
+            if isinstance(indices, tuple):
+                key, id = indices
+                data_to_write[data_field] = data[key][id]
+            else:
+                data_to_write[data_field] = data[indices]
         self.data_set.clear()
-        return data
+        return data_to_write
+
 
     def _control_execution(self):
         if self.writing_event.is_set():
@@ -58,6 +71,7 @@ class DataWriterThread(DataWriter, Thread):
         self.writer.writeheader()
         self.file.flush()
     def close_file(self):
+        self.writing_ok = False
         self.file.close()
 
     def data_write(self, data):

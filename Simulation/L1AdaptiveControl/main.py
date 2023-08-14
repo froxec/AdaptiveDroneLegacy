@@ -28,7 +28,7 @@ USE_ADAPTIVE = True
 USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
-HORIZON = 20
+HORIZON = 100
 QUAD_NOMINAL_MASS = 0.7
 
 INNER_LOOP_FREQ = 100
@@ -37,11 +37,11 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([100, 100, 50])
+trajectory = SinglePoint([100, 20, 50])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': 0.5})
 
     ## parameters holder
     parameters_holder = DataHolder(perturber.perturbed_parameters)
@@ -57,7 +57,6 @@ if __name__ == "__main__":
     quad_conf = QuadConfiguration(perturber.nominal_parameters, pendulum_parameters, x0, np.zeros(4), PWM_RANGE,
                                   ANGULAR_VELOCITY_RANGE, external_disturbance=wind_force)
     x0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
-    u0 = np.zeros(3)
 
     ## Controller configuration
     if MODEL == 0 or MODEL == 2:
@@ -65,14 +64,15 @@ if __name__ == "__main__":
     elif MODEL == 1:
         prediction_model = LinearTranslationalMotionDynamics(parameters_holder, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
+                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE, MPC_IMPLEMENTATION='SPARSE')
     controller_conf.position_controller.switch_modes(MPC_MODE)
+    u0 = controller_conf.position_controller_input_converter.u_ss
 
     ## Adaptive Controller configuration
     z0 = x0[3:6]
     if MODEL == 0:
         As = np.diag([-5, -5, -5])
-        bandwidths = [0.1, 0.1, 0.1]
+        bandwidths = [0.5, 0.5, 0.5]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -93,8 +93,8 @@ if __name__ == "__main__":
     else:
         adaptive_controller = None
 
-    ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
-                             'upper_bound': np.array([2, 0.78, 0.78])}
+    ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -np.Inf, -np.Inf]),
+                             'upper_bound': np.array([np.Inf, np.Inf, np.Inf])}
     ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ, output_saturation=l1_saturator)
     position_controller = PositionController(controller_conf.position_controller,
                                              controller_conf.position_controller_input_converter,

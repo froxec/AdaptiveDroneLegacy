@@ -8,6 +8,7 @@ from Factories.ControllersFactory.position_controllers.position_controller_param
 import numpy as np
 from Factories.ControllersFactory.position_controllers.mpc_controllers import gekkoMPC
 from Factories.ControllersFactory.position_controllers.mpc import ModelPredictiveControl
+from Factories.ControllersFactory.position_controllers.constrained_mpc import ConstrainedMPC
 from Factories.ModelsFactory.linear_models import LinearizedQuad, LinearTranslationalMotionDynamics
 from typing import Type
 
@@ -48,12 +49,16 @@ class QuadConfiguration(Configuration):
 
 class CustomMPCConfig(ControllerConfigurationBase):
     def __init__(self, prediction_model, INNER_LOOP_FREQ,
-                 OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10, normalize_system=False):
+                 OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10, normalize_system=False,
+                 MPC_IMPLEMENTATION='SPARSE'):
         if isinstance(prediction_model, LinearTranslationalMotionDynamics):
             mode = 'transDynamicsModel'
         elif isinstance(prediction_model, LinearizedQuad):
             mode = 'proprietary'
-        self.position_controller = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, horizon, normalize_system=normalize_system)
+        if MPC_IMPLEMENTATION == 'SPARSE':
+            self.position_controller = ConstrainedMPC(prediction_model, OUTER_LOOP_FREQ, horizon, normalize_system=normalize_system)
+        else:
+            self.position_controller = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, horizon, normalize_system=normalize_system)
         x_ss = np.zeros(prediction_model.A.shape[0])
         self.position_controller_output_converter = MPC_output_converter(prediction_model.parameters_holder,
                                                                          ANGULAR_VELOCITY_RANGE, mode)

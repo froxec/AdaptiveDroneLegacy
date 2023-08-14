@@ -34,10 +34,10 @@ class PositionController():
         self.setpoint = None
         self.history = {'u': []}
 
-    def __call__(self, x=None, convert_throttle=True):
-        return self.get_control(x, convert_throttle=convert_throttle)
+    def __call__(self, x=None, u_prev=None, convert_throttle=True):
+        return self.get_control(x, u_prev,convert_throttle=convert_throttle)
 
-    def get_control(self, x=None, convert_throttle=True):
+    def get_control(self, x=None, u_prev=None, convert_throttle=True):
         if self.interface is not None:
             data = self.interface('recv')
             if data is not None:
@@ -49,9 +49,10 @@ class PositionController():
                 self.change_trajectory(trajectory)
         else:
             self.x = x
+            self.u_prev = u_prev
         self.set_reference(self.trajectory, x)
-        delta_x, _ = self.input_converter(self.x, None)
-        delta_u_next = self.controller.predict(delta_x)
+        delta_x, delta_u = self.input_converter(self.x, self.u_prev)
+        delta_u_next = self.controller.predict(delta_x, delta_u)
         if convert_throttle:
             u_next = self.output_converter(delta_u_next)
         else:
@@ -125,6 +126,7 @@ class PositionControllerThread(PositionController, Thread):
                                     ramp_saturation=ramp_saturation)
         Thread.__init__(self)
         self.x = None
+        self.u = None
         self.u_ref = None
         self.data_set = threading.Event()
         self.control_set = threading.Event()
@@ -162,8 +164,8 @@ class PositionControllerThread(PositionController, Thread):
         else:
             self.x = x
         self.set_reference(self.trajectory, x)
-        delta_x, _ = self.input_converter(self.x, None)
-        delta_u_next = self.controller.predict(delta_x)
+        delta_x, delta_u = self.input_converter(self.x, self.u)
+        delta_u_next = self.controller.predict(delta_x, delta_u)
         u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)

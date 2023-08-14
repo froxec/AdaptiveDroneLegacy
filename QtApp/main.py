@@ -135,6 +135,8 @@ class MainWindow(QMainWindow):
         self.window.saveDataBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
         self.window.dataWritingStatus.setText("DATA NO WRITING")
         self.window.dataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
+        self.window.remoteDataWritingStatus.setText("DATA NO WRITING")
+        self.window.remoteDataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
         # STATUS
         self.window.batteryPixmap.setStyleSheet("color: white")
         # show
@@ -188,19 +190,7 @@ class MainWindow(QMainWindow):
             self.window.batteryCurrent.setText(
                 ("{:.2f}" + " " + "A").format(self.telemetry['bat_current']))
         if self.data_writer.writing_event.is_set():
-            data = {}
-            for data_field in self.data_writer.data_fields:
-                if data_field == 'TIME':
-                    data[data_field] = datetime.now()
-                    continue
-                indices = FIELDNAMES_TELEMETRY_NAMES_MAPPING[data_field]
-                if isinstance(indices, tuple):
-                    key, id = indices
-                    data[data_field] = self.telemetry[key][id]
-                else:
-                    data[data_field] = self.telemetry[indices]
-
-            self.data_writer.data = data
+            self.data_writer.data = self.telemetry
             self.data_writer.data_set.set()
             if self.data_writer.writing_ok:
                 self.window.dataWritingStatus.setText("DATA WRITING OK")
@@ -208,6 +198,13 @@ class MainWindow(QMainWindow):
             else:
                 self.window.dataWritingStatus.setText("DATA NO WRITING")
                 self.window.dataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
+        if self.telemetry['telem_writing_ok']:
+            self.window.remoteDataWritingStatus.setText("REMOTE:DATA WRITING OK")
+            self.window.remoteDataWritingStatus.setStyleSheet("QLabel {background-color: lightgreen}")
+        else:
+            self.window.remoteDataWritingStatus.setText("REMOTE:DATA NO WRITING")
+            self.window.remoteDataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
+
         self.lidia_telemetry(self.telemetry)
 
     @Slot()
@@ -259,10 +256,11 @@ class MainWindow(QMainWindow):
             filename = self.window.dataFilenameTextbox.toPlainText()
             self.data_writer.filename = filename
             self.data_writer.writing_event.set()
-            #self.telemetry_manager.publish('POSITION_CONTROLLER_ON_OFF', 1)
+            self.telemetry_manager.publish('DATA_WRITE', 'S_{}RPI'.format(filename))
         else:
             self.window.saveDataBtn.setText("SAVING OFF")
             self.window.saveDataBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
+            self.telemetry_manager.publish('DATA_WRITE', 'R')
             self.data_writer.writing_event.clear()
 
     def change_flight_mode(self, mode):
@@ -312,7 +310,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    tm = TelemetryManagerThreadGCS(serialport='/dev/ttyUSB2',
+    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/4',
                                    baudrate=115200,
                                    update_freq=10,
                                    lora_address=40,
