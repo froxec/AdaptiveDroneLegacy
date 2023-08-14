@@ -72,7 +72,7 @@ parameters = Z550_parameters
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--connect', default='localhost:8005')
+    parser.add_argument('--connect', default='localhost:8000')
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=921600, wait_ready=True, rate=100)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs/')
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/7',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/3',
                                    baudrate=115200,
                                    update_freq=5,
                                    vehicle=vehicle,
@@ -178,7 +178,7 @@ if __name__ == "__main__":
                                    remote_lora_address=40,
                                    remote_lora_freq=868)
 
-    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/pts/7',
+    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/pts/3',
                                             baudrate=115200,
                                             update_freq=10,
                                             vehicle=vehicle,

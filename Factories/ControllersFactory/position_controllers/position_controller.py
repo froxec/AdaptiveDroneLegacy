@@ -126,6 +126,7 @@ class PositionControllerThread(PositionController, Thread):
                                     ramp_saturation=ramp_saturation)
         Thread.__init__(self)
         self.x = None
+        self.u = None
         self.u_ref = None
         self.data_set = threading.Event()
         self.control_set = threading.Event()
@@ -159,8 +160,8 @@ class PositionControllerThread(PositionController, Thread):
         else:
             self.x = x
         self.set_reference(self.trajectory, x)
-        delta_x, _ = self.input_converter(self.x, None)
-        delta_u_next = self.controller.predict(delta_x)
+        delta_x, delta_u = self.input_converter(self.x, self.u)
+        delta_u_next = self.controller.predict(delta_x, delta_u)
         u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)

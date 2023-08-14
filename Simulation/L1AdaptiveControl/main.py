@@ -37,11 +37,11 @@ OUTER_LOOP_FREQ = 10
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([100, 100, 50])
+trajectory = SinglePoint([5, 5, 50])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': 1.0})
 
     ## parameters holder
     parameters_holder = DataHolder(perturber.perturbed_parameters)

@@ -47,8 +47,10 @@ class ConstrainedMPC:
                 parameters_type = 'TRANSLATIONAL_DYNAMICS'
         self.Q_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base']) + np.ones(6)*1e-6
         self.P_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['P_base'])
+        self.R_base = np.ones(self.n) * 1000
         self.Q = np.diag(np.tile(self.Q_base, pred_horizon))
         self.P = np.diag(np.tile(self.P_base, pred_horizon))
+        self.R = np.diag(np.tile(self.R_base, pred_horizon))
         self.mode = self.mode = MPCModes.CONSTRAINED
         self.setpoint = None
         self.normalize_state = normalize_system

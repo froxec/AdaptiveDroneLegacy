@@ -26,6 +26,7 @@ class ControlSupervisor:
         self.mpc_ref = None
         self.z_prev = np.zeros(3)
         self.u_prev = np.zeros(3)
+        self.mpc_ref_prev = self.position_controller.input_converter.u_ss
         self.telemetry_to_read = None
         self.min_altitude = min_altitude
         self.position_controller_on = False
@@ -55,6 +56,7 @@ class ControlSupervisor:
         x = self.get_state()
         if self.position_controller.ready_event.is_set():
             self.position_controller.x = x
+            self.position_controller.u = self.mpc_ref_prev
             self.position_controller.data_set.set()
             self.position_controller.ready_event.clear()
         if self.position_controller.control_set.is_set():
@@ -62,6 +64,7 @@ class ControlSupervisor:
             self.position_controller.control_set.clear()
             #print("Got MPC reference {}".format(self.mpc_ref))
             u_composite = self.mpc_ref
+            self.mpc_ref_prev = self.mpc_ref
         if (self.adaptive_controller is not None
                 and self.adaptive_controller_on
                 and self.mpc_ref is not None
