@@ -16,6 +16,8 @@ class ConstrainedMPC:
                            'upper': np.array([1000, 1000, 1000, 100, 100, 100])},
                  u_bounds={'lower': np.array([-1000, -np.pi/6, -np.pi/6]),
                            'upper': np.array([1000, np.pi/6, np.pi/6])},
+                 delta_x_bounds={'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
+                                   'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
                  delta_u_bounds = {'lower': np.array([-8, -np.pi/6, -np.pi/6]),
                                    'upper': np.array([8, np.pi/6, np.pi/6])}):
         self.model = model
@@ -25,14 +27,16 @@ class ConstrainedMPC:
             self.x_bounds = x_bounds
             self.u_bounds = u_bounds
             self.delta_u_bounds = delta_u_bounds
+            self.delta_x_bounds = delta_x_bounds
         else:
             x_bounds['lower'], u_bounds['lower'] = self._normalize_state(x_bounds['lower'], u_bounds['lower'])
             x_bounds['upper'], u_bounds['upper'] = self._normalize_state(x_bounds['upper'], u_bounds['upper'])
-            _, delta_u_bounds['lower'] = self._normalize_state(u=delta_u_bounds['lower'])
-            _, delta_u_bounds['upper'] = self._normalize_state(u=delta_u_bounds['upper'])
+            delta_x_bounds['lower'], delta_u_bounds['lower'] = self._normalize_state(x=delta_x_bounds['lower'], u=delta_u_bounds['lower'])
+            delta_x_bounds['upper'], delta_u_bounds['upper'] = self._normalize_state(x=delta_x_bounds['upper'], u=delta_u_bounds['upper'])
             self.x_bounds = x_bounds
             self.u_bounds = u_bounds
             self.delta_u_bounds = delta_u_bounds
+            self.delta_x_bounds = delta_x_bounds
         self.n = self.model.A.shape[0]
         self.m = self.model.B.shape[1]
         if isinstance(model, LinearizedQuadNoYaw):
@@ -99,6 +103,7 @@ class ConstrainedMPC:
         top_b = np.tile(discrete_delta_u_ub, self.pred_horizon - 1)
         bottom_b = -np.tile(discrete_delta_u_lb, self.pred_horizon-1)
         h = np.concatenate([top_b, bottom_b], axis=0)
+        #G, h = self.add_state_ramp_constraints(G, h)
         self.G = G
         self.h = h
         return G, h
@@ -130,7 +135,23 @@ class ConstrainedMPC:
             u_k = self._denormalize_control(u_k)
         return u_k
 
-
+    def add_state_ramp_constraints(self, G, h):
+        I = np.identity(self.n)
+        I_map = np.eye(self.pred_horizon, dtype=int)[:-1, :]
+        I_neg_map = np.eye(self.pred_horizon,  k=1, dtype=int)[:-1, :]
+        left = np.kron(I_map, I) + np.kron(I_neg_map, I)
+        right = np.zeros((left.shape[0], self.m*self.pred_horizon))
+        top_G = np.concatenate([left, right], axis=1)
+        bottom_G = -top_G
+        G_new = np.concatenate([top_G, bottom_G], axis=0)
+        discrete_delta_x_lb = self.delta_x_bounds['lower'] * (1 / self.freq)
+        discrete_delta_x_ub = self.delta_x_bounds['upper'] * (1 / self.freq)
+        top_h = np.tile(discrete_delta_x_ub, self.pred_horizon - 1)
+        bottom_h = -np.tile(discrete_delta_x_lb, self.pred_horizon - 1)
+        h_new = np.concatenate([top_h, bottom_h], axis=0)
+        G = np.concatenate([G, G_new], axis=0)
+        h = np.concatenate([h, h_new], axis=0)
+        return G, h
     def _normalize_state(self, x=None, u=None):
         if x is not None:
             x = np.diag(1/np.diagonal(self.model.Nx)) @ x
