@@ -164,7 +164,7 @@ if __name__ == "__main__":
     data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs/')
 
     ## telemetry manager
-    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/3',
+    tm = TelemetryManagerThreadUAV(serialport='/dev/pts/6',
                                    baudrate=115200,
                                    update_freq=5,
                                    vehicle=vehicle,
@@ -178,7 +178,7 @@ if __name__ == "__main__":
                                    remote_lora_address=40,
                                    remote_lora_freq=868)
 
-    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/pts/3',
+    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/pts/6',
                                             baudrate=115200,
                                             update_freq=10,
                                             vehicle=vehicle,
