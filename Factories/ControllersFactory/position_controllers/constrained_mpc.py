@@ -26,7 +26,7 @@ class ConstrainedMPC:
         self.freq = freq
         self.pred_horizon = pred_horizon
         self.soft_constraints = soft_constraints
-        self.opts = {'MAXITER':100,'VERBOSE':199,'OUTPUT':2}
+        self.opts = {'MAXITER':100,'VERBOSE':0,'OUTPUT':2}
         if not normalize_system:
             self.x_bounds = x_bounds
             self.u_bounds = u_bounds
@@ -69,6 +69,8 @@ class ConstrainedMPC:
         else:
             self.H, self.f = self.calculate_cost_matrices(self.Q, self.P)
         self.calculacte_nonequality_constraints()
+        self.calculate_equality_constraints() # might be calculated only on parameters change
+        self.G, self.h = self._add_boundaries(self.G, self.h)
     def calculate_cost_matrices(self, Q, R, P=None):
         top_right = np.zeros((Q.shape[0], R.shape[1]))
         bottom_left = np.zeros((R.shape[0], Q.shape[1]))
@@ -186,12 +188,10 @@ class ConstrainedMPC:
         u = delta_u
         if self.normalize_state:
             x, u = self._normalize_state(x, u)
-        self.calculate_equality_constraints() # might be calculated only on parameters change
         Aeq, beq = self._add_initial_condition(self.Aeq, self.beq, x, u)
-        G, h = self._add_boundaries(self.G, self.h)
         #lb, ub = self.set_boundaries(x, u)
         #solution = solve_qp(self.H, self.f, G=self.G, h=self.h, A=Aeq, b=beq, solver='osqp') #lb and ub must be here, for state feedback
-        solution = qpSWIFT.run(P=self.H, c=self.f, G=G, h=h, A=Aeq, b=beq, opts=self.opts)['sol']
+        solution = qpSWIFT.run(P=self.H, c=self.f, G=self.G, h=self.h, A=Aeq, b=beq, opts=self.opts)['sol']
         u_k = solution[self.pred_horizon*self.model.A.shape[0]+3:self.pred_horizon*self.model.A.shape[0]+6]# first control is dummy
         print(time.time() - t1)
         if self.normalize_state:
