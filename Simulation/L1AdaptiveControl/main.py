@@ -24,11 +24,11 @@ from Factories.ToolsFactory.Converters import RampSaturationWithManager
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = True
+USE_ADAPTIVE = False
 USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
-HORIZON = 100
+HORIZON = 10
 QUAD_NOMINAL_MASS = 0.7
 
 INNER_LOOP_FREQ = 100
