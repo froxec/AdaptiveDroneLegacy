@@ -181,7 +181,7 @@ if __name__ == "__main__":
                                    remote_lora_address=40,
                                    remote_lora_freq=868)
 
-    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB0',
+    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB1',
                                             baudrate=115200,
                                             update_freq=10,
                                             vehicle=vehicle,
