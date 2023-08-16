@@ -26,7 +26,7 @@ class ConstrainedMPC:
         self.freq = freq
         self.pred_horizon = pred_horizon
         self.soft_constraints = soft_constraints
-        self.opts = {'MAXITER':100,'VERBOSE':199,'OUTPUT':2}
+        self.opts = {'MAXITER':100,'VERBOSE':0,'OUTPUT':2}
         if not normalize_system:
             self.x_bounds = x_bounds
             self.u_bounds = u_bounds
@@ -55,7 +55,7 @@ class ConstrainedMPC:
                 parameters_type = 'TRANSLATIONAL_DYNAMICS'
         self.Q_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base']) + np.ones(6)*1e-6
         self.P_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['P_base'])
-        self.Qn_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base'])*10000 + np.ones(6)*1e-6
+        self.Qn_base = np.array(MPC_PARAMETERS_MAPPING[parameters_type]['Q_base'])*100 + np.ones(6)*1e-6
         self.R_base = np.ones(self.n) * 100
         self.Q = np.diag(np.concatenate([np.tile(self.Q_base, pred_horizon-1), self.Qn_base]))
         self.P = np.diag(np.tile(self.P_base, pred_horizon))
@@ -190,7 +190,7 @@ class ConstrainedMPC:
         Aeq, beq = self._add_initial_condition(self.Aeq, self.beq, x, u)
         G, h = self._add_boundaries(self.G, self.h)
         #lb, ub = self.set_boundaries(x, u)
-        #solution = solve_qp(self.H, self.f, G=self.G, h=self.h, A=Aeq, b=beq, solver='osqp') #lb and ub must be here, for state feedback
+        #solution = solve_qp(self.H, self.f, G=G, h=h, A=Aeq, b=beq, solver='osqp') #lb and ub must be here, for state feedback
         solution = qpSWIFT.run(P=self.H, c=self.f, G=G, h=h, A=Aeq, b=beq, opts=self.opts)['sol']
         u_k = solution[self.pred_horizon*self.model.A.shape[0]+3:self.pred_horizon*self.model.A.shape[0]+6]# first control is dummy
         print(time.time() - t1)
