@@ -143,7 +143,7 @@ class PositionControllerThread(PositionController, Thread):
         import time
         t1 = time.time()
         while True:
-            #print(time.time() - t1)
+            print(time.time() - t1)
             t1 = time.time()
             self._restart_watchdog()
             x = self._get_data()

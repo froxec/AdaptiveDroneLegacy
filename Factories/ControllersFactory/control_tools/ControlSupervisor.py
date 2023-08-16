@@ -105,7 +105,7 @@ class ControlSupervisor:
                 angles = np.concatenate([u_composite[1:], np.array([0.0])])
                 self.estimator_agent.data = {'measurement': measurement, 'force': force, 'angles': angles}
                 self.estimator_agent.data_set_event.set()
-        time.sleep(self.Ts)
+        # time.sleep(self.Ts)
     def set_attitude(self, u):
         dronekit_commands.set_attitude(self.vehicle, u[1], u[2], 0, u[0])
 

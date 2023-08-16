@@ -16,11 +16,11 @@ class ConstrainedMPC:
                            'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
                  u_bounds={'lower': np.array([-1000, -np.pi/6, -np.pi/6]),
                            'upper': np.array([1000, np.pi/6, np.pi/6])},
-                 delta_x_bounds={'lower': np.array([-3, -3, -3, -0.5, -0.5, -0.5]),
-                                   'upper': np.array([3, 3, 3, 0.5, 0.5, 0.5])},
+                 delta_x_bounds={'lower': np.array([-10, -10, -10, -2, -2, -2]),
+                                   'upper': np.array([10, 10, 10, 2, 2, 2])},
                  delta_u_bounds = {'lower': np.array([-2, -np.pi/6, -np.pi/6]),
                                    'upper': np.array([2, np.pi/6, np.pi/6])},
-                 soft_constraints=True):
+                 soft_constraints=False):
         self.model = model
         self.freq = freq
         self.pred_horizon = pred_horizon
@@ -146,7 +146,7 @@ class ConstrainedMPC:
             x, u = self._normalize_state(x, u)
         self.calculate_equality_constraints() # might be calculated only on parameters change
         lb, ub = self.set_boundaries(x, u)
-        solution = solve_qp(self.H, self.f, G=self.G, h=self.h, A=self.Aeq, b=self.beq, lb=lb, ub=ub, solver='osqp') #lb and ub must be here, for state feedback
+        solution = solve_qp(self.H, self.f, G=self.G, h=self.h, A=self.Aeq, b=self.beq, lb=lb, ub=ub, solver='qpswift') #lb and ub must be here, for state feedback
         u_k = solution[self.pred_horizon*self.model.A.shape[0]+3:self.pred_horizon*self.model.A.shape[0]+6]# first control is dummy
         if self.normalize_state:
             u_k = self._denormalize_control(u_k)

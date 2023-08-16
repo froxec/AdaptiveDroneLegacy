@@ -61,14 +61,15 @@ MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
 USE_ESTIMATOR = True
 ESTIMATOR_MODE = 'VELOCITY_CONTROL'  #only available
-ADAPTIVE_FREQ = 100
+ADAPTIVE_FREQ = 50
 MPC_MODE = MPCModes.CONSTRAINED
-HORIZON = 20
+HORIZON = 10
+OUTER_LOOP_FREQ = 10
 QUAD_NOMINAL_MASS = 0.7
 SIM_IP = 'udp:192.168.0.27:8500'
 REAL_QUAD_IP = '/dev/ttyAMA1'
-IP = REAL_QUAD_IP
-trajectory = SinglePoint([0, 50, 10])
+IP = SIM_IP
+trajectory = SinglePoint([0, 0, 5])
 Z550_parameters['m'] = QUAD_NOMINAL_MASS
 parameters = Z550_parameters
 
@@ -180,7 +181,7 @@ if __name__ == "__main__":
                                    remote_lora_address=40,
                                    remote_lora_freq=868)
 
-    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/pts/3',
+    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB0',
                                             baudrate=115200,
                                             update_freq=10,
                                             vehicle=vehicle,
@@ -212,4 +213,4 @@ if __name__ == "__main__":
             if tm.telemetry is not None:
                 data_writer.data = tm.telemetry
                 data_writer.data_set.set()
-        time.sleep(1/ADAPTIVE_FREQ)# this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
+        time.sleep(1/100)# this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
