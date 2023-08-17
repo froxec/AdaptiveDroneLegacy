@@ -20,12 +20,16 @@ from Factories.GaussianProcessFactory.kernels import RBF_Kernel
 from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianProcess
 from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceChecker
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
-
+import datetime
+#WRITING_DATA
+filename = 'test_single_points_no_dist.csv'
+path = "./ResearchTests/MPCTestResults/" + datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S") + filename
+WRITE = True
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = False
-USE_ESTIMATOR = True
+USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 10
@@ -41,13 +45,13 @@ trajectory = SinglePoint([50, 20, 50])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.9})
+    perturber({'m': 0.0})
 
     ## parameters holder
     parameters_holder = DataHolder(perturber.perturbed_parameters)
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[0, 1, 0], strength=5)
+    wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
     #wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=3.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
     #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=2)
@@ -150,4 +154,11 @@ if __name__ == "__main__":
         # estimator_agent.plot_history('normalized_penalty')
     simulator.position_controller.plot_history('u')
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
+    if WRITE:
+        import pandas as pd
+        columns = ['time', 'x', 'y', 'z', 'Vx', 'Vy', 'Vz', 'phi', 'theta', 'psi', 'omega_x', 'omega_y', 'omega_z', 'F', 'phi_ref', 'theta_ref']
+        u = np.array(simulator.history['u_ref'])
+        data_array = np.concatenate([t.reshape(-1, 1), x, u], axis=1)
+        data = pd.DataFrame(data_array, columns=columns)
+        data.to_csv(path)
     #plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])

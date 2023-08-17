@@ -39,6 +39,7 @@ class SoftwareInTheLoop:
         if not isinstance(acceleration_noise, np.ndarray):
             acceleration_noise = np.array(acceleration_noise)
         self.acceleration_noise = acceleration_noise
+        self.history = {'u_ref': []}
 
     def run(self, stop_time, deltaT, x0, u0, setpoint):
         import time
@@ -49,6 +50,7 @@ class SoftwareInTheLoop:
         ref_prev = u0
         u_prev = ref_prev
         u_saturated_prev = u_prev
+        self.history['u_ref'].append(ref_prev)
         self.position_controller.change_trajectory(setpoint)
         for i, t_i in enumerate(t[1:], 0):
             if (i % self.MODULO_FACTOR) == 0:
@@ -82,6 +84,7 @@ class SoftwareInTheLoop:
                                                 throttle)
             motors = self.esc(ESC_PWMs)
             x[i + 1], dstate = self.system(np.array(motors), deltaT, self.quad)[:12]
+            self.history['u_ref'].append(ref)
             if isinstance(self.estimator, BanditEstimatorAgent):
                 self.estimator(x[i + 1, :6], ref_prev)
             elif isinstance(self.estimator, BanditEstimatorAcceleration):
