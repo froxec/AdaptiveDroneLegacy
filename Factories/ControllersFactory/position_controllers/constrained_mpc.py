@@ -180,8 +180,6 @@ class ConstrainedMPC:
         beq = np.concatenate([beq, x, u])
         return Aeq, beq
     def predict(self, delta_x, delta_u):
-        import time
-        t1 = time.time()
         x = delta_x
         u = delta_u
         if self.normalize_state:
@@ -193,7 +191,6 @@ class ConstrainedMPC:
         #solution = solve_qp(self.H, self.f, G=self.G, h=self.h, A=Aeq, b=beq, solver='osqp') #lb and ub must be here, for state feedback
         solution = qpSWIFT.run(P=self.H, c=self.f, G=G, h=h, A=Aeq, b=beq, opts=self.opts)['sol']
         u_k = solution[self.pred_horizon*self.model.A.shape[0]+3:self.pred_horizon*self.model.A.shape[0]+6]# first control is dummy
-        print(time.time() - t1)
         if self.normalize_state:
             u_k = self._denormalize_control(u_k)
         return u_k
