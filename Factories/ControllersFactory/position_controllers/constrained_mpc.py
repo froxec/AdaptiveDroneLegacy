@@ -15,12 +15,12 @@ class ConstrainedMPC:
                  normalize_system=False,
                  x_bounds={'lower': np.array([-100000, -100000, -100000, -5, -5, -5]),
                            'upper': np.array([100000, 100000, 100000, 5, 5, 5])},
-                 u_bounds={'lower': np.array([-1000, -np.pi/12, -np.pi/12]),
-                           'upper': np.array([1000, np.pi/12, np.pi/12])},
+                 u_bounds={'lower': np.array([-1000, -np.pi/6, -np.pi/6]),
+                           'upper': np.array([1000, np.pi/6, np.pi/6])},
                  delta_x_bounds={'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
                                    'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
-                 delta_u_bounds = {'lower': np.array([-5, -np.pi/6, -np.pi/6]),
-                                   'upper': np.array([5, np.pi/6,np.pi/6])},
+                 delta_u_bounds = {'lower': np.array([-5, -np.pi/3, -np.pi/3]),
+                                   'upper': np.array([5, np.pi/3,np.pi/3])},
                  soft_constraints=True):
         self.model = model
         self.freq = freq
