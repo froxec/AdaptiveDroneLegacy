@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-08-18T19:52:37.554Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/116.0" etag="yP67XpZzYhPd4mUgRLtJ" version="21.6.8" type="github">
+<mxfile host="app.diagrams.net" modified="2023-08-18T19:55:21.665Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/116.0" etag="W1Kp0pya4wx_rUVYHbk9" version="21.6.8" type="github">
   <diagram name="Page-1" id="J81h2vpOOWW3btrM4r2T">
-    <mxGraphModel dx="1434" dy="1112" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1654" pageHeight="2336" background="none" math="0" shadow="0">
+    <mxGraphModel dx="1139" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1654" pageHeight="2336" background="none" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -2710,6 +2710,9 @@
               <mxPoint x="2360" y="10320" />
             </Array>
           </mxGeometry>
+        </mxCell>
+        <mxCell id="VXBOz9jkzoiJ8HC8SACZ-36" value="&lt;font color=&quot;#75787b&quot; face=&quot;Arial&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;span lang=&quot;en&quot; class=&quot;ILfuVd NA6bn&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;span class=&quot;hgKElc&quot; style=&quot;font-size: 24px;&quot;&gt;&lt;b style=&quot;font-size: 24px;&quot;&gt; σ&lt;sub&gt;k&lt;/sub&gt;&lt;/b&gt;&lt;/span&gt;&lt;/span&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;" vertex="1" parent="1">
+          <mxGeometry x="2305" y="10360" width="31" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
