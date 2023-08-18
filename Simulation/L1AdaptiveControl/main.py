@@ -22,7 +22,7 @@ from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceCheck
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
 import datetime
 #WRITING_DATA
-filename = 'test_single_points_no_dist.csv'
+filename = 'wind_100_strength_5.csv'
 path = "./ResearchTests/MPCTestResults/" + datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S") + filename
 WRITE = True
 #TESTING OPTIONS
@@ -33,7 +33,7 @@ USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 10
-QUAD_NOMINAL_MASS = 0.7
+QUAD_NOMINAL_MASS = Z550_parameters['m']
 
 INNER_LOOP_FREQ = 100
 deltaT = 1 / INNER_LOOP_FREQ
@@ -41,7 +41,7 @@ OUTER_LOOP_FREQ = 5
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([50, 20, 50])
+trajectory = SinglePoint([10, 10, 5])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parameters_holder = DataHolder(perturber.perturbed_parameters)
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
+    wind_force = WindModel(direction_vector=[1, 0, 0], strength=2)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
     #wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=3.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
     #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=2)
