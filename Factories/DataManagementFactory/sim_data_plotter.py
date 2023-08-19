@@ -150,8 +150,8 @@ class DataPlotter():
         df_plus05 = pd.read_csv(path + "perturbed+05.csv")
         tests = [df_min05, df_min02, df_0, df_plus02, df_plus05]
         legend_names = ['Δm = -0.5 kg', 'Δm = -0.2 kg', 'Δm = 0.0 kg', 'Δm = 0.2 kg', 'Δm = 0.5 kg']
-        self.plot_tests_state(tests, legend_names, path)
-        self.plot_tests_control(tests, legend_names, path)
+        self.plot_tests_state(tests, legend_names, path, 'mass_sensitivity')
+        self.plot_tests_control(tests, legend_names, path, 'mass_sensitivity_control')
 
     def plot_wind_tests(self, path):
         wind1 = pd.read_csv(path + "wind_100_0.csv")
@@ -159,10 +159,21 @@ class DataPlotter():
         wind3 = pd.read_csv(path + "wind_100_5.csv")
         tests = [wind1, wind2, wind3]
         legend_names = ['||w|| = 0 N', '||w|| = 2 N', '||w|| = 5 N']
-        self.plot_tests_state(tests, legend_names, path)
-        self.plot_tests_control(tests, legend_names, path)
-
-    def plot_tests_state(self, tests, legend_names, path):
+        self.plot_tests_state(tests, legend_names, path, 'wind_sensitivity')
+        self.plot_tests_control(tests, legend_names, path, 'wind_sensitivity_control')
+    def plot_adaptive_mass_sensitivity_tests(self, path):
+        test1 = pd.read_csv(path + "adaptive_mass-05.csv")
+        test2 = pd.read_csv(path + "adaptive_mass-02.csv")
+        test3 = pd.read_csv(path + "adaptive_mass-00.csv")
+        test4 = pd.read_csv(path + "adaptive_mass+02.csv")
+        test5 = pd.read_csv(path + "adaptive_mass+05.csv")
+        legend_names = ['Δm = -0.5 kg', 'Δm = -0.2 kg', 'Δm = 0.0 kg', 'Δm = 0.2 kg', 'Δm = 0.5 kg']
+        tests = [test1, test2, test3, test4, test5]
+        self.plot_tests_state(tests, legend_names, path, 'adaptive_mass_sensitivity')
+        self.plot_tests_control(tests, legend_names, path, 'adaptive_mass_sensitivity_control')
+        self.plot_tests_sigma(tests, legend_names, path, 'adaptive_mass_sensitivity_sigma')
+        self.plot_tests_u_adapt(tests, legend_names, path, 'adaptive_mass_sensitivity_u_adapt')
+    def plot_tests_state(self, tests, legend_names, path, filename):
         colors = plotly.colors.DEFAULT_PLOTLY_COLORS
         state_fig = make_subplots(rows=4, cols=3, horizontal_spacing=0.1)
         plot_indices = [(1, 1), (1, 2), (1, 3),
@@ -201,8 +212,8 @@ class DataPlotter():
                 k += 1
             state_fig.update_layout(yaxis9=(dict(range=[-0.5, 0.5])))
             state_fig.update_layout(yaxis12=(dict(range=[-0.5, 0.5])))
-        state_fig.write_image(path + '/' + 'wind_sensitivity.png')
-    def plot_tests_control(self, tests, legend_names, path):
+        state_fig.write_image(path + '/' + filename + '.png')
+    def plot_tests_control(self, tests, legend_names, path, filename):
         colors = plotly.colors.DEFAULT_PLOTLY_COLORS
         control_columns = ['F', 'phi_ref', 'theta_ref']
         y_labels = ['Fzad [N]', 'φzad [rad]', 'θzad [rad]']
@@ -237,13 +248,92 @@ class DataPlotter():
                     control_fig['layout']['xaxis']['title'] = 't [s]'
                     control_fig['layout']['yaxis']['title'] = y_labels[k]
                 k += 1
-        control_fig.write_image(path + '/' + '_wind_sensitivity_control.png')
+        control_fig.write_image(path + '/' + filename + '.png')
+    def plot_tests_sigma(self, tests, legend_names, path, filename):
+        colors = plotly.colors.DEFAULT_PLOTLY_COLORS
+        control_columns = ['sigma_x', 'sigma_y', 'sigma_z']
+        y_labels = ['$\\Large{\\hat{\\sigma}_{0}} [N]$',
+                    '$\\Large{\\hat{\\sigma}_{1}} [rad]$',
+                    '$\\Large{\\hat{\\sigma}_{2}} [rad]$']
+        plot_indices = [(1, 1), (2, 1), (3, 1)]
+        layout = {'font': self.font_dict,  # font formatting
+                  'plot_bgcolor': 'white',  # background color
+                  'width': 1400,  # figure width
+                  'height': 900,  # figure height
+                  'margin': dict(r=10, t=0, b=0),  # remove white space
+                  }
+        control_fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.1)
+        control_fig.update_layout(**layout)
+        control_fig.update_xaxes(**self.axeslayout)
+        control_fig.update_yaxes(**self.axeslayout)
+        t = tests[0]['time']
+        for l, test in enumerate(tests):
+            data = test
+            k = 0
+            for col, (i, j) in zip(control_columns, plot_indices):
+                if i == 1 and j == 1:
+                    legend = True
+                else:
+                    legend = False
+                control_fig.add_trace(
+                    go.Scatter(x=t, y=data[col], line=dict(color=colors[l], width=3), name=legend_names[l],
+                               showlegend=legend), row=i, col=j)
+                if k > 0:
+                    control_fig['layout']['xaxis' + str(k + 1)]['title'] = 't [s]'
+                    control_fig['layout']['yaxis' + str(k + 1)]['title'] = y_labels[k]
+                    control_fig['layout']['yaxis' + str(k + 1)]['title']['standoff'] = 0
+                else:
+                    control_fig['layout']['xaxis']['title'] = 't [s]'
+                    control_fig['layout']['yaxis']['title'] = y_labels[k]
+                k += 1
+        control_fig.write_image(path + '/' + filename + '.png')
+
+    def plot_tests_u_adapt(self, tests, legend_names, path, filename):
+        colors = plotly.colors.DEFAULT_PLOTLY_COLORS
+        control_columns = ['u_l1_x', 'u_l1_y', 'u_l1_z']
+        y_labels = [r"$\Large{u_{adapt, 0}}  \ [N]$", r'$\Large{u_{adapt,1}} \ \ [rad]$',
+                    r'$\Large{u_{adapt, 2}} \ [rad]$']
+        plot_indices = [(1, 1), (2, 1), (3, 1)]
+        layout = {'font': self.font_dict,  # font formatting
+                  'plot_bgcolor': 'white',  # background color
+                  'width': 1400,  # figure width
+                  'height': 900,  # figure height
+                  'margin': dict(r=10, t=0, b=0),  # remove white space
+                  }
+        control_fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.1)
+        control_fig.update_layout(**layout)
+        control_fig.update_xaxes(**self.axeslayout)
+        control_fig.update_yaxes(**self.axeslayout)
+        t = tests[0]['time']
+        for l, test in enumerate(tests):
+            data = test
+            k = 0
+            for col, (i, j) in zip(control_columns, plot_indices):
+                if i == 1 and j == 1:
+                    legend = True
+                else:
+                    legend = False
+                control_fig.add_trace(
+                    go.Scatter(x=t, y=data[col], line=dict(color=colors[l], width=3), name=legend_names[l],
+                               showlegend=legend), row=i, col=j)
+                if k > 0:
+                    control_fig['layout']['xaxis' + str(k + 1)]['title'] = 't [s]'
+                    control_fig['layout']['yaxis' + str(k + 1)]['title'] = y_labels[k]
+                    control_fig['layout']['yaxis' + str(k + 1)]['title']['standoff'] = 0
+                else:
+                    control_fig['layout']['xaxis']['title'] = 't [s]'
+                    control_fig['layout']['yaxis']['title'] = y_labels[k]
+                k += 1
+        control_fig.write_image(path + '/' + filename + '.png')
+
 if __name__ == "__main__":
     path = './ResearchTests/MPCTestResults/BasicTest/2023:08:18:14:56:32mpc_basic_test.csv'
     mass_sensitivity_tests_path = './ResearchTests/MPCTestResults/MassSensitivity/'
     wind_tests_path = './ResearchTests/MPCTestResults/WindTests/'
+    adaptive_mass_sensitivity = './ResearchTests/MPCTestResults/AdaptiveMassSensitivity/'
     data_plotter = DataPlotter(path)
     #data_plotter._plotting_states()
     #data_plotter._plotting_controls()
     #data_plotter.plot_mass_sensitivity_tests(mass_sensitivity_tests_path)
-    data_plotter.plot_wind_tests(wind_tests_path)
+    #data_plotter.plot_wind_tests(wind_tests_path)
+    data_plotter.plot_adaptive_mass_sensitivity_tests(adaptive_mass_sensitivity)

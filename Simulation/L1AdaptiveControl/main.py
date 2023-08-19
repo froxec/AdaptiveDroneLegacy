@@ -22,13 +22,13 @@ from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceCheck
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
 import datetime
 #WRITING_DATA
-filename = 'wind_100_0.csv'
+filename = 'adaptive_mass+05.csv'
 path = "./ResearchTests/MPCTestResults/" + datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S") + filename
 WRITE = True
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = False
+USE_ADAPTIVE = True
 USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
@@ -45,7 +45,7 @@ trajectory = SinglePoint([10, 10, 5])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': -0.0})
+    perturber({'m': 0.5})
 
     ## parameters holder
     parameters_holder = DataHolder(perturber.perturbed_parameters)
@@ -75,8 +75,8 @@ if __name__ == "__main__":
     ## Adaptive Controller configuration
     z0 = x0[3:6]
     if MODEL == 0:
-        As = np.diag([-5, -5, -5])
-        bandwidths = [0.5, 0.5, 0.5]
+        As = np.diag([-15, -15, -0.1])
+        bandwidths = [15, 0.2, 0.2]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -156,9 +156,11 @@ if __name__ == "__main__":
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     if WRITE:
         import pandas as pd
-        columns = ['time', 'x', 'y', 'z', 'Vx', 'Vy', 'Vz', 'phi', 'theta', 'psi', 'omega_x', 'omega_y', 'omega_z', 'F', 'phi_ref', 'theta_ref']
+        columns = ['time', 'x', 'y', 'z', 'Vx', 'Vy', 'Vz', 'phi', 'theta', 'psi', 'omega_x', 'omega_y', 'omega_z', 'F', 'phi_ref', 'theta_ref', 'sigma_x', 'sigma_y', 'sigma_z', 'u_l1_x', 'u_l1_y', 'u_l1_z']
         u = np.array(simulator.history['u_ref'])
-        data_array = np.concatenate([t.reshape(-1, 1), x, u], axis=1)
+        sigma = np.array(simulator.history['sigma'])
+        u_l1 = np.array(simulator.history['u_l1'])
+        data_array = np.concatenate([t.reshape(-1, 1), x, u, sigma, u_l1], axis=1)
         data = pd.DataFrame(data_array, columns=columns)
         data.to_csv(path)
     #plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])
