@@ -173,6 +173,16 @@ class DataPlotter():
         self.plot_tests_control(tests, legend_names, path, 'adaptive_mass_sensitivity_control')
         self.plot_tests_sigma(tests, legend_names, path, 'adaptive_mass_sensitivity_sigma')
         self.plot_tests_u_adapt(tests, legend_names, path, 'adaptive_mass_sensitivity_u_adapt')
+    def plot_adaptive_wind_tests(self, path):
+        wind1 = pd.read_csv(path + "adaptive_wind_100_00.csv")
+        wind2 = pd.read_csv(path + "adaptive_wind_100_02.csv")
+        wind3 = pd.read_csv(path + "adaptive_wind_100_05.csv")
+        tests = [wind1, wind2, wind3]
+        legend_names = ['||w|| = 0 N', '||w|| = 2 N', '||w|| = 5 N']
+        self.plot_tests_state(tests, legend_names, path, 'adaptive_wind_sensitivity')
+        self.plot_tests_control(tests, legend_names, path, 'adaptive_wind_sensitivity_control')
+        self.plot_tests_sigma(tests, legend_names, path, 'adaptive_wind_sensitivity_sigma')
+        self.plot_tests_u_adapt(tests, legend_names, path, 'adaptive_wind_sensitivity_u_adapt')
     def plot_tests_state(self, tests, legend_names, path, filename):
         colors = plotly.colors.DEFAULT_PLOTLY_COLORS
         state_fig = make_subplots(rows=4, cols=3, horizontal_spacing=0.1)
@@ -331,9 +341,11 @@ if __name__ == "__main__":
     mass_sensitivity_tests_path = './ResearchTests/MPCTestResults/MassSensitivity/'
     wind_tests_path = './ResearchTests/MPCTestResults/WindTests/'
     adaptive_mass_sensitivity = './ResearchTests/MPCTestResults/AdaptiveMassSensitivity/'
+    adaptive_wind_sensitivity = './ResearchTests/MPCTestResults/AdaptiveWindSensitivity/'
     data_plotter = DataPlotter(path)
     #data_plotter._plotting_states()
     #data_plotter._plotting_controls()
     #data_plotter.plot_mass_sensitivity_tests(mass_sensitivity_tests_path)
     #data_plotter.plot_wind_tests(wind_tests_path)
-    data_plotter.plot_adaptive_mass_sensitivity_tests(adaptive_mass_sensitivity)
+    #data_plotter.plot_adaptive_mass_sensitivity_tests(adaptive_mass_sensitivity)
+    data_plotter.plot_adaptive_wind_tests(adaptive_wind_sensitivity)
