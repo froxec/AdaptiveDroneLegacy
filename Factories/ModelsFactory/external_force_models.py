@@ -41,6 +41,7 @@ class WindModel(ExternalDisturbance):
             self.direction_vector = direction_vector / (np.linalg.norm(direction_vector) + 1e-15)
         else:
             self.direction_vector = direction_vector
+        print("Wind direction:", self.direction_vector)
         self.strength = strength
 
     def ask_for_disturbance(self, time):

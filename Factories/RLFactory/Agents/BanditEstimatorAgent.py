@@ -291,7 +291,7 @@ class BanditEstimatorAcceleration:
             self.action = self.take_action()
             self.estimated_parameters_holder.m = self.action
             self.converged = self.convergence_checker(self.action)
-        elif not self.parameters_changed:
+        if self.converged and not self.parameters_changed:
             parameters = self.get_parameters()
             print("Converged to {}".format(parameters))
             self.update_parameters(parameters)

@@ -20,16 +20,20 @@ from Factories.GaussianProcessFactory.kernels import RBF_Kernel
 from Factories.GaussianProcessFactory.gaussian_process import EfficientGaussianProcess
 from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceChecker
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
-
+import datetime
+#WRITING_DATA
+filename = 'adaptive_wind_100_05.csv'
+path = "./ResearchTests/MPCTestResults/" + datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S") + filename
+WRITE = True
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = False
+USE_ADAPTIVE = True
 USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 10
-QUAD_NOMINAL_MASS = 0.7
+QUAD_NOMINAL_MASS = Z550_parameters['m']
 
 INNER_LOOP_FREQ = 100
 deltaT = 1 / INNER_LOOP_FREQ
@@ -37,7 +41,7 @@ OUTER_LOOP_FREQ = 5
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-trajectory = SinglePoint([5, 20, 50])
+trajectory = SinglePoint([10, 10, 50])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
@@ -47,7 +51,7 @@ if __name__ == "__main__":
     parameters_holder = DataHolder(perturber.perturbed_parameters)
 
     ##External Disturbances
-    wind_force = WindModel(direction_vector=[0, 1, 0], strength=0)
+    wind_force = WindModel(direction_vector=[1, 0, 0], strength=0)
     #wind_force = RandomAdditiveNoiseWind(direction_vector=[1, 1, 1], strength=1, scale=2)
     #wind_force = RandomWalkWind(direction_vector=[1, 1, 1], strength=3.0, dir_vec_scale=0.5, strength_scale=0.05, weight=0.01)
     #wind_force = SinusoidalWind(0.1, INNER_LOOP_FREQ, direction_vector=[0, 1, 0], max_strength=2)
@@ -71,8 +75,8 @@ if __name__ == "__main__":
     ## Adaptive Controller configuration
     z0 = x0[3:6]
     if MODEL == 0:
-        As = np.diag([-5, -5, -5])
-        bandwidths = [0.5, 0.5, 0.5]
+        As = np.diag([-0.1, -0.1, -0.1])
+        bandwidths = [15, 0.2, 0.2]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -86,21 +90,21 @@ if __name__ == "__main__":
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / INNER_LOOP_FREQ, As)
     l1_filter = L1_LowPass(bandwidths=bandwidths, fs=INNER_LOOP_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
-    l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
-                                       upper_bounds=[parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
+    # l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
+    #                                    upper_bounds=[parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
     if USE_ADAPTIVE:
-        adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, l1_saturator)
+        adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, saturator=None)
     else:
         adaptive_controller = None
 
     ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -np.Inf, -np.Inf]),
                              'upper_bound': np.array([np.Inf, np.Inf, np.Inf])}
-    ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ, output_saturation=l1_saturator)
+    #ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ, output_saturation=l1_saturator)
     position_controller = PositionController(controller_conf.position_controller,
                                              controller_conf.position_controller_input_converter,
                                              controller_conf.position_controller_output_converter,
                                              trajectory,
-                                             ramp_saturation=ramp_saturation)
+                                             ramp_saturation=None)
 
     ## parameters manager
     parameters_manager = ParametersManager(parameters_holder=parameters_holder,
@@ -118,9 +122,9 @@ if __name__ == "__main__":
     domain = (MASS_MIN, MASS_MAX)
     X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
     rbf_kernel = RBF_Kernel(length=0.1)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.5, max_samples=100, overflow_handling_mode='IMPORTANCE')
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=1.5, max_samples=100, overflow_handling_mode='IMPORTANCE')
     estimator_prediction_model = NonlinearTranslationalModel(parameters_holder)
-    convergence_checker = ConvergenceChecker(30, 0.05)
+    convergence_checker = ConvergenceChecker(30, 0.1)
     if USE_ESTIMATOR:
         estimator_agent = BanditEstimatorAcceleration(parameters_manager=parameters_manager,
                                                       prediction_model=estimator_prediction_model,
@@ -129,6 +133,7 @@ if __name__ == "__main__":
                                                       pen_moving_window=None,
                                                       variance_threshold=0,
                                                       epsilon_episode_steps=0,
+                                                      save_images=True,
                                                       mode=ESTIMATOR_MODE)
     else:
         estimator_agent = None
@@ -149,4 +154,13 @@ if __name__ == "__main__":
         # estimator_agent.plot_history('normalized_penalty')
     simulator.position_controller.plot_history('u')
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
+    if WRITE:
+        import pandas as pd
+        columns = ['time', 'x', 'y', 'z', 'Vx', 'Vy', 'Vz', 'phi', 'theta', 'psi', 'omega_x', 'omega_y', 'omega_z', 'F', 'phi_ref', 'theta_ref', 'sigma_x', 'sigma_y', 'sigma_z', 'u_l1_x', 'u_l1_y', 'u_l1_z']
+        u = np.array(simulator.history['u_ref'])
+        sigma = np.array(simulator.history['sigma'])
+        u_l1 = np.array(simulator.history['u_l1'])
+        data_array = np.concatenate([t.reshape(-1, 1), x, u, sigma, u_l1], axis=1)
+        data = pd.DataFrame(data_array, columns=columns)
+        data.to_csv(path)
     #plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])
