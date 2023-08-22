@@ -59,7 +59,8 @@ class PositionController():
             u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)
-        u_next = self.ramp_saturation(u_next)
+        if self.ramp_saturation is not None:
+            u_next = self.ramp_saturation(u_next)
         self.history['u'].append(u_next)
         return u_next
 
@@ -165,7 +166,8 @@ class PositionControllerThread(PositionController, Thread):
         u_next = self.output_converter(delta_u_next, throttle=False)
         if self.interface is not None:
             self.interface('send', u_next)
-        u_next = self.ramp_saturation(u_next)
+        if self.ramp_saturation is not None:
+            u_next = self.ramp_saturation(u_next)
         self._set_telemetry(u_next)
         return u_next
 

@@ -30,7 +30,10 @@ class L1_Augmentation:
         sigma_hat = self.adaptive_law(z_hat, z)
         #print(sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
-        u_composite, u_l1 = self.saturator(u, u_l1)
+        if self.saturator is not None:
+            u_composite, u_l1 = self.saturator(u, u_l1)
+        else:
+            u_composite = u + u_l1
         self.lp_filter.u_l1 = u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
@@ -126,7 +129,10 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         sigma_hat = self.adaptive_law(z_hat, z)
         print("Sigma hat", sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
-        u_composite, u_l1 = self.saturator(u, u_l1)
+        if self.saturator is not None:
+            u_composite, u_l1 = self.saturator(u, u_l1)
+        else:
+            u_composite = u + u_l1
         self.lp_filter.u_l1 = u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)

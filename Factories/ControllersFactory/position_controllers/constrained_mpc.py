@@ -19,8 +19,8 @@ class ConstrainedMPC:
                            'upper': np.array([1000, np.pi/6, np.pi/6])},
                  delta_x_bounds={'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
                                    'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
-                 delta_u_bounds = {'lower': np.array([-5, -np.pi/3, -np.pi/3]),
-                                   'upper': np.array([5, np.pi/3,np.pi/3])},
+                 delta_u_bounds = {'lower': np.array([-1, -np.pi/24, -np.pi/24]),
+                                   'upper': np.array([1, np.pi/24,np.pi/24])},
                  soft_constraints=True):
         self.model = model
         self.freq = freq

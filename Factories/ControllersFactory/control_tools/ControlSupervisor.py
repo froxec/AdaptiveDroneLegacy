@@ -15,7 +15,7 @@ class ControlSupervisor:
                  position_controller: Type[PositionControllerThread],
                  adaptive_controller: Type[L1_AugmentationThread]=None,
                  estimator_agent: Type[BanditEstimatorThread]=None,
-                 min_altitude=5.0):
+                 min_altitude=2.5):
         self.position_controller = position_controller
         self.adaptive_controller = adaptive_controller
         self.estimator_agent = estimator_agent
@@ -42,7 +42,7 @@ class ControlSupervisor:
         #print("State", x)
         if not self._check_for_min_altitude():
             self.position_controller_on = False
-        if self.position_controller_on:
+        if self.position_controller_on and self.vehicle.mode.name == VehicleMode("GUIDED").name:
             self.run_controllers()
         else:
             if self.vehicle.mode.name != VehicleMode("RTL").name:
@@ -105,7 +105,7 @@ class ControlSupervisor:
                 angles = np.concatenate([u_composite[1:], np.array([0.0])])
                 self.estimator_agent.data = {'measurement': measurement, 'force': force, 'angles': angles}
                 self.estimator_agent.data_set_event.set()
-        time.sleep(self.Ts)
+        #time.sleep(self.Ts)
     def set_attitude(self, u):
         dronekit_commands.set_attitude(self.vehicle, u[1], u[2], 0, u[0])
 
@@ -126,6 +126,8 @@ class ControlSupervisor:
         u = -u
         if thrust > 1:
             thrust_converted = 1
+        elif thrust < 0:
+            thrust_converted = 0
         else:
             thrust_converted = thrust
         u[0] = thrust_converted

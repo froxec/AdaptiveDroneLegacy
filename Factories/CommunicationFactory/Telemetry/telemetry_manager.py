@@ -115,7 +115,7 @@ class TelemetryManager:
             if self.vehicle.armed == False or self.vehicle.mode != VehicleMode("GUIDED"):
                 print("TAKEOFF_COMM: COMMAND REJECTED: PLEASE CHECK VEHICLE IS ARMED AND IN GUIDED MODE!")
                 return
-            target_attitude = 5
+            target_attitude = 3
             self.vehicle.simple_takeoff(target_attitude)
             while True:
                 print(" Altitude: ", self.vehicle.location.global_relative_frame.alt)

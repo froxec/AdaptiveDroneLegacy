@@ -6,8 +6,10 @@ def initialize_drone(vehicle):
     vehicle.parameters['GUID_OPTIONS'] = int(8)
     vehicle.parameters['FENCE_ENABLE'] = 1
     vehicle.parameters['FENCE_ALT_MAX'] = 80
-    vehicle.parameters['FENCE_ALT_MIN'] = 3
-    vehicle.parameters['FENCE_RADIUS'] = 30
+    vehicle.parameters['FENCE_ALT_MIN'] = 0
+    vehicle.parameters['FENCE_RADIUS'] = 60
+    vehicle.parameters['RTL_ALT'] = 5
+    vehicle.parameters['WP_YAW_BEHAVIOR'] = 0 #never change yaw
 
     # commands below dont affect the behaviour..
     # message_rates = [

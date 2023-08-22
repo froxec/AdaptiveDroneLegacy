@@ -65,7 +65,7 @@ ADAPTIVE_FREQ = 100
 OUTER_LOOP_FREQ = 5
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 10
-QUAD_NOMINAL_MASS = 0.5
+QUAD_NOMINAL_MASS = 1.2
 
 trajectory = SinglePoint([0, 0, 10])
 Z550_parameters['m'] = QUAD_NOMINAL_MASS
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     z0 = x0[3:6]
     if MODEL == 0:
         As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [0.1, 0.1, 0.1]
+        bandwidths = [0.5, 0.2, 0.2]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -108,23 +108,23 @@ if __name__ == "__main__":
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / ADAPTIVE_FREQ, As)
     l1_filter = L1_LowPass(bandwidths=bandwidths, fs=ADAPTIVE_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
-    l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
-                                       upper_bounds=[3*parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
+    # l1_saturator = L1_ControlSaturator(lower_bounds=[-np.Inf, -np.Inf, -np.Inf],
+    #                                    upper_bounds=[np.Inf, np.Inf, np.Inf])
     if USE_ADAPTIVE:
-        adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, l1_saturator)
+        adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, saturator=None)
     else:
         adaptive_controller = None
 
     ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
                              'upper_bound': np.array([np.Inf, 0.78, 0.78])}
-    ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
-                                                output_saturation=l1_saturator)
+    # ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
+    #                                             output_saturation=l1_saturator)
     #ramp_saturation = RampSaturation(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
                                                    controller_conf.position_controller_output_converter,
                                                    trajectory,
-                                                   ramp_saturation=ramp_saturation)
+                                                   ramp_saturation=None)
 
     ## parameters manager
     parameters_manager = ParametersManager(parameters_holder=parameters_holder,
@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
     while True:
         tm.update()
-        if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 5.0:
+        if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 2.5:
             control_supervisor.supervise()
         else:
             ("Waiting for drone to reach required attitude.")
