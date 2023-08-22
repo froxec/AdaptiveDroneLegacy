@@ -1,4 +1,5 @@
 import os
+import time
 
 from Factories.ModelsFactory.model_parameters import arducopter_parameters, Z550_parameters
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint, SpiralTrajectory
@@ -27,12 +28,15 @@ from Factories.ToolsFactory.Converters import RampSaturationWithManager
 from Factories.CommunicationFactory.Telemetry.subscriptions import *
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
+from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
 
 import dronekit
 import serial
 import argparse
 import numpy as np
 import subprocess
+from gpiozero import Buzzer
+
 def mpc_command_convert(u, thrust_min, thrust_max):
     thrust = u[0]
     u = -u
@@ -61,26 +65,29 @@ MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
 USE_ESTIMATOR = True
 ESTIMATOR_MODE = 'VELOCITY_CONTROL'  #only available
-ADAPTIVE_FREQ = 100
-OUTER_LOOP_FREQ = 5
+ADAPTIVE_FREQ = 50
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 10
-OUTER_LOOP_FREQ = 10
-QUAD_NOMINAL_MASS = 0.7
-SIM_IP = 'udp:192.168.0.27:8500'
+OUTER_LOOP_FREQ = 5
+QUAD_NOMINAL_MASS = Z550_parameters['m']
+SIM_IP = 'udp:192.168.0.27:8520'
 REAL_QUAD_IP = '/dev/ttyAMA1'
-IP = SIM_IP
+IP = REAL_QUAD_IP
 trajectory = SinglePoint([0, 0, 5])
 Z550_parameters['m'] = QUAD_NOMINAL_MASS
 parameters = Z550_parameters
 
+buzzer = Buzzer(23)
+
 if __name__ == "__main__":
+    #startup_signal(buzzer)
     parser = argparse.ArgumentParser()
     parser.add_argument('--connect', default=IP)
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=921600, wait_ready=True, rate=100)
-
+    vehicle_connected_signal(buzzer)
+    
     ## parameters holder
     parameters_holder = DataHolder(parameters)
 
@@ -182,7 +189,7 @@ if __name__ == "__main__":
                                    remote_lora_address=40,
                                    remote_lora_freq=868)
 
-    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB1',
+    tm_commands = TelemetryManagerThreadUAV(serialport='/dev/ttyUSB0',
                                             baudrate=115200,
                                             update_freq=10,
                                             vehicle=vehicle,
