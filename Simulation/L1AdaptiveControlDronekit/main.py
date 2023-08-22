@@ -28,11 +28,9 @@ from Factories.CommunicationFactory.Telemetry.subscriptions import *
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
 
-import dronekit
-import serial
 import argparse
 import numpy as np
-import subprocess
+
 def mpc_command_convert(u, thrust_min, thrust_max):
     thrust = u[0]
     u = -u
