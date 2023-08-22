@@ -1,0 +1,1 @@
+OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
