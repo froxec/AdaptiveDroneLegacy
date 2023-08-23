@@ -1,13 +1,14 @@
 import time
 
-from Factories.DataManagementFactory.OPC.opc_server import DroneDataServer
-from QuadcopterIntegration.Utilities import dronekit_commands
+from Factories.DataManagementFactory.OPC.opc_objects import DroneDataServer, DataAcquisition
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS
 from dronekit import connect
+from oclock import Timer
 
 if __name__ == "__main__":
     # set params
     FREQUENCY = 100
+    DELTA_T = 1/FREQUENCY
 
     # connect to drone
     drone_addr = "localhost:8000"
@@ -19,9 +20,12 @@ if __name__ == "__main__":
     opc_addr = OPC_SERVER_ADDRESS
     server = DroneDataServer(opc_addr)
 
+    # create data acquisition object
+    da = DataAcquisition(vehicle, opc_addr)
+
+    #init timer
+    timer = Timer(interval=DELTA_T)
 
     while True:
-        state = dronekit_commands.get_state(vehicle)
-        for i, x in enumerate(state):
-            server.state_vars[i].set_value(x)
-            time.sleep(1 / FREQUENCY)
+        da.update_state()
+        time.sleep(1 / FREQUENCY)

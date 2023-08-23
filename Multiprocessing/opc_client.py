@@ -10,7 +10,7 @@ if __name__ == "__main__":
         root = client.get_root_node()
 
         # Now getting a variable node using its browse path
-        x = root.get_child(["0:Objects", "2:VehicleState", "2:x"])
+        x = root.get_child(["0:Objects", "2:Drone", "2:state", "2:x"])
         while True:
             print(x.get_value())
     finally:
