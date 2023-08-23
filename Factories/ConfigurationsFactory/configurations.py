@@ -64,8 +64,9 @@ class CustomMPCConfig(ControllerConfigurationBase):
                                                                          ANGULAR_VELOCITY_RANGE, mode)
         self.position_controller_input_converter = MPC_input_converter(x_ss, prediction_model.parameters_holder, mode)
         PWM0 = PWM_RANGE[0]
-        self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ, PWM_RANGE, PWM0)
-        self.inner_loop_freq = INNER_LOOP_FREQ
+        if INNER_LOOP_FREQ is not None:
+            self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ, PWM_RANGE, PWM0)
+            self.inner_loop_freq = INNER_LOOP_FREQ
         self.outer_loop_freq = OUTER_LOOP_FREQ
 
 class ControllerConfiguration(ControllerConfigurationBase):
@@ -80,8 +81,9 @@ class ControllerConfiguration(ControllerConfigurationBase):
                                                                          ANGULAR_VELOCITY_RANGE, mode)
         self.position_controller_input_converter = MPC_input_converter(x_ss, prediction_model.parameters_holder, mode)
         PWM0 = PWM_RANGE[0]
-        self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ, PWM_RANGE, PWM0)
-        self.inner_loop_freq = INNER_LOOP_FREQ
+        if INNER_LOOP_FREQ is not None:
+            self.attitude_controller = control.quadControler(1 / INNER_LOOP_FREQ, PWM_RANGE, PWM0)
+            self.inner_loop_freq = INNER_LOOP_FREQ
         self.outer_loop_freq = OUTER_LOOP_FREQ
 
 # class GekkoConfiguration(ControllerConfiguration):
