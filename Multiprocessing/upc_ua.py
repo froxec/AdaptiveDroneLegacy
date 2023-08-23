@@ -11,7 +11,7 @@ if __name__ == "__main__":
     DELTA_T = 1/FREQUENCY
 
     # connect to drone
-    drone_addr = "localhost:8000"
+    drone_addr = 'udp:192.168.0.27:8500'
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=100)
     print("Connection established!")
@@ -28,4 +28,4 @@ if __name__ == "__main__":
 
     while True:
         da.update_state()
-        time.sleep(1 / FREQUENCY)
+        timer.checkpt()
