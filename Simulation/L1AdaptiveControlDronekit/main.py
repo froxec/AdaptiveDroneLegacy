@@ -32,6 +32,7 @@ from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_conne
 
 import argparse
 import numpy as np
+from gpiozero import Buzzer
 
 def mpc_command_convert(u, thrust_min, thrust_max):
     thrust = u[0]
@@ -64,13 +65,13 @@ ESTIMATOR_MODE = 'VELOCITY_CONTROL'  #only available
 ADAPTIVE_FREQ = 50
 MPC_MODE = MPCModes.CONSTRAINED
 HORIZON = 10
-OUTER_LOOP_FREQ = 5
+OUTER_LOOP_FREQ = 20
 QUAD_NOMINAL_MASS = Z550_parameters['m']
-SIM_IP = 'udp:192.168.0.27:8520'
+SIM_IP = 'udp:192.168.0.27:8500'
 REAL_QUAD_IP = '/dev/ttyAMA1'
-IP = REAL_QUAD_IP
+IP = SIM_IP
 trajectory = SinglePoint([0, 0, 5])
-Z550_parameters['m'] = QUAD_NOMINAL_MASS
+Z550_parameters['m'] = 0.6
 parameters = Z550_parameters
 
 buzzer = Buzzer(23)
@@ -100,7 +101,7 @@ if __name__ == "__main__":
     z0 = x0[3:6]
     if MODEL == 0:
         As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [0.1, 0.1, 0.1]
+        bandwidths = [0.2, 0.1, 0.1]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -114,23 +115,23 @@ if __name__ == "__main__":
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / ADAPTIVE_FREQ, As)
     l1_filter = L1_LowPass(bandwidths=bandwidths, fs=ADAPTIVE_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
-    l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
-                                       upper_bounds=[3*parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
+    # l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
+    #                                    upper_bounds=[3*parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
     if USE_ADAPTIVE:
-        adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, l1_saturator)
+        adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, saturator=None)
     else:
         adaptive_controller = None
 
     ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
                              'upper_bound': np.array([np.Inf, 0.78, 0.78])}
-    ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
-                                                output_saturation=l1_saturator)
+    # ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
+    #                                             output_saturation=l1_saturator)
     #ramp_saturation = RampSaturation(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
                                                    controller_conf.position_controller_output_converter,
                                                    trajectory,
-                                                   ramp_saturation=ramp_saturation)
+                                                   ramp_saturation=None)
 
     ## parameters manager
     parameters_manager = ParametersManager(parameters_holder=parameters_holder,
@@ -168,7 +169,7 @@ if __name__ == "__main__":
                                            adaptive_controller,
                                            estimator_agent)
 
-    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs/')
+    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pi/AdaptiveDrone/logs/')
 
     ## telemetry manager
     tm = TelemetryManagerThreadUAV(serialport='/dev/ttyS0',
@@ -209,7 +210,7 @@ if __name__ == "__main__":
     # print("Take off complete")
     while True:
         tm.update()
-        if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 5.0:
+        if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 2.5:
             control_supervisor.supervise()
         else:
             ("Waiting for drone to reach required attitude.")
@@ -217,4 +218,4 @@ if __name__ == "__main__":
             if tm.telemetry is not None:
                 data_writer.data = tm.telemetry
                 data_writer.data_set.set()
-        time.sleep(1/100)# this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
+        time.sleep(1/ ADAPTIVE_FREQ)# this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT

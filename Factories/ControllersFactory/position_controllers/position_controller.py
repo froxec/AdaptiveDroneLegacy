@@ -141,11 +141,11 @@ class PositionControllerThread(PositionController, Thread):
         self.telemetry_to_read = None
 
     def run(self):
-        import time
-        t1 = time.time()
+        # import time
+        # t1 = time.time()
         while True:
-            print(time.time() - t1)
-            t1 = time.time()
+            # print(time.time() - t1)
+            # t1 = time.time()
             self._restart_watchdog()
             x = self._get_data()
             self.u_ref = self.get_control(x)

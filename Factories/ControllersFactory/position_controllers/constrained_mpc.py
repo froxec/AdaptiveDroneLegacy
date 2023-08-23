@@ -19,8 +19,8 @@ class ConstrainedMPC:
                            'upper': np.array([1000, np.pi/6, np.pi/6])},
                  delta_x_bounds={'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
                                    'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
-                 delta_u_bounds = {'lower': np.array([-1, -np.pi/24, -np.pi/24]),
-                                   'upper': np.array([1, np.pi/24,np.pi/24])},
+                 delta_u_bounds = {'lower': np.array([-3, -np.pi/12, -np.pi/12]),
+                                   'upper': np.array([3, np.pi/12,np.pi/12])},
                  soft_constraints=True):
         self.model = model
         self.freq = freq
@@ -182,6 +182,8 @@ class ConstrainedMPC:
         beq = np.concatenate([beq, x, u])
         return Aeq, beq
     def predict(self, delta_x, delta_u):
+        import time
+        t1 = time.time()
         x = delta_x
         u = delta_u
         if self.normalize_state:
@@ -193,6 +195,7 @@ class ConstrainedMPC:
         u_k = solution[self.pred_horizon*self.model.A.shape[0]+3:self.pred_horizon*self.model.A.shape[0]+6]# first control is dummy
         if self.normalize_state:
             u_k = self._denormalize_control(u_k)
+        print(time.time() - t1)
         return u_k
 
     def add_state_ramp_constraints(self, G, h):
