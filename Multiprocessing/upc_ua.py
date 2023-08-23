@@ -28,4 +28,4 @@ if __name__ == "__main__":
 
     while True:
         da.update_state()
-        time.sleep(1 / FREQUENCY)
+        timer.checkpt()

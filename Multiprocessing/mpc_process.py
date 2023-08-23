@@ -33,6 +33,9 @@ if __name__ == "__main__":
     # init Timer
     timer = Timer(interval=DELTA_T)
 
+    # start mpc
+    mpc_client.mpc_running_node.set_value(True)
+
     while True:
         t1 = time.time()
         # get current state and previous control
