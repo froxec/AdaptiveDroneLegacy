@@ -3,6 +3,7 @@ import time
 from Factories.DataManagementFactory.OPC.opc_objects import DroneDataServer, DataAcquisition
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS
 from dronekit import connect
+from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
 
 if __name__ == "__main__":
@@ -27,5 +28,11 @@ if __name__ == "__main__":
     timer = Timer(interval=DELTA_T)
 
     while True:
+        # update current state
         da.update_state()
+
+        # set vehicle control
+        u = da.get_control()
+        if u is not None:
+            dronekit_commands.set_attitude(vehicle, u[1], u[2], 0, u[0])
         timer.checkpt()

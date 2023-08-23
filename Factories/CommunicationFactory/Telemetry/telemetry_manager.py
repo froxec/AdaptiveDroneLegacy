@@ -106,6 +106,7 @@ class TelemetryManager:
             self.position_controller.change_trajectory(SinglePoint(setpoint))
 
     def auxiliary_command_callback(self, topic, data, opts):
+        print("HALO", topic, data)
         command = AUXILIARY_COMMANDS_MAPPING[data]
         if command == 'RETURN_TO_LAUNCH':
             self.vehicle.mode = VehicleMode('RTL')
@@ -358,3 +359,85 @@ class TelemetryManagerThreadGCS(TelemetryManagerThread):
         while True:
             self.update()
             time.sleep(1 / self.update_freq)
+
+class TelemetryManagerUAV(TelemetryManager):
+    def __init__(self,
+                 serialport: str,
+                 baudrate: int,
+                 vehicle,
+                 opc_client,
+                 data_writer=None,
+                 subscribed_comms='ALL',
+                 additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle'],
+                 send_telemetry=True,
+                 lora_address=None,
+                 lora_freq=None,
+                 remote_lora_address=None,
+                 remote_lora_freq=None):
+        TelemetryManager.__init__(self,
+                                  serialport=serialport,
+                                  baudrate=baudrate,
+                                  vehicle=vehicle,
+                                  subscribed_comms=subscribed_comms,
+                                  lora_address=lora_address,
+                                  lora_freq=lora_freq,
+                                  remote_lora_address=remote_lora_address,
+                                  remote_lora_freq=remote_lora_freq)
+
+        self.data_writer = data_writer
+        self.additional_telemetry = additional_telemetry
+        self.send_telemetry = send_telemetry
+        self.opc_client = opc_client
+
+    def update_controllers_callback(self, topic, data, opts):
+        comm = COMMANDS_ASCII_MAPPING[topic]
+        comm_split = comm.split("_")
+        if comm_split[0] == 'POSITION':
+            if data == 1:
+                print("TELEM_MANAGER: POSITION_CONTROLLER ON")
+                self.opc_client.mpc_running_node.set_value(True)
+            elif data == 0:
+                print("TELEM_MANAGER: POSITION_CONTROLLER OFF")
+                self.opc_client.mpc_running_node.set_value(False)
+        if comm_split[0] == 'ADAPTIVE':
+            if data == 1:
+                print("TELEM_MANAGER: ADAPTIVE_CONTROLLER ON")
+                self.opc_client.adaptive_running_node.set_value(True)
+            elif data == 0:
+                print("TELEM_MANAGER: ADAPTIVE_CONTROLLER OFF")
+                self.opc_client.adaptive_running_node.set_value(False)
+        # if comm_split[0] == 'ESTIMATOR':
+        #     if data == 1:
+        #         print("TELEM_MANAGER: ESTIMATOR ON")
+        #         self.control_supervisor.estimation_on = True
+        #     elif data == 0:
+        #         print("TELEM_MANAGER: ESTIMATOR OFF")
+        #         self.control_supervisor.estimation_on = False
+
+    def publish_telemetry(self):
+        update_telemetry(self.telemetry, self.vehicle)
+        # if hasattr(self, 'additional_telemetry') and 'estimation_and_ref' in self.additional_telemetry:
+        #     self._add_estimation_to_telemetry(self.telemetry)
+        # if hasattr(self, 'additional_telemetry') and 'reference' in self.additional_telemetry:
+        #     self._add_control_to_telemetry(self.telemetry)
+        # if hasattr(self, 'additional_telemetry') and 'output_and_throttle' in self.additional_telemetry:
+        #     self._add_output_to_telemetry(self.telemetry)
+        # if self.data_writer is not None:
+        #     self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
+        available_telemetry = self.telemetry.keys()
+        for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
+            if not isinstance(indices, tuple):
+                key = indices
+                if key not in available_telemetry:
+                    continue
+                value = self.telemetry[key]
+            else:
+                key, id = indices
+                if key not in available_telemetry:
+                    continue
+                value = self.telemetry[key][id]
+            self.publish(command, value)
+    def run(self):
+        if self.send_telemetry:
+            self.publish_telemetry()
+        self.update()

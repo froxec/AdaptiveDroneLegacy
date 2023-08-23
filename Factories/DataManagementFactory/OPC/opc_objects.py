@@ -47,14 +47,15 @@ class DataAcquisition:
         self.adaptive_node = objects.get_child(["2:AdaptiveController"])
         self.adpative_output_node = self.adaptive_node.get_child(["2:output"])
 
-        #control handler
-        self.control_handler = ControlHandler(self.vehicle)
-        sub = self.client.create_subscription(500, self.control_handler)
-        self.handle = sub.subscribe_data_change(self.adpative_output_node)
 
     def update_state(self):
         x = dronekit_commands.get_state(self.vehicle)
-        self.state_node.set_value(x)
+        if None not in x:
+            self.state_node.set_value(x)
+
+    def get_control(self):
+        u = self.adpative_output_node.get_value()
+        return u
 class MPCClient:
     def __init__(self, endpoint_address):
         self.client = Client(endpoint_address)
@@ -115,6 +116,25 @@ class AdaptiveClient:
     def get_previous_control(self):
         u_prev = self.ref_node.get_value()
         return np.array(u_prev)
+
+class TelemetryManagerClient:
+    def __init__(self, endpoint_address):
+        self.client = Client(endpoint_address)
+        try:
+            self.client.connect()
+        except:
+            raise "Telemetry manager client could not connect to opc server on {}". format(endpoint_address)
+
+        # get required nodes
+        objects = self.client.get_objects_node()
+        self.adaptive_node = objects.get_child(["2:AdaptiveController"])
+        self.mpc_node = objects.get_child(["2:MPC"])
+        self.drone_node = objects.get_child(["2:Drone"])
+        self.u_node = self.adaptive_node.get_child(["2:output"])
+        self.ref_node = self.mpc_node.get_child(["2:output"])
+        self.x_node = self.drone_node.get_child(["2:state"])
+        self.adaptive_running_node = self.adaptive_node.get_child(["2:running"])
+        self.mpc_running_node = self.mpc_node.get_child(["2:running"])
 
 class Supervisor:
     def __init__(self, endpoint_address, vehicle):
