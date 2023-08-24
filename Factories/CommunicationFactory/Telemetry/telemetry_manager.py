@@ -444,7 +444,6 @@ class TelemetryManagerUAV(TelemetryManager):
             comm = comm_decoupled[0]
         elif len(comm_decoupled) == 2:
             comm, suffix = comm_decoupled
-
             setpoint = self.position_controller.trajectory.setpoint
             setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
             self.position_controller.change_trajectory(SinglePoint(setpoint))
@@ -452,3 +451,43 @@ class TelemetryManagerUAV(TelemetryManager):
         if self.send_telemetry:
             self.publish_telemetry()
         self.update()
+
+
+class TelemetryManagerUAVMultiprocessingThread(TelemetryManagerUAV, Thread):
+    def __init__(self,
+                 serialport: str,
+                 baudrate: int,
+                 update_freq,
+                 vehicle,
+                 opc_client,
+                 data_writer=None,
+                 subscribed_comms='ALL',
+                 additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle'],
+                 send_telemetry=True,
+                 lora_address=None,
+                 lora_freq=None,
+                 remote_lora_address=None,
+                 remote_lora_freq=None):
+        TelemetryManagerUAV.__init__(self,
+                                  serialport=serialport,
+                                  baudrate=baudrate,
+                                  vehicle=vehicle,
+                                  opc_client=opc_client,
+                                  data_writer=data_writer,
+                                  subscribed_comms=subscribed_comms,
+                                  additional_telemetry=additional_telemetry,
+                                  send_telemetry=send_telemetry,
+                                  lora_address=lora_address,
+                                  lora_freq=lora_freq,
+                                  remote_lora_address=remote_lora_address,
+                                  remote_lora_freq=remote_lora_freq)
+        Thread.__init__(self)
+        self.update_freq = update_freq
+        self.start()
+
+    def run(self):
+        while True:
+            if self.send_telemetry:
+                self.publish_telemetry()
+            self.update()
+            time.sleep(1 / self.update_freq)
