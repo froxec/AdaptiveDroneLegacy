@@ -52,4 +52,3 @@ if __name__ == "__main__":
 
         # watchdog
         timer.checkpt()
-        print(time.time() - t1)

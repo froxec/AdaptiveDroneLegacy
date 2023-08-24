@@ -81,7 +81,10 @@ class MPCClient:
         return np.array(x)
 
     def get_previous_control(self):
+        import time
+        t1 = time.time()
         u_prev = self.u_node.get_value()
+        print(time.time() - t1)
         return np.array(u_prev)
 
 class AdaptiveClient:
