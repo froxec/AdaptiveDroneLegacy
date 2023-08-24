@@ -182,8 +182,6 @@ class ConstrainedMPC:
         beq = np.concatenate([beq, x, u])
         return Aeq, beq
     def predict(self, delta_x, delta_u):
-        import time
-        t1 = time.time()
         x = delta_x
         u = delta_u
         if self.normalize_state:
@@ -195,7 +193,6 @@ class ConstrainedMPC:
         u_k = solution[self.pred_horizon*self.model.A.shape[0]+3:self.pred_horizon*self.model.A.shape[0]+6]# first control is dummy
         if self.normalize_state:
             u_k = self._denormalize_control(u_k)
-        print(time.time() - t1)
         return u_k
 
     def add_state_ramp_constraints(self, G, h):
