@@ -37,10 +37,11 @@ if __name__ == "__main__":
     mpc_client.mpc_running_node.set_value(True)
 
     while True:
-        t1 = time.time()
         # get current state and previous control
+        t1 = time.time()
         x = mpc_client.get_current_state()
         u_prev = mpc_client.get_previous_control()
+        print(time.time() - t1)
         if None in u_prev:
             u_prev = np.zeros(3)
 
@@ -52,4 +53,3 @@ if __name__ == "__main__":
 
         # watchdog
         timer.checkpt()
-        print(time.time() - t1)

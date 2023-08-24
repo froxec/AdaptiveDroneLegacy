@@ -82,3 +82,4 @@ if __name__ == "__main__":
             adaptive_client.set_control(u)
 
         timer.checkpt()
+        print(time.time() - t1)
