@@ -7,29 +7,29 @@ from oclock.timer import Timer
 
 if __name__ == "__main__":
     # set params
-    FREQUENCY = 10
+    FREQUENCY = 5
     DELTA_T = 1/FREQUENCY
 
     # connect to drone
-    drone_addr = "localhost:8008"
+    drone_addr = "localhost:14551"
     print("Connecting to drone {}".format(drone_addr))
-    vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=100)
+    vehicle = connect(drone_addr, baud=921600, wait_ready=True)
     print("Connection established!")
 
     client = TelemetryManagerClient(OPC_SERVER_ADDRESS)
 
     # setup telemetry managers
-    tm = TelemetryManagerUAV(serialport='/dev/pts/6',
+    tm = TelemetryManagerUAV(serialport='/dev/pts/2',
                                             baudrate=115200,
                                             vehicle=vehicle,
                                             opc_client=client,
-                                            subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
+                                            subscribed_comms='ALL',#subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
                                             send_telemetry=True,
                                             lora_address = 2,
                                             lora_freq = 868,
                                             remote_lora_address = 40,
                                             remote_lora_freq = 868)
-    tm_commands = TelemetryManagerUAV(serialport='/dev/pts/6',
+    tm_commands = TelemetryManagerUAV(serialport='/dev/pts/2',
                                         baudrate=115200,
                                         vehicle=vehicle,
                                         opc_client=client,

@@ -105,9 +105,10 @@ class AdaptiveClient:
 
         self.current_state = None
     def set_control(self, u):
-        u = list(u)
-        self.current_state = u
-        self.u_node.set_value(u)
+        if u is not None:
+            u = list(u)
+            self.current_state = u
+            self.u_node.set_value(u)
 
     def get_current_state(self):
         x = self.x_node.get_value()

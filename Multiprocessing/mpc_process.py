@@ -45,9 +45,10 @@ if __name__ == "__main__":
             u_prev = np.zeros(3)
 
         # compute control
-        u = position_controller(x, u_prev, convert_throttle=False)
-        # update control
-        mpc_client.set_control(u)
+        if None not in x and None not in u_prev:
+            u = position_controller(x, u_prev, convert_throttle=False)
+            # update control
+            mpc_client.set_control(u)
 
         # watchdog
         timer.checkpt()

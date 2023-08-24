@@ -106,7 +106,6 @@ class TelemetryManager:
             self.position_controller.change_trajectory(SinglePoint(setpoint))
 
     def auxiliary_command_callback(self, topic, data, opts):
-        print("HALO", topic, data)
         command = AUXILIARY_COMMANDS_MAPPING[data]
         if command == 'RETURN_TO_LAUNCH':
             self.vehicle.mode = VehicleMode('RTL')
@@ -124,7 +123,7 @@ class TelemetryManager:
                 if self.vehicle.location.global_relative_frame.alt >= target_attitude * 0.95:
                     print("Reached target altitude")
                     break
-                time.sleep(0.5)
+                time.sleep(0.1)
 
     def update_controllers_callback(self, topic, data, opts):
         raise NotImplementedError
@@ -437,6 +436,18 @@ class TelemetryManagerUAV(TelemetryManager):
                     continue
                 value = self.telemetry[key][id]
             self.publish(command, value)
+
+    def change_setpoint_callback(self, topic, data, opts):
+        comm = COMMANDS_ASCII_MAPPING[topic]
+        comm_decoupled = comm.split(":")
+        if len(comm_decoupled) == 1:
+            comm = comm_decoupled[0]
+        elif len(comm_decoupled) == 2:
+            comm, suffix = comm_decoupled
+
+            setpoint = self.position_controller.trajectory.setpoint
+            setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
+            self.position_controller.change_trajectory(SinglePoint(setpoint))
     def run(self):
         if self.send_telemetry:
             self.publish_telemetry()
