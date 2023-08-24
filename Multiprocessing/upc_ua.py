@@ -31,7 +31,7 @@ if __name__ == "__main__":
     client = TelemetryManagerClient(OPC_SERVER_ADDRESS)
 
     # setup telemetry managers
-    tm = TelemetryManagerUAV(serialport='/dev/pts/2',
+    tm = TelemetryManagerUAV(serialport='/dev/ttyS0',
                              baudrate=115200,
                              vehicle=vehicle,
                              opc_client=client,
@@ -41,7 +41,7 @@ if __name__ == "__main__":
                              lora_freq=868,
                              remote_lora_address=40,
                              remote_lora_freq=868)
-    tm_commands = TelemetryManagerUAV(serialport='/dev/pts/2',
+    tm_commands = TelemetryManagerUAV(serialport='/dev/ttyUSB0',
                                       baudrate=115200,
                                       vehicle=vehicle,
                                       opc_client=client,
