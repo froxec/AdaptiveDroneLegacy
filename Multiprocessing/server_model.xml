@@ -12,6 +12,7 @@
     <Alias Alias="HasSubtype">i=45</Alias>
     <Alias Alias="HasProperty">i=46</Alias>
     <Alias Alias="HasComponent">i=47</Alias>
+    <Alias Alias="Boolean">i=1</Alias>
   </Aliases>
   <UAObjectType NodeId="ns=1;i=3" BrowseName="1:ControlAlgorithmType">
     <DisplayName>ControlAlgorithmType</DisplayName>
@@ -22,6 +23,7 @@
       <Reference ReferenceType="HasComponent">ns=1;i=5</Reference>
       <Reference ReferenceType="HasProperty">ns=1;i=9</Reference>
       <Reference ReferenceType="HasTypeDefinition" IsForward="false">ns=1;i=10</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=51</Reference>
     </References>
   </UAObjectType>
   <UAMethod NodeId="ns=1;i=4" BrowseName="1:activate" ParentNodeId="ns=1;i=3">
@@ -59,6 +61,7 @@
       <Reference ReferenceType="HasComponent">ns=1;i=12</Reference>
       <Reference ReferenceType="HasProperty">ns=1;i=13</Reference>
       <Reference ReferenceType="HasComponent">ns=1;i=45</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=53</Reference>
     </References>
   </UAObject>
   <UAMethod NodeId="ns=1;i=11" BrowseName="1:activate" ParentNodeId="ns=1;i=10">
@@ -180,6 +183,74 @@
   <UAVariable NodeId="ns=1;i=45" BrowseName="1:output" ParentNodeId="ns=1;i=10" ArrayDimensions="3" DataType="Float" AccessLevel="3" UserAccessLevel="3" Historizing="true">
     <DisplayName>output</DisplayName>
     <Description>output</Description>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=10</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+    </References>
+  </UAVariable>
+  <UAObject NodeId="ns=1;i=46" BrowseName="1:AdaptiveController" ParentNodeId="i=85">
+    <DisplayName>AdaptiveController</DisplayName>
+    <Description>ControlAlgorithmType</Description>
+    <References>
+      <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
+      <Reference ReferenceType="HasTypeDefinition">ns=1;i=3</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=47</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=48</Reference>
+      <Reference ReferenceType="HasProperty">ns=1;i=49</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=50</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=52</Reference>
+    </References>
+  </UAObject>
+  <UAMethod NodeId="ns=1;i=47" BrowseName="1:activate" ParentNodeId="ns=1;i=46">
+    <DisplayName>activate</DisplayName>
+    <Description>activate</Description>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=46</Reference>
+    </References>
+  </UAMethod>
+  <UAMethod NodeId="ns=1;i=48" BrowseName="1:deactivate" ParentNodeId="ns=1;i=46">
+    <DisplayName>deactivate</DisplayName>
+    <Description>deactivate</Description>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=46</Reference>
+    </References>
+  </UAMethod>
+  <UAVariable NodeId="ns=1;i=49" BrowseName="1:name" ParentNodeId="ns=1;i=46" DataType="LocalizedText" Historizing="true">
+    <DisplayName>name</DisplayName>
+    <Description>name</Description>
+    <References>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=46</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=50" BrowseName="1:output" ParentNodeId="ns=1;i=46" ArrayDimensions="3" DataType="Float" AccessLevel="3" UserAccessLevel="3">
+    <DisplayName>output</DisplayName>
+    <Description>output</Description>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=46</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=51" BrowseName="1:running" ParentNodeId="ns=1;i=3" DataType="Boolean">
+    <DisplayName>running</DisplayName>
+    <Description>running</Description>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=3</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=52" BrowseName="1:running" ParentNodeId="ns=1;i=46" DataType="Boolean" AccessLevel="3" UserAccessLevel="3">
+    <DisplayName>running</DisplayName>
+    <Description>running</Description>
+    <References>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=46</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=53" BrowseName="1:running" ParentNodeId="ns=1;i=10" DataType="Boolean" AccessLevel="3" UserAccessLevel="3">
+    <DisplayName>running</DisplayName>
+    <Description>running</Description>
     <References>
       <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=10</Reference>
       <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
