@@ -6,6 +6,11 @@ import numpy as np
 # OPC SERVER
 OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
 
+# REDIS DATABASE
+REDIS_HOST = "127.0.0.1"
+REDIS_PORT = 6379
+DB_NUM = 0
+
 # MODEL
 NORMALIZE = True
 ANGULAR_VELOCITY_RANGE = [0, 800]

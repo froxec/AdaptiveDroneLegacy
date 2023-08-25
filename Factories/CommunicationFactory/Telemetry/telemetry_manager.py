@@ -364,7 +364,7 @@ class TelemetryManagerUAV(TelemetryManager):
                  serialport: str,
                  baudrate: int,
                  vehicle,
-                 opc_client,
+                 db_interface,
                  data_writer=None,
                  subscribed_comms='ALL',
                  additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle'],
@@ -386,25 +386,30 @@ class TelemetryManagerUAV(TelemetryManager):
         self.data_writer = data_writer
         self.additional_telemetry = additional_telemetry
         self.send_telemetry = send_telemetry
-        self.opc_client = opc_client
+        self.db_interface = db_interface
 
     def update_controllers_callback(self, topic, data, opts):
         comm = COMMANDS_ASCII_MAPPING[topic]
         comm_split = comm.split("_")
+
+        # update flags
         if comm_split[0] == 'POSITION':
             if data == 1:
                 print("TELEM_MANAGER: POSITION_CONTROLLER ON")
-                self.opc_client.mpc_running_node.set_value(True)
+                self.db_interface.telemetry_manager_state['mpc_running'] = True
             elif data == 0:
                 print("TELEM_MANAGER: POSITION_CONTROLLER OFF")
-                self.opc_client.mpc_running_node.set_value(False)
+                self.db_interface.telemetry_manager_state['mpc_running'] = False
         if comm_split[0] == 'ADAPTIVE':
             if data == 1:
                 print("TELEM_MANAGER: ADAPTIVE_CONTROLLER ON")
-                self.opc_client.adaptive_running_node.set_value(True)
+                self.db_interface.telemetry_manager_state['adaptive_running'] = True
             elif data == 0:
                 print("TELEM_MANAGER: ADAPTIVE_CONTROLLER OFF")
-                self.opc_client.adaptive_running_node.set_value(False)
+                self.db_interface.telemetry_manager_state['adaptive_running'] = False
+
+        # update db
+        self.db_interface.update_telemetry_manager_db()
         # if comm_split[0] == 'ESTIMATOR':
         #     if data == 1:
         #         print("TELEM_MANAGER: ESTIMATOR ON")
@@ -459,7 +464,7 @@ class TelemetryManagerUAVMultiprocessingThread(TelemetryManagerUAV, Thread):
                  baudrate: int,
                  update_freq,
                  vehicle,
-                 opc_client,
+                 db_interface,
                  data_writer=None,
                  subscribed_comms='ALL',
                  additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle'],
@@ -472,7 +477,7 @@ class TelemetryManagerUAVMultiprocessingThread(TelemetryManagerUAV, Thread):
                                   serialport=serialport,
                                   baudrate=baudrate,
                                   vehicle=vehicle,
-                                  opc_client=opc_client,
+                                  db_interface=db_interface,
                                   data_writer=data_writer,
                                   subscribed_comms=subscribed_comms,
                                   additional_telemetry=additional_telemetry,

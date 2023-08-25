@@ -2,20 +2,21 @@ import numpy as np
 import time
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, ANGULAR_VELOCITY_RANGE, PWM_RANGE, NORMALIZE, HORIZON, MPC_MODE, \
     TRAJECTORY, PREDICTOR_PARAMETERS
-from Factories.DataManagementFactory.OPC.opc_objects import MPCClient
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from Factories.ConfigurationsFactory.configurations import CustomMPCConfig
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
 from Factories.DataManagementFactory.data_holders import DataHolder
+from process_interfaces import MPC_Interface
 from oclock import Timer
+import redis
 
 if __name__ == "__main__":
     # parameters
     FREQ = 5
     DELTA_T = 1/FREQ
 
-    # init database client
-    mpc_client = MPCClient(OPC_SERVER_ADDRESS)
+    # create redis interface
+    db_interface = MPC_Interface()
 
     # init position controler
     parameters_holder = DataHolder(PREDICTOR_PARAMETERS)
@@ -33,22 +34,24 @@ if __name__ == "__main__":
     # init Timer
     timer = Timer(interval=DELTA_T)
 
-    # start mpc
-    mpc_client.mpc_running_node.set_value(True)
-
     while True:
+        # get current drone state from db
         t1 = time.time()
+        db_interface.fetch_db()
         # get current state and previous control
-        x = mpc_client.get_current_state()
-        u_prev = mpc_client.get_previous_control()
+        x = db_interface.get_drone_state()
+        u_prev = db_interface.get_previous_control()
         if None in u_prev:
             u_prev = np.zeros(3)
 
         # compute control
-        if None not in x and None not in u_prev:
+        if x is not None and db_interface.is_mpc_running():
             u = position_controller(x, u_prev, convert_throttle=False)
             # update control
-            mpc_client.set_control(u)
+            db_interface.set_control(u)
+        # update mpc state
+        db_interface.update_db()
 
         # watchdog
         timer.checkpt()
+        print(time.time() - t1)

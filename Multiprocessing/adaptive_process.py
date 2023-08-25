@@ -1,4 +1,4 @@
-from Factories.DataManagementFactory.OPC.opc_objects import AdaptiveClient
+from process_interfaces import Adaptive_Interface
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, BANDWIDTHS, As, ANGULAR_VELOCITY_RANGE, \
     TRAJECTORY, PREDICTOR_PARAMETERS
 from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain
@@ -29,15 +29,16 @@ def command_convert(u):
 
 if __name__ == "__main__":
     # parameters
-    FREQ = 50
+    FREQ = 100
     DELTA_T = 1 / FREQ
 
-    # init database client
-    adaptive_client = AdaptiveClient(OPC_SERVER_ADDRESS)
+    # init redis interface
+    db_interface = Adaptive_Interface()
+    db_interface.fetch_db()
 
     # init adaptive controller
-    x0 = adaptive_client.get_current_state()
-    if None in x0:
+    x0 = db_interface.get_drone_state()
+    if x0 is None:
         x0 = np.zeros(6)
     z0 = x0[3:6]
     u0 = np.zeros(3)
@@ -56,21 +57,20 @@ if __name__ == "__main__":
     timer = Timer(interval=DELTA_T)
     z, z_prev, u, u_prev = z0, z0, u0, u0
 
-    #turn on adaptive controller
-    adaptive_client.adaptive_running_node.set_value(False)
-
     while True:
         t1 = time.time()
+        # fetch db
+        db_interface.fetch_db()
         # check if adaptive controller is running
-        if adaptive_client.adaptive_running_node.get_value():
+        if db_interface.is_adaptive_running():
             # calculate adaptive control
-            ref = adaptive_client.ref_node.get_value()
+            ref = db_interface.get_ref()
             u = adaptive_controller(z, z_prev, u, u_prev)
             z_prev = z
             u_prev = u
         else:
             # pass mpc control
-            u = adaptive_client.ref_node.get_value()
+            u = db_interface.get_ref()
 
         # process thrust to throttle
         if u is not None:
@@ -79,6 +79,10 @@ if __name__ == "__main__":
             # convert command
             u = command_convert(u)
             # set output
-            adaptive_client.set_control(u)
+            db_interface.set_control(u)
+
+        # update db
+        db_interface.update_db()
 
         timer.checkpt()
+        print(time.time() - t1)
