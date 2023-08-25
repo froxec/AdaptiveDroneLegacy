@@ -31,7 +31,7 @@ class PositionController():
 
         #trajectory tracking
         self.current_waypoint_id = 0
-        self.setpoint = None
+        self.setpoint = input_converter.x_ss
         self.history = {'u': []}
 
     def __call__(self, x=None, u_prev=None, convert_throttle=True):
@@ -91,7 +91,7 @@ class PositionController():
         if self.setpoint.shape != x.shape:
             distance = euclidean_distance(self.setpoint.flatten(), x)
         else:
-            euclidean_distance(self.setpoint, x)
+            distance = euclidean_distance(self.setpoint, x)
         if distance < 0.1:
             return True
         else:

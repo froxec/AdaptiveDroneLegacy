@@ -15,9 +15,6 @@ if __name__ == "__main__":
     FREQ = 5
     DELTA_T = 1/FREQ
 
-    # create redis interface
-    db_interface = MPC_Interface()
-
     # init position controler
     parameters_holder = DataHolder(PREDICTOR_PARAMETERS)
     prediction_model = LinearizedQuadNoYaw(parameters_holder, Ts=1 / FREQ)
@@ -30,6 +27,14 @@ if __name__ == "__main__":
                                                    controller_conf.position_controller_output_converter,
                                                    TRAJECTORY,
                                                    ramp_saturation=None)
+
+
+    # create redis interface
+    db_interface = MPC_Interface(position_controller)
+
+    # flush db on startup
+    db_interface.redis_database.flushdb()
+
 
     # init Timer
     timer = Timer(interval=DELTA_T)
@@ -49,6 +54,9 @@ if __name__ == "__main__":
             u = position_controller(x, u_prev, convert_throttle=False)
             # update control
             db_interface.set_control(u)
+            print(u)
+        # update current setpoint info
+        db_interface.update_setpoint(position_controller.setpoint)
         # update mpc state
         db_interface.update_db()
 

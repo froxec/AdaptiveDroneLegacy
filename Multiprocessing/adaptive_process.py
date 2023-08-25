@@ -5,7 +5,7 @@ from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain
 from Factories.DataManagementFactory.data_holders import DataHolder
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import L1_Predictor, L1_AdaptiveLaw, L1_LowPass, \
     L1_ControlConverter, L1_Augmentation
-from Factories.ToolsFactory.Converters import MPC_output_converter
+from Factories.ToolsFactory.Converters import MPC_input_converter, MPC_output_converter
 import numpy as np
 from oclock import Timer
 import time
@@ -32,26 +32,34 @@ if __name__ == "__main__":
     FREQ = 100
     DELTA_T = 1 / FREQ
 
+    # init input and output converters
+    x_ss = np.zeros(6)
+    parameters_holder = DataHolder(PREDICTOR_PARAMETERS)
+    output_converter = MPC_output_converter(parameters_holder, ANGULAR_VELOCITY_RANGE)
+    input_converter = MPC_input_converter(x_ss, parameters_holder)
+
     # init redis interface
-    db_interface = Adaptive_Interface()
+    db_interface = Adaptive_Interface(input_converter=input_converter,
+                                      output_converter=output_converter)
+
+    # flush db on startup
+    db_interface.redis_database.flushdb()
+
     db_interface.fetch_db()
+
 
     # init adaptive controller
     x0 = db_interface.get_drone_state()
-    if x0 is None:
+    if None in x0:
         x0 = np.zeros(6)
     z0 = x0[3:6]
     u0 = np.zeros(3)
-    parameters_holder = DataHolder(PREDICTOR_PARAMETERS)
     uncertain_model = LinearQuadUncertain(parameters_holder)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / FREQ, As)
     l1_filter = L1_LowPass(bandwidths=BANDWIDTHS, fs=FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, saturator=None)
-
-    # init output converter
-    output_converter = MPC_output_converter(parameters_holder, ANGULAR_VELOCITY_RANGE)
 
     # init Timer
     timer = Timer(interval=DELTA_T)
@@ -63,17 +71,23 @@ if __name__ == "__main__":
         db_interface.fetch_db()
         # check if adaptive controller is running
         if db_interface.is_adaptive_running():
-            # calculate adaptive control
+            # get reference and current state
             ref = db_interface.get_ref()
-            u = adaptive_controller(z, z_prev, u, u_prev)
-            z_prev = z
-            u_prev = u
+            x = db_interface.get_drone_state()
+            if None not in ref and None not in x:
+                delta_x, delta_u = input_converter(x, ref)
+                u = delta_u
+                z = delta_x[3:6]
+                # calculate adaptive control
+                u = adaptive_controller(z, z_prev, u, u_prev)
+                z_prev = z
+                u_prev = u
+                u = output_converter(u, throttle=False)
         else:
             # pass mpc control
             u = db_interface.get_ref()
-
         # process thrust to throttle
-        if u is not None:
+        if None not in u:
             # process thrust to throttle
             u = output_converter.convert_throttle(np.array(u).astype(float))
             # convert command

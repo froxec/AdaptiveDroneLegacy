@@ -449,9 +449,13 @@ class TelemetryManagerUAV(TelemetryManager):
             comm = comm_decoupled[0]
         elif len(comm_decoupled) == 2:
             comm, suffix = comm_decoupled
-            setpoint = self.position_controller.trajectory.setpoint
-            setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
-            self.position_controller.change_trajectory(SinglePoint(setpoint))
+            current_setpoint = self.db_interface.mpc_interface_state['current_setpoint']
+            current_setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
+            self.db_interface.telemetry_manager_state['setpoint'] = current_setpoint
+
+        #update db
+        if None not in self.db_interface.telemetry_manager_state['setpoint']:
+            self.db_interface.publish_setpoint(self.db_interface.telemetry_manager_state['setpoint'])
     def run(self):
         if self.send_telemetry:
             self.publish_telemetry()
