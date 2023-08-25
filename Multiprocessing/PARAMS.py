@@ -5,7 +5,7 @@ import numpy as np
 
 # OPC SERVER
 OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
-DATA_FREQ = 50
+DATA_FREQ = 10
 
 # REDIS DATABASE
 REDIS_HOST = "127.0.0.1"

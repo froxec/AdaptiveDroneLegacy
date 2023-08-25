@@ -71,9 +71,11 @@ if __name__ == "__main__":
         else:
             # pass mpc control
             u = db_interface.get_ref()
+        
+        print(u)
 
         # process thrust to throttle
-        if u is not None:
+        if None not in u:
             # process thrust to throttle
             u = output_converter.convert_throttle(np.array(u).astype(float))
             # convert command

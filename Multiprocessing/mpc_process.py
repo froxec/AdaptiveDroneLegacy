@@ -45,13 +45,13 @@ if __name__ == "__main__":
             u_prev = np.zeros(3)
 
         # compute control
-        if x is not None and db_interface.is_mpc_running():
+        if None not in x and db_interface.is_mpc_running():
             u = position_controller(x, u_prev, convert_throttle=False)
             # update control
             db_interface.set_control(u)
         # update mpc state
         db_interface.update_db()
-
+        print(u)
         # watchdog
         timer.checkpt()
         print(time.time() - t1)

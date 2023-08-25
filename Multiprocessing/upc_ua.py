@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
         # set vehicle control
         u = db_interface.get_control()
-        if u is not None:
+        if u is not None and vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 2.5:
             dronekit_commands.set_attitude(vehicle, u[1], u[2], 0, u[0])
 
         # update db state
