@@ -7,7 +7,8 @@ import numpy as np
 from copy import deepcopy
 
 drone_proxy_definition = {
-    'x': None
+    'x': None,
+    'armed': False,
 }
 
 mpc_proxy_defintion = {
@@ -67,6 +68,9 @@ class MPC_Interface:
     def is_mpc_running(self):
         return self.telemetry_manager_state['mpc_running']
 
+    def is_vehicle_armed(self):
+        return self.drone_state['armed']
+
     def reset_state(self):
         self.mpc_interface_state = deepcopy(mpc_proxy_defintion)
 
@@ -123,12 +127,16 @@ class Adaptive_Interface:
     def is_adaptive_running(self):
         return self.telemetry_manager_state['adaptive_running']
 
+    def is_vehicle_armed(self):
+        return self.drone_state['armed']
+
     def get_current_setpoint(self):
         current_setpoint = np.array(self.mpc_interface_state['current_setpoint'])
         return np.array(current_setpoint)
 
     def reset_state(self):
         self.adaptive_interface_state = deepcopy(adaptive_proxy_definition)
+
 
     def setpoint_change_callback(self, message):
         data = message['data']
@@ -155,6 +163,7 @@ class Supervisor_Interface:
         self.redis_database.set("adaptive_interface_state", json.dumps(self.adaptive_interface_state))
         self.redis_database.set("telemetry_manager_state", json.dumps(self.telemetry_manager_state))
     def update_db(self):
+        self.drone_state['armed'] = self.vehicle.armed
         self.redis_database.set("drone_state", json.dumps(self.drone_state))
 
     def update_telemetry_manager_db(self):

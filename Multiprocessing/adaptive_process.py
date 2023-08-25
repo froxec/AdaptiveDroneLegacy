@@ -1,6 +1,6 @@
 from process_interfaces import Adaptive_Interface
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, BANDWIDTHS, As, ANGULAR_VELOCITY_RANGE, \
-    TRAJECTORY, PREDICTOR_PARAMETERS
+    TRAJECTORY, PREDICTOR_PARAMETERS, MIN_ATTITUDE
 from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain
 from Factories.DataManagementFactory.data_holders import DataHolder
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import L1_Predictor, L1_AdaptiveLaw, L1_LowPass, \
@@ -74,7 +74,10 @@ if __name__ == "__main__":
             # get reference and current state
             ref = db_interface.get_ref()
             x = db_interface.get_drone_state()
-            if None not in ref and None not in x:
+            if (None not in ref
+                    and None not in x
+                    and db_interface.is_vehicle_armed()
+                    and x[2] > MIN_ATTITUDE):
                 delta_x, delta_u = input_converter(x, ref)
                 u = delta_u
                 z = delta_x[3:6]
