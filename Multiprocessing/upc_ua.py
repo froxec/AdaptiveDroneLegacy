@@ -1,7 +1,8 @@
 import time
 from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManagerUAVMultiprocessingThread
 from Factories.CommunicationFactory.Telemetry.subscriptions import UAV_TELEMETRY_AGENT_SUBS, UAV_COMMAND_AGENT_SUBS
-from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, DATA_FREQ
+from Factories.DataManagementFactory.data_writer import DataWriterThread
+from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
 from dronekit import connect
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
@@ -21,12 +22,16 @@ if __name__ == "__main__":
     # init db interface
     db_interface = Supervisor_Interface(vehicle)
 
+    # setup data writer
+    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs/')
+
     # setup telemetry managers
     tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyS0',
                              baudrate=115200,
                              update_freq=5,
                              vehicle=vehicle,
                              db_interface=db_interface,
+                             data_writer=data_writer,
                              subscribed_comms='ALL',  # subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
                              send_telemetry=True,
                              lora_address=2,
@@ -38,6 +43,7 @@ if __name__ == "__main__":
                                       update_freq=10,
                                       vehicle=vehicle,
                                       db_interface=db_interface,
+                                      data_writer=data_writer,
                                       subscribed_comms=UAV_COMMAND_AGENT_SUBS,
                                       send_telemetry=False,
                                       lora_address=1,
@@ -62,5 +68,12 @@ if __name__ == "__main__":
         print(u)
         # update db state
         db_interface.update_db()
+
+        # update data writer
+        if data_writer.writing_event.is_set():
+            if tm.telemetry is not None:
+                data_writer.data = tm.telemetry
+                data_writer.data_set.set()
+
         timer.checkpt()
         print(time.time() - t1)

@@ -192,5 +192,6 @@ class Supervisor_Interface:
         u = self.adaptive_interface_state['u']
         return u
 
+
     def reset(self):
         self.drone_state = deepcopy(drone_proxy_definition)

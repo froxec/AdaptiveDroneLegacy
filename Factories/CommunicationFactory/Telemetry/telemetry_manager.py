@@ -426,8 +426,10 @@ class TelemetryManagerUAV(TelemetryManager):
         #     self._add_control_to_telemetry(self.telemetry)
         # if hasattr(self, 'additional_telemetry') and 'output_and_throttle' in self.additional_telemetry:
         #     self._add_output_to_telemetry(self.telemetry)
-        # if self.data_writer is not None:
-        #     self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
+        if self.data_writer is not None:
+            self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
+        self.telemetry['telem_mpc_running'] = self.db_interface.telemetry_manager_state['mpc_running']
+        self.telemetry['telem_adaptive_running'] = self.db_interface.telemetry_manager_state['adaptive_running']
         available_telemetry = self.telemetry.keys()
         for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
             if not isinstance(indices, tuple):
@@ -456,6 +458,20 @@ class TelemetryManagerUAV(TelemetryManager):
         #update db
         if None not in self.db_interface.telemetry_manager_state['setpoint']:
             self.db_interface.publish_setpoint(self.db_interface.telemetry_manager_state['setpoint'])
+
+    def data_write_callback(self, topic, data, opts):
+        if self.data_writer is None:
+            raise ValueError("TELEM_MANAGER: write request, data_writer is None")
+        commands = data.split("_")
+        if len(commands) == 1 and commands[0] == "R":
+            self.data_writer.writing_event.clear()
+            print("TELEM_MANAGER: REQUESTED TO STOP WRITING DATA")
+        elif commands[0] == "S":
+            filename = commands[1]
+            self.data_writer.filename = filename
+            self.data_writer.writing_event.set()
+            print("TELEM_MANAGER: REQUESTED WRITING DATA TO FILE {}".format(filename))
+
     def run(self):
         if self.send_telemetry:
             self.publish_telemetry()
