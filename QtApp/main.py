@@ -204,19 +204,6 @@ class MainWindow(QMainWindow):
         else:
             self.window.remoteDataWritingStatus.setText("REMOTE:DATA NO WRITING")
             self.window.remoteDataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
-        if self.telemetry['telem_mpc_running']:
-            self.window.MPC_ON_OFF_BTN.setText("ON")
-            self.window.MPC_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightgreen}")
-        else:
-            self.window.MPC_ON_OFF_BTN.setText("OFF")
-            self.window.MPC_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
-        if self.telemetry['telem_adaptive_running']:
-            self.window.ADA_ON_OFF_BTN.setText("ON")
-            self.window.ADA_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightgreen}")
-        else:
-            self.window.ADA_ON_OFF_BTN.setText("OFF")
-            self.window.ADA_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
-
         self.lidia_telemetry(self.telemetry)
 
     @Slot()
@@ -234,13 +221,21 @@ class MainWindow(QMainWindow):
     def on_off_controllers(self, controller_type):
         if controller_type == "MPC":
             if self.window.MPC_ON_OFF_BTN.isChecked():
+                self.window.MPC_ON_OFF_BTN.setText("ON")
+                self.window.MPC_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightgreen}")
                 self.telemetry_manager.publish('POSITION_CONTROLLER_ON_OFF', 1)
             else:
+                self.window.MPC_ON_OFF_BTN.setText("OFF")
+                self.window.MPC_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
                 self.telemetry_manager.publish('POSITION_CONTROLLER_ON_OFF', 0)
         elif controller_type == "ADAPTIVE":
             if self.window.ADA_ON_OFF_BTN.isChecked():
+                self.window.ADA_ON_OFF_BTN.setText("ON")
+                self.window.ADA_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightgreen}")
                 self.telemetry_manager.publish('ADAPTIVE_CONTROLLER_ON_OFF', 1)
             else:
+                self.window.ADA_ON_OFF_BTN.setText("OFF")
+                self.window.ADA_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
                 self.telemetry_manager.publish('ADAPTIVE_CONTROLLER_ON_OFF', 0)
         elif controller_type == "ESTIMATOR":
             if self.window.ESTIM_ON_OFF_BTN.isChecked():
@@ -314,7 +309,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/4',
+    tm = TelemetryManagerThreadGCS(serialport='/dev/ttyUSB0',
                                    baudrate=115200,
                                    update_freq=10,
                                    lora_address=40,

@@ -428,8 +428,6 @@ class TelemetryManagerUAV(TelemetryManager):
         #     self._add_output_to_telemetry(self.telemetry)
         if self.data_writer is not None:
             self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
-        self.telemetry['telem_mpc_running'] = self.db_interface.telemetry_manager_state['mpc_running']
-        self.telemetry['telem_adaptive_running'] = self.db_interface.telemetry_manager_state['adaptive_running']
         available_telemetry = self.telemetry.keys()
         for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
             if not isinstance(indices, tuple):
