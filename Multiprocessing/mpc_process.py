@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, ANGULAR_VELOCITY_RANGE, PWM_RANGE, NORMALIZE, HORIZON, MPC_MODE, \
-    TRAJECTORY, PREDICTOR_PARAMETERS
+    TRAJECTORY, PREDICTOR_PARAMETERS, MIN_ATTITUDE
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from Factories.ConfigurationsFactory.configurations import CustomMPCConfig
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
@@ -39,22 +39,26 @@ if __name__ == "__main__":
     # init Timer
     timer = Timer(interval=DELTA_T)
 
+    # init vars
+    u_prev = np.array([parameters_holder.m*parameters_holder.g, 0, 0])
+
     while True:
         # get current drone state from db
         t1 = time.time()
         db_interface.fetch_db()
-        # get current state and previous control
+        # get current state
         x = db_interface.get_drone_state()
-        u_prev = db_interface.get_previous_control()
-        if None in u_prev:
-            u_prev = np.zeros(3)
 
         # compute control
-        if None not in x and db_interface.is_mpc_running():
+        if (x is not None
+                and db_interface.is_mpc_running()
+                and db_interface.is_vehicle_armed()
+                and x[2] > MIN_ATTITUDE):
             u = position_controller(x, u_prev, convert_throttle=False)
             # update control
             db_interface.set_control(u)
-            print(u)
+            # save previous control
+            u_prev = u
         # update current setpoint info
         db_interface.update_setpoint(position_controller.setpoint)
         # update mpc state

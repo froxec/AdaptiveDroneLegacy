@@ -25,5 +25,8 @@ PREDICTOR_PARAMETERS = Z550_parameters
 PREDICTOR_PARAMETERS['m'] = 0.6
 
 # ADAPTIVE_PARAMETERS:
-As = np.diag([-0.1, -0.1, -0.1])
+As = np.diag([-15, -15, -15])
 BANDWIDTHS = [0.5, 0.2, 0.2]
+
+# CONTROLERS
+MIN_ATTITUDE = 2.5
