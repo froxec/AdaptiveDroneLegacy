@@ -59,7 +59,6 @@ if __name__ == "__main__":
         db_interface.update_setpoint(position_controller.setpoint)
         # update mpc state
         db_interface.update_db()
-        print(u)
         # watchdog
         timer.checkpt()
         print(time.time() - t1)

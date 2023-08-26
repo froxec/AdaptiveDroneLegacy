@@ -47,6 +47,7 @@ if __name__ == "__main__":
     timer = Timer(interval=DELTA_T)
 
     while True:
+        t1 = time.time()
         # fetch db
         db_interface.fetch_db()
 
@@ -58,6 +59,8 @@ if __name__ == "__main__":
         if u is not None and vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 2.5:
             dronekit_commands.set_attitude(vehicle, u[1], u[2], 0, u[0])
 
+        print(u)
         # update db state
         db_interface.update_db()
         timer.checkpt()
+        print(time.time() - t1)
