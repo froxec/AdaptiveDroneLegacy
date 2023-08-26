@@ -82,21 +82,21 @@ if __name__ == "__main__":
                 u = delta_u
                 z = delta_x[3:6]
                 # calculate adaptive control
-                u = adaptive_controller(z, z_prev, u, u_prev)
+                u_output = adaptive_controller(z, z_prev, u, u_prev)
                 z_prev = z
                 u_prev = u
-                u = output_converter(u, throttle=False)
+                u_output = output_converter(u_output, throttle=False)
         else:
             # pass mpc control
-            u = db_interface.get_ref()
+            u_output = db_interface.get_ref()
         # process thrust to throttle
-        if None not in u:
+        if None not in u_output:
             # process thrust to throttle
-            u = output_converter.convert_throttle(np.array(u).astype(float))
+            u_output = output_converter.convert_throttle(np.array(u_output).astype(float))
             # convert command
-            u = command_convert(u)
+            u_output = command_convert(u_output)
             # set output
-            db_interface.set_control(u)
+            db_interface.set_control(u_output)
 
         # update db
         db_interface.update_db()
