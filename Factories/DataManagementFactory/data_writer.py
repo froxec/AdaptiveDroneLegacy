@@ -27,12 +27,13 @@ class DataWriterThread(DataWriter, Thread):
     def run(self):
         while True:
             if not self._control_execution():
+                self.writing_ok = False
                 continue
             data_to_write = self._get_data()
             self.data_write(data_to_write)
 
     def _get_data(self):
-        self.data_set.wait()
+        self.data_set.wait(timeout=1)
         data = self.data
         data_to_write = {}
         for data_field in self.data_fields:
