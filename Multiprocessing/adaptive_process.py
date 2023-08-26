@@ -88,15 +88,23 @@ if __name__ == "__main__":
                 u_output = output_converter(u_output, throttle=False)
         else:
             # pass mpc control
-            u_output = db_interface.get_ref()
+            ref = db_interface.get_ref()
+            u_output = ref
         # process thrust to throttle
         if None not in u_output:
+            # save not converter output
+            u_not_converter = u_output
             # process thrust to throttle
             u_output = output_converter.convert_throttle(np.array(u_output).astype(float))
             # convert command
             u_output = command_convert(u_output)
             # set output
             db_interface.set_control(u_output)
+            # set additional data
+            db_interface.set_sigma_hat(adaptive_controller.adaptive_law.sigma_hat)
+            db_interface.set_u_l1(adaptive_controller.lp_filter.u_l1)
+            db_interface.set_ref(ref)
+            db_interface.set_u_output(u_not_converter)
 
         # update db
         db_interface.update_db()

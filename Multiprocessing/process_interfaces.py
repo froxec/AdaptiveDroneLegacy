@@ -18,6 +18,10 @@ mpc_proxy_defintion = {
 
 adaptive_proxy_definition = {
     'u': None,
+    'u_l1': None,
+    'sigma_hat': None,
+    'ref': None,
+    'u_output': None
 }
 
 telemetry_manager_proxy_definition = {
@@ -134,6 +138,21 @@ class Adaptive_Interface:
         current_setpoint = np.array(self.mpc_interface_state['current_setpoint'])
         return np.array(current_setpoint)
 
+    def set_sigma_hat(self, sigma_hat):
+        sigma_hat = list(sigma_hat)
+        self.adaptive_interface_state['sigma_hat'] = sigma_hat
+
+    def set_u_l1(self, u_l1):
+        u_l1 = list(u_l1)
+        self.adaptive_interface_state['u_l1'] = u_l1
+
+    def set_ref(self, ref):
+        ref = list(ref)
+        self.adaptive_interface_state['ref'] = ref
+
+    def set_u_output(self, u_output):
+        u_output = list(u_output)
+        self.adaptive_interface_state['u_output'] = u_output
     def reset_state(self):
         self.adaptive_interface_state = deepcopy(adaptive_proxy_definition)
 

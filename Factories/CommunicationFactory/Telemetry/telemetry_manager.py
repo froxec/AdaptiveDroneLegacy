@@ -420,12 +420,8 @@ class TelemetryManagerUAV(TelemetryManager):
 
     def publish_telemetry(self):
         update_telemetry(self.telemetry, self.vehicle)
-        # if hasattr(self, 'additional_telemetry') and 'estimation_and_ref' in self.additional_telemetry:
-        #     self._add_estimation_to_telemetry(self.telemetry)
-        # if hasattr(self, 'additional_telemetry') and 'reference' in self.additional_telemetry:
-        #     self._add_control_to_telemetry(self.telemetry)
-        # if hasattr(self, 'additional_telemetry') and 'output_and_throttle' in self.additional_telemetry:
-        #     self._add_output_to_telemetry(self.telemetry)
+        if hasattr(self, 'additional_telemetry') and 'estimation_and_ref' in self.additional_telemetry:
+            self._add_estimation_to_telemetry(self.telemetry)
         if self.data_writer is not None:
             self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
         available_telemetry = self.telemetry.keys()
@@ -469,6 +465,22 @@ class TelemetryManagerUAV(TelemetryManager):
             self.data_writer.filename = filename
             self.data_writer.writing_event.set()
             print("TELEM_MANAGER: REQUESTED WRITING DATA TO FILE {}".format(filename))
+
+    def _add_estimation_to_telemetry(self, telemetry):
+        sigma_hat = self.db_interface.adaptive_interface_state['sigma_hat']
+        u_l1 = self.db_interface.adaptive_interface_state['u_l1']
+        ref = self.db_interface.adaptive_interface_state['ref']
+        u_output = self.db_interface.adaptive_interface_state['u_output']
+        if sigma_hat is not None:
+            telemetry['sigma_hat'] = sigma_hat
+        if u_l1 is not None:
+            telemetry['u_l1'] = u_l1
+        if ref is not None:
+            telemetry['u'] = ref
+        if u_output is not None:
+            telemetry['u_output'] = u_output
+        self.telemetry = telemetry
+        return self.telemetry
 
     def run(self):
         if self.send_telemetry:
