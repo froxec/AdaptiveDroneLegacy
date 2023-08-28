@@ -6,6 +6,10 @@ import numpy as np
 # OPC SERVER
 OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
 
+# Drone addresses
+SIM_IP = "localhost:8000"
+REAL_DRONE_IP = "/dev/ttyAMA1"
+
 # REDIS DATABASE
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = 6379

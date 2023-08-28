@@ -4,6 +4,7 @@ from Factories.CommunicationFactory.Telemetry.subscriptions import UAV_TELEMETRY
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
 from dronekit import connect
+from Multiprocessing.PARAMS import SIM_IP, REAL_DRONE_IP
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     DELTA_T = 1/FREQUENCY
 
     # connect to drone
-    drone_addr = "localhost:8000"
+    drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=100)
     print("Connection established!")
