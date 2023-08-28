@@ -5,6 +5,7 @@ from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
 from Multiprocessing.PARAMS import DATA_FREQ, SIM_IP, REAL_DRONE_IP
 from dronekit import connect
+from Multiprocessing.PARAMS import SIM_IP, REAL_DRONE_IP
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer

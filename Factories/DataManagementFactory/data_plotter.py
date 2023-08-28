@@ -47,7 +47,7 @@ class DataPlotter():
         self._plotting_3rows(column_names)
 
     def plot_sigma(self):
-        column_names = ['SIGMA:X', 'SIGMA:Y', 'SIGMA:Z']
+        column_names = ['sigma_hat:X', 'sigma_hat:Y', 'sigma_hat:Z']
         self._plotting_3rows(column_names)
 
     def plot_u_ref(self):
@@ -68,19 +68,22 @@ class DataPlotter():
         fig.show()
 if __name__ == "__main__":
     import os
-    TEST_NAME = 'TEST3.csv'
-    cwd = os.getcwd()
-    dir = os.listdir()
-    candidates = []
-    for i in range(len(dir)):
-        name = dir[i].split("_")[1]
-        if name == TEST_NAME:
-            candidates.append(dir[i])
-    print(candidates)
-    path = candidates[0]
+    TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
+    path = 'data.csv'
+    # cwd = os.getcwd()
+    # dir = os.listdir()
+    # candidates = []
+    # for i in range(len(dir)):
+    #     print(dir[i])
+    #     name = dir[i].split("_")[1]
+    #     if name == TEST_NAME:
+    #         candidates.append(dir[i])
+    # print(candidates)
+    # path = candidates[0]
     print(os.listdir(os.getcwd()))
     data_plotter = DataPlotter(path)
-    data_plotter.plot_position_local()
-    data_plotter.plot_output_control()
+    # data_plotter.plot_position_local()
+    # data_plotter.plot_output_control()
     data_plotter.plot_u_l1()
-    data_plotter.plot_u_ref()
+    # data_plotter.plot_u_ref()
+    #data_plotter.plot_sigma()
