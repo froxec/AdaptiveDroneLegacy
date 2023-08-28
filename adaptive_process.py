@@ -1,4 +1,4 @@
-from process_interfaces import Adaptive_Interface
+from Multiprocessing.process_interfaces  import Adaptive_Interface
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, BANDWIDTHS, As, ANGULAR_VELOCITY_RANGE, \
     TRAJECTORY, PREDICTOR_PARAMETERS, MIN_ATTITUDE
 from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain

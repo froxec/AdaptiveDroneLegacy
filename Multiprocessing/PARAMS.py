@@ -7,6 +7,10 @@ import numpy as np
 OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
 DATA_FREQ = 10
 
+# Drone addresses
+SIM_IP = 'udp:192.168.0.27:8500'
+REAL_DRONE_IP = '/dev/ttyAMA1'
+
 # REDIS DATABASE
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = 6379
@@ -25,7 +29,7 @@ PREDICTOR_PARAMETERS = Z550_parameters
 PREDICTOR_PARAMETERS['m'] = 0.6
 
 # ADAPTIVE_PARAMETERS:
-As = np.diag([-15, -15, -15])
+As = np.diag([-15, -15, -0.1])
 BANDWIDTHS = [0.5, 0.2, 0.2]
 
 # CONTROLERS

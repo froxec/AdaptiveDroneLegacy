@@ -3,27 +3,35 @@ from Factories.CommunicationFactory.Telemetry.telemetry_manager import Telemetry
 from Factories.CommunicationFactory.Telemetry.subscriptions import UAV_TELEMETRY_AGENT_SUBS, UAV_COMMAND_AGENT_SUBS
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
+from Multiprocessing.PARAMS import DATA_FREQ, SIM_IP, REAL_DRONE_IP
 from dronekit import connect
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
+from gpiozero import Buzzer
+from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
 
 if __name__ == "__main__":
+    # init Buzzer
+    buzzer = Buzzer(23)
+    startup_signal(buzzer)
+
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
-
+    time.sleep(20)
     # connect to drone
-    drone_addr = 'udp:192.168.0.27:8500'
+    drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-
+    vehicle_connected_signal(buzzer)
+    
     # init db interface
     db_interface = Supervisor_Interface(vehicle)
 
     # setup data writer
-    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs/')
+    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pi/AdaptiveDrone/logs/')
 
     # setup telemetry managers
     tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyS0',

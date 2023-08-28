@@ -6,7 +6,7 @@ from Factories.ControllersFactory.position_controllers.position_controller impor
 from Factories.ConfigurationsFactory.configurations import CustomMPCConfig
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
 from Factories.DataManagementFactory.data_holders import DataHolder
-from process_interfaces import MPC_Interface
+from  Multiprocessing.process_interfaces import MPC_Interface
 from oclock import Timer
 import redis
 
