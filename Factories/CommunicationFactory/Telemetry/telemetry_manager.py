@@ -407,16 +407,16 @@ class TelemetryManagerUAV(TelemetryManager):
             elif data == 0:
                 print("TELEM_MANAGER: ADAPTIVE_CONTROLLER OFF")
                 self.db_interface.telemetry_manager_state['adaptive_running'] = False
+        if comm_split[0] == 'ESTIMATOR':
+            if data == 1:
+                print("TELEM_MANAGER: ESTIMATOR ON")
+                self.db_interface.telemetry_manager_state['estimator_running'] = True
+            elif data == 0:
+                print("TELEM_MANAGER: ESTIMATOR OFF")
+                self.db_interface.telemetry_manager_state['estimator_running'] = False
 
         # update db
         self.db_interface.update_telemetry_manager_db()
-        # if comm_split[0] == 'ESTIMATOR':
-        #     if data == 1:
-        #         print("TELEM_MANAGER: ESTIMATOR ON")
-        #         self.control_supervisor.estimation_on = True
-        #     elif data == 0:
-        #         print("TELEM_MANAGER: ESTIMATOR OFF")
-        #         self.control_supervisor.estimation_on = False
 
     def publish_telemetry(self):
         update_telemetry(self.telemetry, self.vehicle)

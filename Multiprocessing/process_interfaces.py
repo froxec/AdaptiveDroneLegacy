@@ -29,6 +29,7 @@ adaptive_proxy_definition = {
 telemetry_manager_proxy_definition = {
     'adaptive_running': False,
     'mpc_running': False,
+    'estimator_running': False,
     'setpoint': None,
 }
 
@@ -83,6 +84,9 @@ class Interface:
     def is_adaptive_running(self):
         return self.telemetry_manager_state['adaptive_running']
 
+    def is_estimator_running(self):
+        return self.telemetry_manager_state['estimator_running']
+
     def is_vehicle_armed(self):
         return self.drone_state['armed']
 
@@ -95,7 +99,8 @@ class MPC_Interface(Interface):
     def __init__(self, position_controller):
         Interface.__init__(self)
         self.pubsub = self.redis_database.pubsub()
-        self.pubsub.subscribe(**{"setpoint_change": self.setpoint_change_callback})
+        self.pubsub.subscribe(**{"setpoint_change": self.setpoint_change_callback,
+                                 'parameters_change': self.parameters_change_callback})
 
         # get access to position controller for setpoint callback
         self.position_controller = position_controller
@@ -147,7 +152,8 @@ class Adaptive_Interface(Interface):
                  prediction_model):
         Interface.__init__(self)
         self.pubsub = self.redis_database.pubsub()
-        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback})
+        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback,
+                                 'parameters_change': self.parameters_change_callback})
         #get converters representations
         self.input_converter = input_converter
         self.output_converter = output_converter
@@ -253,6 +259,11 @@ class Estimator_Interface(Interface):
     def update_parameters(self, parameters):
         parameters['I'] = list(parameters['I'])
         self.estimator_interface_state['parameters'] = parameters
+        self.publish_parameters(parameters)
+    def publish_parameters(self, parameters):
+        parameters = json.dumps({"parameters": parameters})
+        self.redis_database.publish('parameters_change', parameters)
+
     def get_u_output(self):
         u_output = self.adaptive_interface_state['u_output']
         return np.array(u_output)

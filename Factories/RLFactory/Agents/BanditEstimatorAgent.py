@@ -335,6 +335,21 @@ class BanditEstimatorAcceleration:
         parameters['m'] = self.convergence_checker.average
         return parameters
 
+    def reset(self):
+        # reset gp
+        self.gp.reset()
+        # reset convergence checker
+        self.convergence_checker.reset()
+        # reset parameters holders
+        self.nominal_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
+        self.estimated_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
+        #flags reset
+        self.converged = False
+        self.parameters_changed = False
+        self.i = 0
+        self.current_step = 0
+        self.process_finished = False
+
     def plot_history(self, signal_name):
         fig = go.Figure()
         data = self.memory[signal_name]

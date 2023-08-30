@@ -31,3 +31,9 @@ class ConvergenceChecker:
         else:
             return False
 
+    def reset(self):
+        self.average = None
+        self.deque = deque(maxlen=self.n)
+        self.counter = None
+
+
