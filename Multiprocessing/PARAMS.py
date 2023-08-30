@@ -31,5 +31,14 @@ PREDICTOR_PARAMETERS['m'] = 0.6
 As = np.diag([-15, -15, -15])
 BANDWIDTHS = [0.5, 0.2, 0.2]
 
+# ESTIMATOR PARAMETERS
+SAMPLING_FREQ = 100
+MASS_MIN, MASS_MAX = (0.2, 2.0)
+domain = (MASS_MIN, MASS_MAX)
+samples_num = 100
+X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
+CONVERGENCE_SAMPLES_REQUIRED = 30
+CONVERGENCE_EPSILON_NEIGHBOURHOOD = 0.05
+
 # CONTROLERS
 MIN_ATTITUDE = 2.5

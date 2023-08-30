@@ -8,6 +8,7 @@ from Factories.GaussianProcessFactory.gaussian_process import *
 from Factories.ToolsFactory.GeneralTools import RollBuffers
 from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function, euclidean_distance
 from Factories.DataManagementFactory.data_managers import ParametersManager
+from Factories.DataManagementFactory.data_holders import DataHolder
 from typing import Type
 import plotly.graph_objects as go
 from threading import Thread
@@ -420,6 +421,39 @@ class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
     def get_data(self):
         self.data_set_event.wait()
         return self.data['measurement'], self.data['force'], self.data['angles']
+
+class BanditEstimatorAccelerationProcess(BanditEstimatorAcceleration):
+    def __init__(self,
+                 db_interface,
+                 prediction_model,
+                 gp: Type[EfficientGaussianProcess],
+                 convergence_checker,
+                 sleeptime=1,
+                 mode = 'ACCELERATION',
+                 pen_moving_window=None,
+                 actions_moving_window=None,
+                 variance_threshold=0.2,
+                 epsilon_episode_steps=0,
+                 max_steps=np.Inf,
+                 testing_mode=False,
+                 save_images=False):
+        BanditEstimatorAcceleration.__init__(self,
+                                             None,
+                                             prediction_model,
+                                             gp,
+                                             convergence_checker,
+                                             sleeptime,
+                                             mode,
+                                             pen_moving_window,
+                                             actions_moving_window,
+                                             variance_threshold,
+                                             epsilon_episode_steps,
+                                             max_steps,
+                                             testing_mode,
+                                             save_images)
+        self.db_interface = db_interface
+    def update_parameters(self, parameters):
+        self.db_interface.update_parameters(parameters)
 
 if __name__ == "__main__":
     import plotly.express as px

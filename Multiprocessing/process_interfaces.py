@@ -5,6 +5,7 @@ from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import Sin
 from QuadcopterIntegration.Utilities import dronekit_commands
 import numpy as np
 from copy import deepcopy
+import pickle
 
 drone_proxy_definition = {
     'x': None,
@@ -29,32 +30,72 @@ telemetry_manager_proxy_definition = {
     'mpc_running': False,
     'setpoint': None,
 }
-class MPC_Interface:
-    def __init__(self, position_controller):
+
+estimator_proxy_definition = {
+    'parameters': None
+}
+
+class Interface:
+    def __init__(self):
         self.mpc_interface_state = deepcopy(mpc_proxy_defintion)
         self.drone_state = deepcopy(drone_proxy_definition)
         self.telemetry_manager_state = deepcopy(telemetry_manager_proxy_definition)
-        self.redis_database = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=DB_NUM)
+        self.adaptive_interface_state = adaptive_proxy_definition
+        self.estimator_interface_state = estimator_proxy_definition
+        self.redis_database = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=DB_NUM)\
+
+    def update_db(self):
+        raise NotImplementedError
+
+    def fetch_db(self):
+        # get mpc state
+        mpc_state_packed = self.redis_database.get("mpc_state")
+        if mpc_state_packed is not None:
+            self.mpc_interface_state = json.loads(mpc_state_packed.decode("utf-8"))
+        # get drone state
+        drone_state_packed = self.redis_database.get("drone_state")
+        if drone_state_packed is not None:
+            self.drone_state = json.loads(drone_state_packed.decode("utf-8"))
+        # get telemetry manager state
+        telemetry_manager_state_packed = self.redis_database.get("telemetry_manager_state")
+        if telemetry_manager_state_packed is not None:
+            self.telemetry_manager_state = json.loads(telemetry_manager_state_packed.decode("utf-8"))
+        # get adaptive state
+        adaptive_state_packed = self.redis_database.get("adaptive_state")
+        if adaptive_state_packed is not None:
+            self.adaptive_interface_state = json.loads(adaptive_state_packed.decode("utf-8"))
+        # get estimator state
+        estimator_state_packed = self.redis_database.get("estimator_state")
+        if estimator_state_packed is not None:
+            self.estimator_interface_state = json.loads(estimator_state_packed.decode("utf-8"))
+
+    def get_drone_state(self):
+        x = self.drone_state['x']
+        return np.array(x)
+
+    def is_mpc_running(self):
+        return self.telemetry_manager_state['mpc_running']
+
+    def is_adaptive_running(self):
+        return self.telemetry_manager_state['adaptive_running']
+
+    def is_vehicle_armed(self):
+        return self.drone_state['armed']
+
+
+
+class MPC_Interface(Interface):
+    def __init__(self, position_controller):
+        Interface.__init__(self)
         self.pubsub = self.redis_database.pubsub()
-        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback})
+        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback,
+                                 'estimator_state': self.parameters_change_callback})
 
         # get access to position controller for setpoint callback
         self.position_controller = position_controller
     def update_db(self):
         self.redis_database.set("mpc_state", json.dumps(self.mpc_interface_state))
 
-    def fetch_db(self):
-        drone_state_packed = self.redis_database.get("drone_state")
-        if drone_state_packed is not None:
-            self.drone_state = json.loads(drone_state_packed.decode("utf-8"))
-        telemetry_manager_state_packed = self.redis_database.get("telemetry_manager_state")
-        if telemetry_manager_state_packed is not None:
-            self.telemetry_manager_state = json.loads(telemetry_manager_state_packed.decode("utf-8"))
-        self.pubsub.get_message()
-
-    def get_drone_state(self):
-        x = self.drone_state['x']
-        return np.array(x)
 
     def get_previous_control(self):
         u_prev = self.mpc_interface_state['ref']
@@ -68,13 +109,6 @@ class MPC_Interface:
         if not None in setpoint:
             setpoint = list(setpoint.flatten())
             self.mpc_interface_state['current_setpoint'] = setpoint
-
-    def is_mpc_running(self):
-        return self.telemetry_manager_state['mpc_running']
-
-    def is_vehicle_armed(self):
-        return self.drone_state['armed']
-
     def reset_state(self):
         self.mpc_interface_state = deepcopy(mpc_proxy_defintion)
 
@@ -86,39 +120,36 @@ class MPC_Interface:
             print("MPC interface: setpoint change", setpoint)
             self.position_controller.change_trajectory(SinglePoint(setpoint))
             self.mpc_interface_state['current_setpoint'] = setpoint
-class Adaptive_Interface:
+
+    def parameters_change_callback(self, message):
+        data = message['data']
+        parameters_dict = json.loads(data.decode("utf-8"))
+        parameters = parameters_dict['parameters']
+        if None not in parameters:
+            print("MPC interface: parameters change", parameters)
+            parameters_holder = self.position_controller.input_converter.parameters_holder
+            for key in parameters.keys():
+                parameters_holder.__setattr__(key, parameters[key])
+            self.position_controller.controller.model.update_parameters()
+            self.position_controller.output_converter.update()
+            self.position_controller.input_converter.update(update_u_ss=True)
+
+class Adaptive_Interface(Interface):
     def __init__(self,
                  input_converter,
-                 output_converter):
-        self.mpc_interface_state = deepcopy(mpc_proxy_defintion)
-        self.drone_state = deepcopy(drone_proxy_definition)
-        self.adaptive_interface_state = deepcopy(adaptive_proxy_definition)
-        self.telemetry_manager_state = deepcopy(telemetry_manager_proxy_definition)
-        self.redis_database = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=DB_NUM)
+                 output_converter,
+                 prediction_model):
+        Interface.__init__(self)
         self.pubsub = self.redis_database.pubsub()
-        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback})
+        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback,
+                                 'estimator_state': self.parameters_change_callback})
         #get converters representations
         self.input_converter = input_converter
         self.output_converter = output_converter
+        self.prediction_model = prediction_model
 
     def update_db(self):
         self.redis_database.set("adaptive_state", json.dumps(self.adaptive_interface_state))
-
-    def fetch_db(self):
-        drone_state_packed = self.redis_database.get("drone_state")
-        if drone_state_packed is not None:
-            self.drone_state = json.loads(drone_state_packed.decode("utf-8"))
-        mpc_state_packed = self.redis_database.get("mpc_state")
-        if mpc_state_packed is not None:
-            self.mpc_interface_state = json.loads(mpc_state_packed.decode("utf-8"))
-        telemetry_manager_state_packed = self.redis_database.get("telemetry_manager_state")
-        if telemetry_manager_state_packed is not None:
-            self.telemetry_manager_state = json.loads(telemetry_manager_state_packed.decode("utf-8"))
-        self.pubsub.get_message()
-
-    def get_drone_state(self):
-        x = self.drone_state['x']
-        return np.array(x)
 
     def set_control(self, u):
         u = list(u)
@@ -127,12 +158,6 @@ class Adaptive_Interface:
     def get_ref(self):
         ref = np.array(self.mpc_interface_state['ref'])
         return ref
-
-    def is_adaptive_running(self):
-        return self.telemetry_manager_state['adaptive_running']
-
-    def is_vehicle_armed(self):
-        return self.drone_state['armed']
 
     def get_current_setpoint(self):
         current_setpoint = np.array(self.mpc_interface_state['current_setpoint'])
@@ -164,23 +189,32 @@ class Adaptive_Interface:
         if None not in setpoint:
             print("Adaptive interface: setpoint change", setpoint)
             self.input_converter.update(x_ss=np.array(setpoint))
+    def parameters_change_callback(self, message):
+        data = message['data']
+        parameters_dict = json.loads(data.decode("utf-8"))
+        parameters = parameters_dict['parameters']
+        if None not in parameters:
+            print("Adaptive interface: parameters change", parameters)
+            parameters_holder = self.input_converter.parameters_holder
+            for key in parameters.keys():
+                parameters_holder.__setattr__(key, parameters[key])
+            self.prediction_model.update_parameters()
+            self.output_converter.update()
+            self.input_converter.update(update_u_ss=True)
 
-class Supervisor_Interface:
+class Supervisor_Interface(Interface):
     def __init__(self, vehicle):
-        self.mpc_interface_state = deepcopy(mpc_proxy_defintion)
-        self.drone_state = deepcopy(drone_proxy_definition)
-        self.adaptive_interface_state = deepcopy(adaptive_proxy_definition)
-        self.telemetry_manager_state = deepcopy(telemetry_manager_proxy_definition)
-        self.redis_database = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=DB_NUM)
+        Interface.__init__(self)
         self.redis_database.flushdb()
         self._init_db()
         self.vehicle = vehicle
 
     def _init_db(self):
         self.redis_database.set("drone_state", json.dumps(self.drone_state))
-        self.redis_database.set("mpc_interface_state", json.dumps(self.mpc_interface_state))
-        self.redis_database.set("adaptive_interface_state", json.dumps(self.adaptive_interface_state))
+        self.redis_database.set("mpc_state", json.dumps(self.mpc_interface_state))
+        self.redis_database.set("adaptive_state", json.dumps(self.adaptive_interface_state))
         self.redis_database.set("telemetry_manager_state", json.dumps(self.telemetry_manager_state))
+        self.redis_database.set("estimator_state", json.dumps(self.estimator_interface_state))
     def update_db(self):
         self.drone_state['armed'] = self.vehicle.armed
         self.redis_database.set("drone_state", json.dumps(self.drone_state))
@@ -192,17 +226,6 @@ class Supervisor_Interface:
         setpoint = json.dumps({"setpoint": setpoint})
         self.redis_database.publish('setpoint_change', setpoint)
 
-    def fetch_db(self):
-        adaptive_state_packed = self.redis_database.get("adaptive_state")
-        if adaptive_state_packed is not None:
-            self.adaptive_interface_state = json.loads(adaptive_state_packed.decode("utf-8"))
-        mpc_state_packed = self.redis_database.get("mpc_state")
-        if mpc_state_packed is not None:
-            self.mpc_interface_state = json.loads(mpc_state_packed.decode("utf-8"))
-        telemetry_manager_state_packed = self.redis_database.get("telemetry_manager_state")
-        if telemetry_manager_state_packed is not None:
-            self.telemetry_manager_state = json.loads(telemetry_manager_state_packed.decode("utf-8"))
-
     def set_drone_state(self):
         x = dronekit_commands.get_state(self.vehicle)
         self.drone_state['x'] = x
@@ -211,6 +234,17 @@ class Supervisor_Interface:
         u = self.adaptive_interface_state['u']
         return u
 
-
     def reset(self):
         self.drone_state = deepcopy(drone_proxy_definition)
+
+class Estimator_Interface(Interface):
+    def __init__(self):
+        Interface.__init__(self)
+    def update_db(self):
+        self.redis_database.set("estimator_state", json.dumps(self.estimator_interface_state))
+    def update_parameters(self, parameters):
+        parameters['I'] = list(parameters['I'])
+        self.estimator_interface_state['parameters'] = parameters
+    def get_u_output(self):
+        u_output = self.adaptive_interface_state['u_output']
+        return np.array(u_output)

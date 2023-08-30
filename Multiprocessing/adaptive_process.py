@@ -37,10 +37,13 @@ if __name__ == "__main__":
     parameters_holder = DataHolder(PREDICTOR_PARAMETERS)
     output_converter = MPC_output_converter(parameters_holder, ANGULAR_VELOCITY_RANGE)
     input_converter = MPC_input_converter(x_ss, parameters_holder)
+    # init model
+    uncertain_model = LinearQuadUncertain(parameters_holder)
 
     # init redis interface
     db_interface = Adaptive_Interface(input_converter=input_converter,
-                                      output_converter=output_converter)
+                                      output_converter=output_converter,
+                                      prediction_model=uncertain_model)
 
     # flush db on startup
     db_interface.redis_database.flushdb()
@@ -54,7 +57,6 @@ if __name__ == "__main__":
         x0 = np.zeros(6)
     z0 = x0[3:6]
     u0 = np.zeros(3)
-    uncertain_model = LinearQuadUncertain(parameters_holder)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / FREQ, As)
     l1_filter = L1_LowPass(bandwidths=BANDWIDTHS, fs=FREQ, signals_num=z0.shape[0], no_filtering=False)

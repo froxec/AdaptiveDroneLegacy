@@ -69,7 +69,7 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    path = 'data.csv'
+    path = 'test1_field.csv'
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []
@@ -82,8 +82,9 @@ if __name__ == "__main__":
     # path = candidates[0]
     print(os.listdir(os.getcwd()))
     data_plotter = DataPlotter(path)
-    # data_plotter.plot_position_local()
-    # data_plotter.plot_output_control()
+    data_plotter.plot_position_local()
+    data_plotter.plot_output_control()
     data_plotter.plot_u_l1()
-    # data_plotter.plot_u_ref()
-    #data_plotter.plot_sigma()
+    data_plotter.plot_u_ref()
+    data_plotter.plot_sigma()
+    data_plotter.plot_attitude()
