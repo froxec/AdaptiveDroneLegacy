@@ -19,8 +19,8 @@ class ConstrainedMPC:
                            'upper': np.array([1000, np.pi/6, np.pi/6])},
                  delta_x_bounds={'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
                                    'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
-                 delta_u_bounds = {'lower': np.array([-1, -np.pi/24, -np.pi/24]),
-                                   'upper': np.array([1, np.pi/24,np.pi/24])},
+                 delta_u_bounds = {'lower': np.array([-3, -np.pi/12, -np.pi/12]),
+                                   'upper': np.array([3, np.pi/12,np.pi/12])},
                  soft_constraints=True):
         self.model = model
         self.freq = freq
@@ -69,7 +69,7 @@ class ConstrainedMPC:
         else:
             self.H, self.f = self.calculate_cost_matrices(self.Q, self.P)
         self.calculacte_nonequality_constraints()
-        self.calculate_equality_constraints()  # might be calculated only on parameters change
+        self.calculate_equality_constraints() # might be calculated only on parameters change
         self.G, self.h = self._add_boundaries(self.G, self.h)
     def calculate_cost_matrices(self, Q, R, P=None):
         top_right = np.zeros((Q.shape[0], R.shape[1]))

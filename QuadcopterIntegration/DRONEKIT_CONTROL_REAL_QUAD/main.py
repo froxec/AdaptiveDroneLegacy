@@ -1,6 +1,3 @@
-import os
-import time
-
 from Factories.ModelsFactory.model_parameters import arducopter_parameters, Z550_parameters
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint, SpiralTrajectory
 from Factories.ModelsFactory.linear_models import AugmentedLinearizedQuadNoYaw, LinearizedQuadNoYaw, LinearTranslationalMotionDynamics
@@ -26,13 +23,11 @@ from Factories.ModelsFactory.models_for_estimation import NonlinearTranslational
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorThread
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
 from Factories.CommunicationFactory.Telemetry.subscriptions import *
-from Factories.DataManagementFactory.data_writer import DataWriterThread
-from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
-from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
 
+import dronekit
+import serial
 import argparse
 import numpy as np
-from gpiozero import Buzzer
 
 def mpc_command_convert(u, thrust_min, thrust_max):
     thrust = u[0]
@@ -52,39 +47,30 @@ def run_controller(controller, x=None):
         u = controller(x)
         return u
 
-#RUN_MAVLINK_LOGS?
-RUN_MAVLINK_LOGS = True
-#DRONE ADDR
-DRONE_ADDR = "localhost:8000"
+
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
 USE_ADAPTIVE = True
 USE_ESTIMATOR = True
 ESTIMATOR_MODE = 'VELOCITY_CONTROL'  #only available
-ADAPTIVE_FREQ = 50
+ADAPTIVE_FREQ = 100
 MPC_MODE = MPCModes.CONSTRAINED
-HORIZON = 10
-OUTER_LOOP_FREQ = 20
-QUAD_NOMINAL_MASS = Z550_parameters['m']
-SIM_IP = 'udp:192.168.0.27:8500'
-REAL_QUAD_IP = '/dev/ttyAMA1'
-IP = SIM_IP
-trajectory = SinglePoint([0, 0, 5])
-Z550_parameters['m'] = 0.6
+HORIZON = 20
+QUAD_NOMINAL_MASS = 0.7
+SIM_IP = '/dev/ttyAMA1'
+
+trajectory = SinglePoint([0, 50, 10])
+Z550_parameters['m'] = QUAD_NOMINAL_MASS
 parameters = Z550_parameters
 
-buzzer = Buzzer(23)
-
 if __name__ == "__main__":
-    #startup_signal(buzzer)
     parser = argparse.ArgumentParser()
-    parser.add_argument('--connect', default=IP)
+    parser.add_argument('--connect', default=SIM_IP)
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=921600, wait_ready=True, rate=100)
-    vehicle_connected_signal(buzzer)
-    
+
     ## parameters holder
     parameters_holder = DataHolder(parameters)
 
@@ -94,14 +80,14 @@ if __name__ == "__main__":
     if MODEL == 1:
         prediction_model = LinearTranslationalMotionDynamics(parameters_holder, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE, MPC_IMPLEMENTATION='SPARSE')
+                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE)
     controller_conf.position_controller.switch_modes(MPC_MODE)
     x0 = np.array(dronekit_commands.get_state(vehicle))
     ## adaptive controller
     z0 = x0[3:6]
     if MODEL == 0:
         As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [0.2, 0.1, 0.1]
+        bandwidths = [0.1, 0.1, 0.1]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -115,23 +101,23 @@ if __name__ == "__main__":
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / ADAPTIVE_FREQ, As)
     l1_filter = L1_LowPass(bandwidths=bandwidths, fs=ADAPTIVE_FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
-    # l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
-    #                                    upper_bounds=[3*parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
+    l1_saturator = L1_ControlSaturator(lower_bounds=[-parameters_holder.m*parameters_holder.g, -np.pi / 5, -np.pi / 5],
+                                       upper_bounds=[3*parameters_holder.m*parameters_holder.g, np.pi / 5, np.pi / 5])
     if USE_ADAPTIVE:
-        adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, saturator=None)
+        adaptive_controller = L1_AugmentationThread(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, l1_saturator)
     else:
         adaptive_controller = None
 
     ramp_saturation_slope = {'lower_bound': np.array([-np.Inf, -0.78, -0.78]),
                              'upper_bound': np.array([np.Inf, 0.78, 0.78])}
-    # ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
-    #                                             output_saturation=l1_saturator)
+    ramp_saturation = RampSaturationWithManager(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ,
+                                                output_saturation=l1_saturator)
     #ramp_saturation = RampSaturation(slope=ramp_saturation_slope, Ts=1 / OUTER_LOOP_FREQ)
     position_controller = PositionControllerThread(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
                                                    controller_conf.position_controller_output_converter,
                                                    trajectory,
-                                                   ramp_saturation=None)
+                                                   ramp_saturation=ramp_saturation)
 
     ## parameters manager
     parameters_manager = ParametersManager(parameters_holder=parameters_holder,
@@ -169,8 +155,6 @@ if __name__ == "__main__":
                                            adaptive_controller,
                                            estimator_agent)
 
-    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pi/AdaptiveDrone/logs/')
-
     ## telemetry manager
     tm = TelemetryManagerThreadUAV(serialport='/dev/ttyS0',
                                    baudrate=115200,
@@ -179,8 +163,7 @@ if __name__ == "__main__":
                                    position_controller=position_controller,
                                    control_supervisor=control_supervisor,
                                    adaptive_augmentation=adaptive_controller,
-                                   data_writer=data_writer,
-                                   subscribed_comms='ALL', #subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
+                                   subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
                                    lora_address=2,
                                    lora_freq=868,
                                    remote_lora_address=40,
@@ -193,7 +176,6 @@ if __name__ == "__main__":
                                             position_controller=position_controller,
                                             control_supervisor=control_supervisor,
                                             adaptive_augmentation=adaptive_controller,
-                                            data_writer=data_writer,
                                             subscribed_comms=UAV_COMMAND_AGENT_SUBS,
                                             send_telemetry=False,
                                             lora_address=1,
@@ -210,12 +192,8 @@ if __name__ == "__main__":
     # print("Take off complete")
     while True:
         tm.update()
-        if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 2.5:
+        if vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 5.0:
             control_supervisor.supervise()
         else:
             ("Waiting for drone to reach required attitude.")
-        if data_writer.writing_event.is_set():
-            if tm.telemetry is not None:
-                data_writer.data = tm.telemetry
-                data_writer.data_set.set()
-        time.sleep(1/ ADAPTIVE_FREQ)# this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT
+        time.sleep(1/ADAPTIVE_FREQ)# this sleep guarantees that other threads are not blocked by the main thread !!IMPORTANT

@@ -10,6 +10,7 @@ import pickle
 drone_proxy_definition = {
     'x': None,
     'armed': False,
+    'vehicle_mode': None
 }
 
 mpc_proxy_defintion = {
@@ -81,6 +82,9 @@ class Interface:
 
     def is_vehicle_armed(self):
         return self.drone_state['armed']
+
+    def get_vehicle_mode(self):
+        return self.drone_state['vehicle_mode']
 
 
 
@@ -216,6 +220,7 @@ class Supervisor_Interface(Interface):
         self.redis_database.set("telemetry_manager_state", json.dumps(self.telemetry_manager_state))
         self.redis_database.set("estimator_state", json.dumps(self.estimator_interface_state))
     def update_db(self):
+        self.set_vehicle_mode()
         self.drone_state['armed'] = self.vehicle.armed
         self.redis_database.set("drone_state", json.dumps(self.drone_state))
 

@@ -37,11 +37,17 @@ class L1_Augmentation:
         self.lp_filter.u_l1 = u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
+        print("U_l1", u_l1)
+        print("U_composite", u_composite)
         self._time += self.predictor.Ts
         self.adaptation_history['time'].append(time)
         self.adaptation_history['sigma_hat'].append(list(sigma_hat.flatten()))
         self.adaptation_history['u_l1'].append(list(u_l1.flatten()))
         return u_composite
+
+    def reset(self):
+        self.lp_filter.u_l1 = np.zeros(self.lp_filter.signals_num)
+        self.adaptive_law.sigma_hat = np.zeros(3)
 
     def plot_history(self, signal_name):
         if signal_name not in self.adaptation_history.keys():
@@ -77,6 +83,7 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
         start = time.time()
         while True:
             dt = time.time() - start
+            #print(dt)
             start = time.time()
             self._restart_watchdog()
             z, z_prev, u, u_prev, t = self._get_data()
@@ -126,7 +133,7 @@ class L1_AugmentationThread(L1_Augmentation, Thread):
             u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
-        print("Sigma hat", sigma_hat)
+        #print("Sigma hat", sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
         if self.saturator is not None:
             u_composite, u_l1 = self.saturator(u, u_l1)

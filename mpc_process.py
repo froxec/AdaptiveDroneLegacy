@@ -6,7 +6,7 @@ from Factories.ControllersFactory.position_controllers.position_controller impor
 from Factories.ConfigurationsFactory.configurations import CustomMPCConfig
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
 from Factories.DataManagementFactory.data_holders import DataHolder
-from process_interfaces import MPC_Interface
+from  Multiprocessing.process_interfaces import MPC_Interface
 from oclock import Timer
 import redis
 
@@ -44,26 +44,24 @@ if __name__ == "__main__":
 
     while True:
         # get current drone state from db
-        t1 = time.time()
         db_interface.fetch_db()
         # get current state
         x = db_interface.get_drone_state()
-
         # compute control
         if (x is not None
                 and db_interface.is_mpc_running()
                 and db_interface.is_vehicle_armed()
+                and db_interface.get_vehicle_mode() == 'GUIDED'
                 and x[2] > MIN_ATTITUDE):
             u = position_controller(x, u_prev, convert_throttle=False)
             # update control
             db_interface.set_control(u)
             # save previous control
             u_prev = u
+            print(u)
         # update current setpoint info
         db_interface.update_setpoint(position_controller.setpoint)
         # update mpc state
         db_interface.update_db()
-
         # watchdog
         timer.checkpt()
-        print(time.time() - t1)

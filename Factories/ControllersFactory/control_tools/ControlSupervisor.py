@@ -33,7 +33,7 @@ class ControlSupervisor:
         self.position_controller_on = False
         self.adaptive_controller_on = False
         self.estimation_on = False
-        self.velocity_filter = LowPassLiveFilter([5, 5, 5], fs=100, signals_num=3)
+        self.velocity_filter = LowPassLiveFilter([0.5, 0.5, 0.5], fs=100, signals_num=3)
 
     def __call__(self):
         return self.supervise()

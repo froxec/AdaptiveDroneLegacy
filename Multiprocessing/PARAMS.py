@@ -5,10 +5,11 @@ import numpy as np
 
 # OPC SERVER
 OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
+DATA_FREQ = 10
 
 # Drone addresses
-SIM_IP = "localhost:8000"
-REAL_DRONE_IP = "/dev/ttyAMA1"
+SIM_IP = 'udp:192.168.0.27:8500'
+REAL_DRONE_IP = '/dev/ttyAMA1'
 
 # REDIS DATABASE
 REDIS_HOST = "127.0.0.1"
@@ -23,13 +24,13 @@ PWM_RANGE = [1120, 1920]
 # MPC PARAMES
 HORIZON = 10
 MPC_MODE = MPCModes.CONSTRAINED
-TRAJECTORY = SinglePoint([0, 0, 10])
+TRAJECTORY = SinglePoint([0, 0, 3])
 PREDICTOR_PARAMETERS = Z550_parameters
-PREDICTOR_PARAMETERS['m'] = 0.6
+
 
 # ADAPTIVE_PARAMETERS:
-As = np.diag([-15, -15, -15])
-BANDWIDTHS = [0.5, 0.2, 0.2]
+As = np.diag([-15, -15, -0.1])
+BANDWIDTHS = [0.4, 0.2, 0.2]
 
 # ESTIMATOR PARAMETERS
 SAMPLING_FREQ = 100

@@ -10,8 +10,7 @@ from Factories.ControllersFactory.position_controllers.mpc_parameters import MPC
 from plotly.subplots import make_subplots
 from typing import Any, Type
 import plotly.graph_objects as go
-
-
+import qpsolvers 
 
 class ModelPredictiveControl():
     def __init__(self,
