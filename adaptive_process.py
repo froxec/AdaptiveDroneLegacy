@@ -67,6 +67,9 @@ if __name__ == "__main__":
 
     while True:
         t1 = time.time()
+        # reset control
+        u_output = np.array([None])
+
         # fetch db
         db_interface.fetch_db()
         # check if adaptive controller is running
@@ -77,6 +80,8 @@ if __name__ == "__main__":
             if (None not in ref
                     and None not in x
                     and db_interface.is_vehicle_armed()
+                    and db_interface.get_vehicle_mode() == 'GUIDED'
+                    and db_interface.is_mpc_running()
                     and x[2] > MIN_ATTITUDE):
                 delta_x, delta_u = input_converter(x, ref)
                 u = delta_u
@@ -86,11 +91,13 @@ if __name__ == "__main__":
                 z_prev = z
                 u_prev = u
                 u_output = output_converter(u_output, throttle=False)
-        else:
+        elif db_interface.is_mpc_running():
+            # reset adaptive_controller
+            #adaptive_controller.reset()
             # pass mpc control
             ref = db_interface.get_ref()
             u_output = ref
-        # process thrust to throttle
+            # process thrust to throttle
         if None not in u_output:
             # save not converter output
             u_not_converter = u_output

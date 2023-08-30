@@ -37,11 +37,17 @@ class L1_Augmentation:
         self.lp_filter.u_l1 = u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
+        print("U_l1", u_l1)
+        print("U_composite", u_composite)
         self._time += self.predictor.Ts
         self.adaptation_history['time'].append(time)
         self.adaptation_history['sigma_hat'].append(list(sigma_hat.flatten()))
         self.adaptation_history['u_l1'].append(list(u_l1.flatten()))
         return u_composite
+
+    def reset(self):
+        self.lp_filter.u_l1 = np.zeros(self.lp_filter.signals_num)
+        self.adaptive_law.sigma_hat = np.zeros(3)
 
     def plot_history(self, signal_name):
         if signal_name not in self.adaptation_history.keys():

@@ -9,6 +9,7 @@ from copy import deepcopy
 drone_proxy_definition = {
     'x': None,
     'armed': False,
+    'vehicle_mode': None
 }
 
 mpc_proxy_defintion = {
@@ -55,6 +56,9 @@ class MPC_Interface:
     def get_drone_state(self):
         x = self.drone_state['x']
         return np.array(x)
+    
+    def get_vehicle_mode(self):
+        return self.drone_state['vehicle_mode']
 
     def get_previous_control(self):
         u_prev = self.mpc_interface_state['ref']
@@ -128,8 +132,15 @@ class Adaptive_Interface:
         ref = np.array(self.mpc_interface_state['ref'])
         return ref
 
+    def get_vehicle_mode(self):
+        return self.drone_state['vehicle_mode']
+
     def is_adaptive_running(self):
         return self.telemetry_manager_state['adaptive_running']
+    
+
+    def is_mpc_running(self):
+        return self.telemetry_manager_state['mpc_running']
 
     def is_vehicle_armed(self):
         return self.drone_state['armed']
@@ -182,6 +193,7 @@ class Supervisor_Interface:
         self.redis_database.set("adaptive_interface_state", json.dumps(self.adaptive_interface_state))
         self.redis_database.set("telemetry_manager_state", json.dumps(self.telemetry_manager_state))
     def update_db(self):
+        self.set_vehicle_mode()
         self.drone_state['armed'] = self.vehicle.armed
         self.redis_database.set("drone_state", json.dumps(self.drone_state))
 
@@ -210,6 +222,12 @@ class Supervisor_Interface:
     def get_control(self):
         u = self.adaptive_interface_state['u']
         return u
+    
+    def is_mpc_running(self):
+        return self.telemetry_manager_state['mpc_running']
+    
+    def set_vehicle_mode(self):
+        self.drone_state['vehicle_mode'] = self.vehicle.mode.name
 
 
     def reset(self):

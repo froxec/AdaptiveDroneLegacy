@@ -20,14 +20,17 @@ if __name__ == "__main__":
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
-    time.sleep(20)
+    #time.sleep(20)
     # connect to drone
-    drone_addr = SIM_IP
+    drone_addr = REAL_DRONE_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
     vehicle_connected_signal(buzzer)
     
+    #init vehicle
+    dronekit_commands.initialize_drone(vehicle)
+
     # init db interface
     db_interface = Supervisor_Interface(vehicle)
 
@@ -62,7 +65,6 @@ if __name__ == "__main__":
     timer = Timer(interval=DELTA_T)
 
     while True:
-        t1 = time.time()
         # fetch db
         db_interface.fetch_db()
 
@@ -71,7 +73,9 @@ if __name__ == "__main__":
 
         # set vehicle control
         u = db_interface.get_control()
-        if u is not None and vehicle.armed == True and vehicle.location.global_relative_frame.alt > 0.95 * 2.5:
+        if u is not None and vehicle.armed == True \
+        and vehicle.location.global_relative_frame.alt > 0.95 * 2.5 \
+        and db_interface.is_mpc_running():
             dronekit_commands.set_attitude(vehicle, u[1], u[2], 0, u[0])
 
         print(u)
@@ -85,4 +89,3 @@ if __name__ == "__main__":
                 data_writer.data_set.set()
 
         timer.checkpt()
-        print(time.time() - t1)
