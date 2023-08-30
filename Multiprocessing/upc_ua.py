@@ -5,28 +5,21 @@ from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
 from Multiprocessing.PARAMS import DATA_FREQ, SIM_IP, REAL_DRONE_IP
 from dronekit import connect
-from Multiprocessing.PARAMS import SIM_IP, REAL_DRONE_IP
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
-from gpiozero import Buzzer
 from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
 
 if __name__ == "__main__":
-    # init Buzzer
-    buzzer = Buzzer(23)
-    startup_signal(buzzer)
-
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
     #time.sleep(20)
     # connect to drone
-    drone_addr = REAL_DRONE_IP
+    drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-    vehicle_connected_signal(buzzer)
     
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
@@ -35,10 +28,10 @@ if __name__ == "__main__":
     db_interface = Supervisor_Interface(vehicle)
 
     # setup data writer
-    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pi/AdaptiveDrone/logs/')
+    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs')
 
     # setup telemetry managers
-    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyS0',
+    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/5',
                              baudrate=115200,
                              update_freq=5,
                              vehicle=vehicle,
@@ -50,7 +43,7 @@ if __name__ == "__main__":
                              lora_freq=868,
                              remote_lora_address=40,
                              remote_lora_freq=868)
-    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyUSB0',
+    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/5',
                                       baudrate=115200,
                                       update_freq=10,
                                       vehicle=vehicle,
@@ -78,7 +71,6 @@ if __name__ == "__main__":
         and db_interface.is_mpc_running():
             dronekit_commands.set_attitude(vehicle, u[1], u[2], 0, u[0])
 
-        print(u)
         # update db state
         db_interface.update_db()
 

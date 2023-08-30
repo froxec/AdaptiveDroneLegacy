@@ -43,7 +43,8 @@ class Interface:
         self.telemetry_manager_state = deepcopy(telemetry_manager_proxy_definition)
         self.adaptive_interface_state = adaptive_proxy_definition
         self.estimator_interface_state = estimator_proxy_definition
-        self.redis_database = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=DB_NUM)\
+        self.redis_database = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=DB_NUM)
+        self.pubsub = None
 
     def update_db(self):
         raise NotImplementedError
@@ -69,6 +70,8 @@ class Interface:
         estimator_state_packed = self.redis_database.get("estimator_state")
         if estimator_state_packed is not None:
             self.estimator_interface_state = json.loads(estimator_state_packed.decode("utf-8"))
+        if self.pubsub is not None:
+            self.pubsub.get_message()
 
     def get_drone_state(self):
         x = self.drone_state['x']
@@ -92,8 +95,7 @@ class MPC_Interface(Interface):
     def __init__(self, position_controller):
         Interface.__init__(self)
         self.pubsub = self.redis_database.pubsub()
-        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback,
-                                 'estimator_state': self.parameters_change_callback})
+        self.pubsub.subscribe(**{"setpoint_change": self.setpoint_change_callback})
 
         # get access to position controller for setpoint callback
         self.position_controller = position_controller
@@ -145,8 +147,7 @@ class Adaptive_Interface(Interface):
                  prediction_model):
         Interface.__init__(self)
         self.pubsub = self.redis_database.pubsub()
-        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback,
-                                 'estimator_state': self.parameters_change_callback})
+        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback})
         #get converters representations
         self.input_converter = input_converter
         self.output_converter = output_converter
@@ -184,7 +185,6 @@ class Adaptive_Interface(Interface):
         self.adaptive_interface_state['u_output'] = u_output
     def reset_state(self):
         self.adaptive_interface_state = deepcopy(adaptive_proxy_definition)
-
 
     def setpoint_change_callback(self, message):
         data = message['data']
@@ -238,6 +238,9 @@ class Supervisor_Interface(Interface):
     def get_control(self):
         u = self.adaptive_interface_state['u']
         return u
+
+    def set_vehicle_mode(self):
+        self.drone_state['vehicle_mode'] = self.vehicle.mode.name
 
     def reset(self):
         self.drone_state = deepcopy(drone_proxy_definition)

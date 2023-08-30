@@ -8,7 +8,7 @@ OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
 DATA_FREQ = 10
 
 # Drone addresses
-SIM_IP = 'udp:192.168.0.27:8500'
+SIM_IP = 'localhost:8000'
 REAL_DRONE_IP = '/dev/ttyAMA1'
 
 # REDIS DATABASE
