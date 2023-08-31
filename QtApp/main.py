@@ -127,6 +127,17 @@ class MainWindow(QMainWindow):
         self.window.ESTIM_ON_OFF_BTN.setText("OFF")
         self.window.ESTIM_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
 
+        # ESTIMATION ACCEPT BUTTON
+        self.window.ESTIM_ACCEPT_BTN.setText("ACCEPT")
+        self.window.ESTIM_ACCEPT_BTN.setStyleSheet("QPushButton {background-color: lightgreen}")
+        self.window.ESTIM_ACCEPT_BTN.clicked.connect(lambda: self.auxiliary_command('ACCEPT_ESTIMATION'))
+
+        # IDENTIFICATION_PROCEDURE
+        self.window.activateIdentificationBtn.setCheckable(True)
+        self.window.activateIdentificationBtn.setText("OFF")
+        self.window.activateIdentificationBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
+        self.window.activateIdentificationBtn.clicked.connect(self.on_off_estimation_procedure)
+
         # data writer
         self.data_writer = DataWriterThread(DATA_TO_WRITE_GCS, path='../logs/')
         self.window.saveDataBtn.setCheckable(True)
@@ -189,6 +200,9 @@ class MainWindow(QMainWindow):
         if self.telemetry['bat_current'] is not None:
             self.window.batteryCurrent.setText(
                 ("{:.2f}" + " " + "A").format(self.telemetry['bat_current']))
+        if self.telemetry['estimated_mass'] is not None:
+            self.window.estimated_mass.setText(
+                ("{:.2f}" + " " + "kg").format(self.telemetry['estimated_mass']))
         if self.data_writer.writing_event.is_set():
             self.data_writer.data = self.telemetry
             self.data_writer.data_set.set()
@@ -246,6 +260,17 @@ class MainWindow(QMainWindow):
                 self.window.ESTIM_ON_OFF_BTN.setText("OFF")
                 self.window.ESTIM_ON_OFF_BTN.setStyleSheet("QPushButton {background-color: lightcoral}")
                 self.telemetry_manager.publish('ESTIMATOR_ON_OFF', 0)
+
+    @Slot()
+    def on_off_estimation_procedure(self):
+        if self.window.activateIdentificationBtn.isChecked():
+            self.window.activateIdentificationBtn.setText("ON")
+            self.window.activateIdentificationBtn.setStyleSheet("QPushButton {background-color: lightgreen}")
+            self.auxiliary_command("START_IDENTIFICATION_PROCEDURE")
+        else:
+            self.window.activateIdentificationBtn.setText("OFF")
+            self.window.activateIdentificationBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
+            self.auxiliary_command("STOP_IDENTIFICATION_PROCEDURE")
 
     @Slot()
     def serve_data_writer(self):

@@ -125,6 +125,7 @@ class TelemetryManager:
                     break
                 time.sleep(0.1)
 
+
     def update_controllers_callback(self, topic, data, opts):
         raise NotImplementedError
 
@@ -424,6 +425,7 @@ class TelemetryManagerUAV(TelemetryManager):
             self._add_estimation_to_telemetry(self.telemetry)
         if self.data_writer is not None:
             self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
+        self._add_mass_estimation_to_telemetry(self.telemetry)
         available_telemetry = self.telemetry.keys()
         for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
             if not isinstance(indices, tuple):
@@ -481,6 +483,19 @@ class TelemetryManagerUAV(TelemetryManager):
             telemetry['u_output'] = u_output
         self.telemetry = telemetry
         return self.telemetry
+
+    def _add_mass_estimation_to_telemetry(self, telemetry):
+        mass = self.db_interface.get_estimated_mass()
+        telemetry['estimated_mass'] = mass
+        self.telemetry = telemetry
+        return self.telemetry
+
+    def auxiliary_command_callback(self, topic, data, opts):
+        super().auxiliary_command_callback(topic, data, opts)
+        command = AUXILIARY_COMMANDS_MAPPING[data]
+        if command == 'ACCEPT_ESTIMATION':
+            print("TELEMETRY MANAGER: ESTIMATION ACCEPTED -> PUBLISHING PARAMETERS")
+            self.db_interface.publish_parameters()
 
     def run(self):
         if self.send_telemetry:

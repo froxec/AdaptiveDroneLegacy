@@ -251,6 +251,23 @@ class Supervisor_Interface(Interface):
     def set_vehicle_mode(self):
         self.drone_state['vehicle_mode'] = self.vehicle.mode.name
 
+    def publish_parameters(self):
+        parameters = self.get_model_parameters()
+        if parameters is not None:
+            parameters = json.dumps({'parameters': parameters})
+            self.redis_database.publish('parameters_change', parameters)
+
+    def get_estimated_mass(self):
+        parameters = self.estimator_interface_state['parameters']
+        if parameters is not None:
+            mass = parameters['m']
+        else:
+            mass = 0.0
+        return mass
+
+    def get_model_parameters(self):
+        parameters = self.estimator_interface_state['parameters']
+        return parameters
     def reset(self):
         self.drone_state = deepcopy(drone_proxy_definition)
 
@@ -262,10 +279,6 @@ class Estimator_Interface(Interface):
     def update_parameters(self, parameters):
         parameters['I'] = list(parameters['I'])
         self.estimator_interface_state['parameters'] = parameters
-        self.publish_parameters(parameters)
-    def publish_parameters(self, parameters):
-        parameters = json.dumps({"parameters": parameters})
-        self.redis_database.publish('parameters_change', parameters)
 
     def get_u_output(self):
         u_output = self.adaptive_interface_state['u_output']
