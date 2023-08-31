@@ -43,6 +43,7 @@ if __name__ == "__main__":
     u_prev = np.array([parameters_holder.m*parameters_holder.g, 0, 0])
 
     while True:
+        t1 = time.time()
         # get current drone state from db
         db_interface.fetch_db()
         # get current state
@@ -65,3 +66,4 @@ if __name__ == "__main__":
         db_interface.update_db()
         # watchdog
         timer.checkpt()
+        print(time.time() - t1)

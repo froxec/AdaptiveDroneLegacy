@@ -28,10 +28,6 @@ class L1_Augmentation:
             u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
-        print("z_hat", z_hat)
-        print("z", z)
-        print("u_prev", u_prev)
-        print("sigma_hat", sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
         if self.saturator is not None:
             u_composite, u_l1 = self.saturator(u, u_l1)
@@ -40,8 +36,6 @@ class L1_Augmentation:
         self.lp_filter.u_l1 = u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
-        print("U_l1", u_l1)
-        print("U_composite", u_composite)
         self._time += self.predictor.Ts
         self.adaptation_history['time'].append(time)
         self.adaptation_history['sigma_hat'].append(list(sigma_hat.flatten()))

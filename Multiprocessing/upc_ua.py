@@ -61,6 +61,7 @@ if __name__ == "__main__":
     timer = Timer(interval=DELTA_T)
 
     while True:
+        t1 = time.time()
         # fetch db
         db_interface.fetch_db()
 
@@ -86,3 +87,4 @@ if __name__ == "__main__":
                 data_writer.data_set.set()
 
         timer.checkpt()
+        print(time.time() - t1)

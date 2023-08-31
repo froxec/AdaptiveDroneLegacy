@@ -11,6 +11,7 @@ from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceCheck
 from Factories.RLFactory.Agents.BanditEstimatorAgent import BanditEstimatorAccelerationProcess
 from Factories.ModelsFactory.models_for_estimation import NonlinearTranslationalModel
 from oclock import Timer
+import time
 
 
 if __name__ == "__main__":
@@ -33,7 +34,7 @@ if __name__ == "__main__":
                                                          gp=gp,
                                                          convergence_checker=convergence_checker,
                                                          mode='VELOCITY_CONTROL',
-                                                         save_images=True)
+                                                         save_images=False)
 
     # init Timer
     timer = Timer(interval=DELTA_T)
@@ -42,6 +43,7 @@ if __name__ == "__main__":
     saved_to_file = True
 
     while True:
+        t1 = time.time()
         # fetch db
         db_interface.fetch_db()
 
@@ -72,3 +74,4 @@ if __name__ == "__main__":
             db_interface.update_db()
 
         timer.checkpt()
+        print(time.time()-t1)
