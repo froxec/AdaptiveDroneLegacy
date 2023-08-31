@@ -1,5 +1,6 @@
 import threading
-
+import csv
+from datetime import datetime
 import numpy as np
 
 from Factories.ConfigurationsFactory.configurations import *
@@ -221,7 +222,8 @@ class BanditEstimatorAcceleration:
                  epsilon_episode_steps=0,
                  max_steps=np.Inf,
                  testing_mode=False,
-                 save_images=False):
+                 save_images=False,
+                 logs_path='./logs/'):
         self.parameters_manager = parameters_manager
         self.prediction_model = prediction_model
         self.gp = gp
@@ -269,6 +271,14 @@ class BanditEstimatorAcceleration:
         self.action = np.random.choice(values_pool, 1)[0]
         self.estimated_parameters_holder.m = self.action
 
+        self.history = {'acceleration': [],
+                        'a_hat': [],
+                        'action': [],
+                        'penalty': [],
+                        'force_norm': [],
+                        'angles': []}
+        self.logs_path = logs_path
+
     def __call__(self, measurement, force_norm, angles, deltaT=None):
         mode = self.mode.split('_')
         if mode[0] == 'VELOCITY':
@@ -292,6 +302,13 @@ class BanditEstimatorAcceleration:
             self.action = self.take_action()
             self.estimated_parameters_holder.m = self.action
             self.converged = self.convergence_checker(self.action)
+            # append data
+            self.history['acceleration'].append(list(acceleration))
+            self.history['a_hat'].append(list(a_hat))
+            self.history['action'].append(self.action)
+            self.history['penalty'].append(penalty)
+            self.history['force_norm'].append(force_norm)
+            self.history['angles'].append(angles)
         if self.converged and not self.parameters_changed:
             parameters = self.get_parameters()
             print("Converged to {}".format(parameters))
@@ -343,18 +360,45 @@ class BanditEstimatorAcceleration:
         # reset parameters holders
         self.nominal_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
         self.estimated_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
+        self.prediction_model.parameters_holder = self.estimated_parameters_holder
         #flags reset
         self.converged = False
         self.parameters_changed = False
         self.i = 0
         self.current_step = 0
         self.process_finished = False
+        # reset history
+        self.reset_history()
+
+    def reset_history(self):
+        self.history = {'acceleration': [],
+                        'a_hat': [],
+                        'action': [],
+                        'penalty': [],
+                        'force_norm': [],
+                        'angles': []}
 
     def plot_history(self, signal_name):
         fig = go.Figure()
         data = self.memory[signal_name]
         fig.add_trace(go.Scatter(x=list(range(len(data))), y=data, name=signal_name))
         fig.show()
+
+    def save_history_to_file(self):
+        fieldnames = self.history.keys()
+        filename = self.logs_path + datetime.now().strftime("%m-%d-%Y-%H:%M:%S") + '_estimation' + '.csv'
+        file = open(filename, 'w')
+        writer = csv.writer(file)
+        data = []
+        for key in self.history.keys():
+            data.append(self.history[key])
+        rows = zip(*data)
+        writer.writerow(fieldnames)
+        writer.writerows(rows)
+        file.close()
+
+
+
 
 class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
     def __init__(self,
@@ -430,6 +474,7 @@ class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
             self.update_parameters(parameters)
             self.parameters_changed = True
         else:
+            self.save_history_to_file()
             self.procedure_finished.set()
             time.sleep(1)
 

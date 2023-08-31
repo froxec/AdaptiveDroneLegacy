@@ -40,21 +40,9 @@ if __name__ == "__main__":
     # init model
     uncertain_model = LinearQuadUncertain(parameters_holder)
 
-    # init redis interface
-    db_interface = Adaptive_Interface(input_converter=input_converter,
-                                      output_converter=output_converter,
-                                      prediction_model=uncertain_model)
-
-    # flush db on startup
-    db_interface.redis_database.flushdb()
-
-    db_interface.fetch_db()
-
 
     # init adaptive controller
-    x0 = db_interface.get_drone_state()
-    if None in x0:
-        x0 = np.zeros(6)
+    x0 = np.zeros(6)
     z0 = x0[3:6]
     u0 = np.zeros(3)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / FREQ, As)
@@ -62,6 +50,17 @@ if __name__ == "__main__":
     l1_filter = L1_LowPass(bandwidths=BANDWIDTHS, fs=FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, saturator=None)
+
+    # init redis interface
+    db_interface = Adaptive_Interface(input_converter=input_converter,
+                                      output_converter=output_converter,
+                                      prediction_model=uncertain_model,
+                                      adaptive_controller=adaptive_controller)
+
+    # flush db on startup
+    db_interface.redis_database.flushdb()
+
+    db_interface.fetch_db()
 
     # init Timer
     timer = Timer(interval=DELTA_T)
@@ -93,6 +92,8 @@ if __name__ == "__main__":
                 z_prev = z
                 u_prev = u
                 u_output = output_converter(u_output, throttle=False)
+            else:
+                adaptive_controller.reset()
         elif db_interface.is_mpc_running():
             # reset adaptive_controller
             #adaptive_controller.reset()

@@ -38,6 +38,9 @@ if __name__ == "__main__":
     # init Timer
     timer = Timer(interval=DELTA_T)
 
+    # init flag
+    saved_to_file = True
+
     while True:
         # fetch db
         db_interface.fetch_db()
@@ -58,7 +61,11 @@ if __name__ == "__main__":
             f_norm = u_output[0]
             angles = np.concatenate([u_output[1:], np.array([0.0])]) # assumes yaw = 0.0
             estimator_agent(velocity, f_norm, angles, deltaT=DELTA_T)
+            saved_to_file = False
         else:
+            if not saved_to_file:
+                estimator_agent.save_history_to_file()
+                saved_to_file = True
             estimator_agent.reset()
         # update db
         if estimator_agent.converged and estimator_agent.parameters_changed:

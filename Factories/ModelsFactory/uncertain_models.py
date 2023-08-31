@@ -35,6 +35,10 @@ class LinearQuadUncertain(LinearizedQuadNoYaw):
         self.C = self.C[3:6, 3:6]
         self.D = self.D[3:6, :]
         self.G = self.B
+        if isinstance(self.G, np.ndarray):
+            self.G_Inv = np.linalg.inv(self.G)
+        else:
+            self.G_Inv = 1 / self.G
 
     def __call__(self, z, u, u_l1, sigma_hat):
         f = self.A @ z + self.B @ u
@@ -53,6 +57,10 @@ class LinearQuadUncertain(LinearizedQuadNoYaw):
                            [1 / self.m, 0.0, 0.0]])
         self.B = self.B[3:6, :]
         self.G = self.B
+        if isinstance(self.G, np.ndarray):
+            self.G_Inv = np.linalg.inv(self.G)
+        else:
+            self.G_Inv = 1/self.G
 
 if __name__ == "__main__":
     from Factories.ModelsFactory.model_parameters import Z550_parameters

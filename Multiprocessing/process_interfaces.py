@@ -149,7 +149,8 @@ class Adaptive_Interface(Interface):
     def __init__(self,
                  input_converter,
                  output_converter,
-                 prediction_model):
+                 prediction_model,
+                 adaptive_controller):
         Interface.__init__(self)
         self.pubsub = self.redis_database.pubsub()
         self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback,
@@ -158,6 +159,7 @@ class Adaptive_Interface(Interface):
         self.input_converter = input_converter
         self.output_converter = output_converter
         self.prediction_model = prediction_model
+        self.adaptive_controller = adaptive_controller
 
     def update_db(self):
         self.redis_database.set("adaptive_state", json.dumps(self.adaptive_interface_state))
@@ -211,6 +213,8 @@ class Adaptive_Interface(Interface):
             self.prediction_model.update_parameters()
             self.output_converter.update()
             self.input_converter.update(update_u_ss=True)
+            self.adaptive_controller.reset()
+
 
 class Supervisor_Interface(Interface):
     def __init__(self, vehicle):

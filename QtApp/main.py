@@ -309,7 +309,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/4',
+    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/3',
                                    baudrate=115200,
                                    update_freq=10,
                                    lora_address=40,
