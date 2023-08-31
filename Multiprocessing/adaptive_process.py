@@ -1,7 +1,7 @@
 from Multiprocessing.process_interfaces  import Adaptive_Interface
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, BANDWIDTHS, As, ANGULAR_VELOCITY_RANGE, \
     TRAJECTORY, PREDICTOR_PARAMETERS, MIN_ATTITUDE
-from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain
+from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain, QuadTranslationalDynamicsUncertain
 from Factories.DataManagementFactory.data_holders import DataHolder
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import L1_Predictor, L1_AdaptiveLaw, L1_LowPass, \
     L1_ControlConverter, L1_Augmentation
@@ -39,6 +39,7 @@ if __name__ == "__main__":
     input_converter = MPC_input_converter(x_ss, parameters_holder)
     # init model
     uncertain_model = LinearQuadUncertain(parameters_holder)
+    #uncertain_model = QuadTranslationalDynamicsUncertain(parameters_holder)
 
 
     # init adaptive controller
@@ -64,7 +65,8 @@ if __name__ == "__main__":
 
     # init Timer
     timer = Timer(interval=DELTA_T)
-    z, z_prev, u, u_prev = z0, z0, u0, u0
+    z, z_prev, u = z0, z0, u0
+    u_prev = None
 
     while True:
         t1 = time.time()
@@ -84,14 +86,21 @@ if __name__ == "__main__":
                     and db_interface.get_vehicle_mode() == 'GUIDED'
                     and db_interface.is_mpc_running()
                     and x[2] > MIN_ATTITUDE):
-                delta_x, delta_u = input_converter(x, ref)
-                u = delta_u
-                z = delta_x[3:6]
+                if isinstance(adaptive_controller.predictor.ref_model, LinearQuadUncertain):
+                    delta_x, delta_u = input_converter(x, ref)
+                    u = delta_u
+                    z = delta_x[3:6]
+                else:
+                    u = np.concatenate([ref, np.array([0.0])])
+                    z = x[3:6]
+                if u_prev is None:
+                    u_prev = np.zeros_like(u)
                 # calculate adaptive control
                 u_output = adaptive_controller(z, z_prev, u, u_prev)
                 z_prev = z
                 u_prev = u
-                u_output = output_converter(u_output, throttle=False)
+                if isinstance(adaptive_controller.predictor.ref_model, LinearQuadUncertain):
+                    u_output = output_converter(u_output, throttle=False)
             else:
                 adaptive_controller.reset()
         elif db_interface.is_mpc_running():

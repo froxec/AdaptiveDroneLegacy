@@ -9,7 +9,9 @@ class QuadTranslationalDynamicsUncertain:
         self.parameters = parameters_holder.get_data()
         self.m = self.parameters_holder.m
         self.g = self.parameters_holder.g
-        self.G = 1/self.m
+        self.G = self.m
+        self.G_Inv = 1 / self.G
+
     def __call__(self, z, u, u_l1, sigma_hat):
         f = (1 / self.m) * u - np.array([0, 0, 1]) * self.g
         g = (1 / self.m) * (u_l1 + sigma_hat)
@@ -20,7 +22,8 @@ class QuadTranslationalDynamicsUncertain:
         self.parameters = self.parameters_holder.get_data()
         self.m = self.parameters_holder.m
         self.g = self.parameters_holder.g
-
+        self.G = self.m
+        self.G_Inv = 1 / self.G
 class NonlinearQuadUncertain:
     def __init__(self):
         pass
