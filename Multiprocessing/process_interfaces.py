@@ -241,8 +241,7 @@ class Supervisor_Interface(Interface):
         setpoint = json.dumps({"setpoint": setpoint})
         self.redis_database.publish('setpoint_change', setpoint)
 
-    def set_drone_state(self):
-        x = dronekit_commands.get_state(self.vehicle)
+    def set_drone_state(self, x):
         self.drone_state['x'] = x
 
     def get_control(self):

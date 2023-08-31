@@ -8,7 +8,7 @@ from dronekit import connect
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
-from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
+from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 
 if __name__ == "__main__":
     # set params
@@ -54,6 +54,9 @@ if __name__ == "__main__":
                                       lora_address=1,
                                       lora_freq=880)
 
+    # init velocity filter
+    velocity_filter = LowPassLiveFilter([5, 5, 5], fs=FREQUENCY, signals_num=3)
+
     #init timer
     timer = Timer(interval=DELTA_T)
 
@@ -62,7 +65,9 @@ if __name__ == "__main__":
         db_interface.fetch_db()
 
         # update current state
-        db_interface.set_drone_state()
+        x = dronekit_commands.get_state(vehicle)
+        x[3:6] = velocity_filter(x[3:6])
+        db_interface.set_drone_state(x)
 
         # set vehicle control
         u = db_interface.get_control()

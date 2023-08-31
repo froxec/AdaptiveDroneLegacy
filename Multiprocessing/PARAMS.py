@@ -5,7 +5,7 @@ import numpy as np
 
 # OPC SERVER
 OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
-DATA_FREQ = 10
+DATA_FREQ = 100
 
 # Drone addresses
 SIM_IP = 'localhost:8000'
@@ -30,7 +30,7 @@ PREDICTOR_PARAMETERS = Z550_parameters
 
 # ADAPTIVE_PARAMETERS:
 As = np.diag([-15, -15, -0.1])
-BANDWIDTHS = [0.4, 0.1, 0.1]
+BANDWIDTHS = [0.4, 0.2, 0.2]
 
 # ESTIMATOR PARAMETERS
 SAMPLING_FREQ = 100
