@@ -266,11 +266,11 @@ class MainWindow(QMainWindow):
         if self.window.activateIdentificationBtn.isChecked():
             self.window.activateIdentificationBtn.setText("ON")
             self.window.activateIdentificationBtn.setStyleSheet("QPushButton {background-color: lightgreen}")
-            self.auxiliary_command("START_IDENTIFICATION_PROCEDURE")
+            self.telemetry_manager.publish('IDENTIFICATION_THROTTLE', self.window.identification_throttle_value.value())
         else:
             self.window.activateIdentificationBtn.setText("OFF")
             self.window.activateIdentificationBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
-            self.auxiliary_command("STOP_IDENTIFICATION_PROCEDURE")
+            self.telemetry_manager.publish('IDENTIFICATION_THROTTLE', -1.0)
 
     @Slot()
     def serve_data_writer(self):
@@ -334,9 +334,9 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/3',
+    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/7',
                                    baudrate=115200,
-                                   update_freq=10,
+                                   update_freq=50,
                                    lora_address=40,
                                    lora_freq=868,
                                    remote_lora_address=1,

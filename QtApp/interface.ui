@@ -901,7 +901,7 @@ QPushButton {
                   </property>
                   <layout class="QGridLayout" name="gridLayout_9">
                    <item row="0" column="1">
-                    <widget class="QDoubleSpinBox" name="identification_throttle">
+                    <widget class="QDoubleSpinBox" name="identification_throttle_value">
                      <property name="font">
                       <font>
                        <pointsize>10</pointsize>

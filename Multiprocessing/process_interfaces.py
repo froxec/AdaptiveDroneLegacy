@@ -30,6 +30,8 @@ telemetry_manager_proxy_definition = {
     'adaptive_running': False,
     'mpc_running': False,
     'estimator_running': False,
+    'identification_procedure_running': False,
+    'identification_procedure_throttle': None,
     'setpoint': None,
 }
 
@@ -268,6 +270,23 @@ class Supervisor_Interface(Interface):
     def get_model_parameters(self):
         parameters = self.estimator_interface_state['parameters']
         return parameters
+
+    def start_identification_procedure(self, throttle):
+        if throttle is not None and throttle <= 1.0 and throttle >= 0.0:
+            self.telemetry_manager_state['identification_procedure_running'] = True
+            self.telemetry_manager_state['identification_procedure_throttle'] = throttle
+            self.update_telemetry_manager_db()
+    def stop_identification_procedure(self):
+        self.telemetry_manager_state['identification_procedure_running'] = False
+        self.telemetry_manager_state['identification_procedure_throttle'] = None
+        self.update_telemetry_manager_db()
+
+    def is_identification_running(self):
+        return self.telemetry_manager_state['identification_procedure_running']
+
+    def get_throttle(self):
+        throttle = self.telemetry_manager_state['identification_procedure_throttle']
+        return throttle
     def reset(self):
         self.drone_state = deepcopy(drone_proxy_definition)
 

@@ -125,7 +125,8 @@ class TelemetryManager:
                     break
                 time.sleep(0.1)
 
-
+    def identification_procedure_callback(self, topic, data, opts):
+        raise NotImplementedError
     def update_controllers_callback(self, topic, data, opts):
         raise NotImplementedError
 
@@ -496,6 +497,15 @@ class TelemetryManagerUAV(TelemetryManager):
         if command == 'ACCEPT_ESTIMATION':
             print("TELEMETRY MANAGER: ESTIMATION ACCEPTED -> PUBLISHING PARAMETERS")
             self.db_interface.publish_parameters()
+
+    def identification_procedure_callback(self, topic, data, opts):
+        throttle = data
+        if data >= 0.0:
+            self.db_interface.start_identification_procedure(throttle)
+        else:
+            self.db_interface.stop_identification_procedure()
+
+
 
     def run(self):
         if self.send_telemetry:

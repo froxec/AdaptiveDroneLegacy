@@ -9,6 +9,7 @@ from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
+from Factories.IdentificationProceduresFactory.throttle_to_thrust import ThrottleToThrustIdentification
 
 if __name__ == "__main__":
     # set params
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs')
 
     # setup telemetry managers
-    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/2',
+    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/8',
                              baudrate=115200,
                              update_freq=5,
                              vehicle=vehicle,
@@ -43,7 +44,7 @@ if __name__ == "__main__":
                              lora_freq=868,
                              remote_lora_address=40,
                              remote_lora_freq=868)
-    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/2',
+    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/8',
                                       baudrate=115200,
                                       update_freq=10,
                                       vehicle=vehicle,
@@ -53,6 +54,12 @@ if __name__ == "__main__":
                                       send_telemetry=False,
                                       lora_address=1,
                                       lora_freq=880)
+
+    # init throttle to thrust identification
+    identification_procedure = ThrottleToThrustIdentification(db_interface,
+                                   vehicle,
+                                   logs_path = './identification_logs/')
+
 
     # init velocity filter
     velocity_filter = LowPassLiveFilter([5, 5, 5], fs=FREQUENCY, signals_num=3)
@@ -70,6 +77,11 @@ if __name__ == "__main__":
         x[3:6] = velocity_filter(x[3:6])
         db_interface.set_drone_state(x)
 
+        identification_running = identification_procedure.run(x)
+        if identification_running:
+            # update db state
+            db_interface.update_db()
+            continue
         # set vehicle control
         u = db_interface.get_control()
         if u is not None and vehicle.armed == True \
@@ -87,4 +99,4 @@ if __name__ == "__main__":
                 data_writer.data_set.set()
 
         timer.checkpt()
-        print(time.time() - t1)
+        #print(time.time() - t1)
