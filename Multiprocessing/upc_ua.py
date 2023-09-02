@@ -8,10 +8,14 @@ from dronekit import connect
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
-from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
-from Factories.IdentificationProceduresFactory.throttle_to_thrust import ThrottleToThrustIdentification
+from gpiozero import Buzzer
+from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
 
 if __name__ == "__main__":
+    # init Buzzer
+    buzzer = Buzzer(23)
+    startup_signal(buzzer)
+
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
@@ -21,7 +25,8 @@ if __name__ == "__main__":
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-    
+    vehicle_connected_signal(buzzer)
+
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
 
@@ -29,7 +34,7 @@ if __name__ == "__main__":
     db_interface = Supervisor_Interface(vehicle)
 
     # setup data writer
-    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs')
+    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pi/AdaptiveDrone/logs/')
 
     # setup telemetry managers
     tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyS0',
@@ -57,8 +62,8 @@ if __name__ == "__main__":
 
     # init throttle to thrust identification
     identification_procedure = ThrottleToThrustIdentification(db_interface,
-                                   vehicle,
-                                   logs_path = './identification_logs/')
+                                                              vehicle,
+                                                              logs_path ='../identification_logs/')
 
 
     # init velocity filter
