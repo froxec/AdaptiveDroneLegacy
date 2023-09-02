@@ -65,7 +65,7 @@ if __name__ == "__main__":
     # init throttle to thrust identification
     identification_procedure = ThrottleToThrustIdentification(db_interface,
                                                               vehicle,
-                                                              logs_path ='../identification_logs/')
+                                                              logs_path ='./identification_logs/')
 
 
     # init velocity filter
