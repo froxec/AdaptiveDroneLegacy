@@ -71,37 +71,37 @@ class ThrottleThrustCharacteristics:
         print("Equation: thrust = {} * throttle + {}".format(slope, intercept))
 if __name__ == "__main__":
     print(os.getcwd())
-    throttle_thrust_csv_path = './identification_data/throttle_thrust_data/iris/'
+    throttle_thrust_csv_path = './identification_data/throttle_thrust_data/iris_rpi/'
 
     # collect throttle - acceleration data
 
-    # csv_files_path = './identification_logs/iris/'
-    # files = os.listdir(csv_files_path)
-    # throttle_list = []
-    # acceleration_list = []
-    # for file in files:
-    #     path = csv_files_path + file
-    #     data_plotter = DataPlotter(path)
-    #     a, throttle = data_plotter.get_acceleration()
-    #     throttle_list.append(throttle)
-    #     acceleration_list.append(a)
-    # data_pairs = [(throttle, acceleration) for throttle, acceleration in sorted(zip(throttle_list, acceleration_list))]
-    # throttle_list = [throttle for throttle, acceleration in data_pairs]
-    # acceleration_list = [acceleration for throttle, acceleration in data_pairs]
-    # print(throttle_list)
-    # print(acceleration_list)
-    # fig = go.Figure()
-    # fig.add_trace(go.Scatter(x=throttle_list, y=acceleration_list))
-    # fig.show()
-    # with open(throttle_thrust_csv_path + datetime.now().strftime("%m-%d-%Y-%H:%M:%S") + '_thrust_throttle.csv', 'w') as f:
-    #     writer = csv.writer(f)
-    #     writer.writerow(['throttle', 'acceleration'])
-    #     for data in data_pairs:
-    #         writer.writerow(data)
+    csv_files_path = './identification_logs/rpi_iris/'
+    files = os.listdir(csv_files_path)
+    throttle_list = []
+    acceleration_list = []
+    for file in files:
+        path = csv_files_path + file
+        data_plotter = DataPlotter(path)
+        a, throttle = data_plotter.get_acceleration()
+        throttle_list.append(throttle)
+        acceleration_list.append(a)
+    data_pairs = [(throttle, acceleration) for throttle, acceleration in sorted(zip(throttle_list, acceleration_list))]
+    throttle_list = [throttle for throttle, acceleration in data_pairs]
+    acceleration_list = [acceleration for throttle, acceleration in data_pairs]
+    print(throttle_list)
+    print(acceleration_list)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=throttle_list, y=acceleration_list))
+    fig.show()
+    with open(throttle_thrust_csv_path + datetime.now().strftime("%m-%d-%Y-%H:%M:%S") + '_thrust_throttle.csv', 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(['throttle', 'acceleration'])
+        for data in data_pairs:
+            writer.writerow(data)
 
     # calculate characteristics
 
-    throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle.csv',
-                                                    mass=1.5,
-                                                    max_idx=6)
-    throttle_thrust.calculate_characteristics()
+    # throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle.csv',
+    #                                                 mass=1.5,
+    #                                                 max_idx=6)
+    # throttle_thrust.calculate_characteristics()
