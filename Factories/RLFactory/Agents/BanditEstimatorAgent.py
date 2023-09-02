@@ -1,5 +1,6 @@
 import threading
-
+import csv
+from datetime import datetime
 import numpy as np
 
 from Factories.ConfigurationsFactory.configurations import *
@@ -8,6 +9,7 @@ from Factories.GaussianProcessFactory.gaussian_process import *
 from Factories.ToolsFactory.GeneralTools import RollBuffers
 from Factories.ToolsFactory.GeneralTools import manhattan_distance, sigmoid_function, euclidean_distance
 from Factories.DataManagementFactory.data_managers import ParametersManager
+from Factories.DataManagementFactory.data_holders import DataHolder
 from typing import Type
 import plotly.graph_objects as go
 from threading import Thread
@@ -220,7 +222,8 @@ class BanditEstimatorAcceleration:
                  epsilon_episode_steps=0,
                  max_steps=np.Inf,
                  testing_mode=False,
-                 save_images=False):
+                 save_images=False,
+                 logs_path='./logs/'):
         self.parameters_manager = parameters_manager
         self.prediction_model = prediction_model
         self.gp = gp
@@ -268,6 +271,14 @@ class BanditEstimatorAcceleration:
         self.action = np.random.choice(values_pool, 1)[0]
         self.estimated_parameters_holder.m = self.action
 
+        self.history = {'acceleration': [],
+                        'a_hat': [],
+                        'action': [],
+                        'penalty': [],
+                        'force_norm': [],
+                        'angles': []}
+        self.logs_path = logs_path
+
     def __call__(self, measurement, force_norm, angles, deltaT=None):
         mode = self.mode.split('_')
         if mode[0] == 'VELOCITY':
@@ -291,6 +302,13 @@ class BanditEstimatorAcceleration:
             self.action = self.take_action()
             self.estimated_parameters_holder.m = self.action
             self.converged = self.convergence_checker(self.action)
+            # append data
+            self.history['acceleration'].append(list(acceleration))
+            self.history['a_hat'].append(list(a_hat))
+            self.history['action'].append(self.action)
+            self.history['penalty'].append(penalty)
+            self.history['force_norm'].append(force_norm)
+            self.history['angles'].append(angles)
         if self.converged and not self.parameters_changed:
             parameters = self.get_parameters()
             print("Converged to {}".format(parameters))
@@ -334,11 +352,53 @@ class BanditEstimatorAcceleration:
         parameters['m'] = self.convergence_checker.average
         return parameters
 
+    def reset(self):
+        # reset gp
+        self.gp.reset()
+        # reset convergence checker
+        self.convergence_checker.reset()
+        # reset parameters holders
+        self.nominal_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
+        self.estimated_parameters_holder = DataHolder(self.prediction_model.parameters_holder.get_data())
+        self.prediction_model.parameters_holder = self.estimated_parameters_holder
+        #flags reset
+        self.converged = False
+        self.parameters_changed = False
+        self.i = 0
+        self.current_step = 0
+        self.process_finished = False
+        # reset history
+        self.reset_history()
+
+    def reset_history(self):
+        self.history = {'acceleration': [],
+                        'a_hat': [],
+                        'action': [],
+                        'penalty': [],
+                        'force_norm': [],
+                        'angles': []}
+
     def plot_history(self, signal_name):
         fig = go.Figure()
         data = self.memory[signal_name]
         fig.add_trace(go.Scatter(x=list(range(len(data))), y=data, name=signal_name))
         fig.show()
+
+    def save_history_to_file(self):
+        fieldnames = self.history.keys()
+        filename = self.logs_path + datetime.now().strftime("%m-%d-%Y-%H:%M:%S") + '_estimation' + '.csv'
+        file = open(filename, 'w')
+        writer = csv.writer(file)
+        data = []
+        for key in self.history.keys():
+            data.append(self.history[key])
+        rows = zip(*data)
+        writer.writerow(fieldnames)
+        writer.writerows(rows)
+        file.close()
+
+
+
 
 class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
     def __init__(self,
@@ -414,12 +474,46 @@ class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
             self.update_parameters(parameters)
             self.parameters_changed = True
         else:
+            self.save_history_to_file()
             self.procedure_finished.set()
             time.sleep(1)
 
     def get_data(self):
         self.data_set_event.wait()
         return self.data['measurement'], self.data['force'], self.data['angles']
+
+class BanditEstimatorAccelerationProcess(BanditEstimatorAcceleration):
+    def __init__(self,
+                 db_interface,
+                 prediction_model,
+                 gp: Type[EfficientGaussianProcess],
+                 convergence_checker,
+                 sleeptime=1,
+                 mode = 'ACCELERATION',
+                 pen_moving_window=None,
+                 actions_moving_window=None,
+                 variance_threshold=0.2,
+                 epsilon_episode_steps=0,
+                 max_steps=np.Inf,
+                 testing_mode=False,
+                 save_images=False):
+        BanditEstimatorAcceleration.__init__(self,
+                                             None,
+                                             prediction_model,
+                                             gp,
+                                             convergence_checker,
+                                             sleeptime,
+                                             mode,
+                                             pen_moving_window,
+                                             actions_moving_window,
+                                             variance_threshold,
+                                             epsilon_episode_steps,
+                                             max_steps,
+                                             testing_mode,
+                                             save_images)
+        self.db_interface = db_interface
+    def update_parameters(self, parameters):
+        self.db_interface.update_parameters(parameters)
 
 if __name__ == "__main__":
     import plotly.express as px

@@ -28,7 +28,6 @@ class L1_Augmentation:
             u_prev = self.converter.convert_to_vector(u_prev[0], u_prev[1:])
         z_hat = self.predictor(z_prev, u_prev, self.lp_filter.u_l1, self.adaptive_law.sigma_hat)
         sigma_hat = self.adaptive_law(z_hat, z)
-        #print(sigma_hat)
         u_l1 = self.lp_filter(sigma_hat)
         if self.saturator is not None:
             u_composite, u_l1 = self.saturator(u, u_l1)
@@ -37,8 +36,6 @@ class L1_Augmentation:
         self.lp_filter.u_l1 = u_l1
         if isinstance(self.predictor.ref_model, QuadTranslationalDynamicsUncertain):
             u_composite = self.converter.convert_from_vector(u_composite)
-        print("U_l1", u_l1)
-        print("U_composite", u_composite)
         self._time += self.predictor.Ts
         self.adaptation_history['time'].append(time)
         self.adaptation_history['sigma_hat'].append(list(sigma_hat.flatten()))
@@ -46,7 +43,7 @@ class L1_Augmentation:
         return u_composite
 
     def reset(self):
-        self.lp_filter.u_l1 = np.zeros(self.lp_filter.signals_num)
+        self.lp_filter.reset()
         self.adaptive_law.sigma_hat = np.zeros(3)
 
     def plot_history(self, signal_name):
@@ -171,20 +168,19 @@ class L1_AdaptiveLaw:
         self.exp_As_Ts = np.diag(np.exp(np.diag(self.As * self.Ts)))
         self.PHI = self.As_Inv @ (self.exp_As_Ts - np.identity(As.shape[0]))
         self.PHI_Inv = np.linalg.inv(self.PHI)
-        if isinstance(self.ref_model.G, np.ndarray):
-            self.g_inv = np.linalg.inv(self.ref_model.G)
-        else:
-            self.g_inv = 1/self.ref_model.G
         self.sigma_hat = np.zeros(3)
 
     def __call__(self, z_hat, z):
         error = z_hat - z
         miu = self.exp_As_Ts @ error
+        self.g_inv = self.ref_model.G_Inv
         if isinstance(self.g_inv, np.ndarray):
             self.sigma_hat = - self.g_inv @ self.PHI_Inv @ miu
         else:
             self.sigma_hat = - self.g_inv * self.PHI_Inv @ miu
         return self.sigma_hat
+
+
 
 
 class L1_LowPass(LowPassLiveFilter):
@@ -200,6 +196,10 @@ class L1_LowPass(LowPassLiveFilter):
         else:
             u_l1 = -x
         return u_l1
+
+    def reset(self):
+        super().reset()
+        self.u_l1 = np.zeros(self.signals_num)
 class L1_ControlConverter:
     def __init__(self):
         self.epsilon = 1e-15

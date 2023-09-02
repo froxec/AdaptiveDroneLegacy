@@ -26,6 +26,15 @@ Z550_parameters = {
     'l': 0.28,
     'arm_angle': deg2rad(45)
 }
+
+Iris_parameters = {
+    # less parameters required for HIL (only translational motion model used)
+    'm': 1.5,
+    'g': 9.81,
+    'throttle_thrust_slope': 44.567,
+    'throttle_thrust_intercept': 0.17
+}
+
 arducopter_parameters = {
     'm': 1.0,
     'g': 9.81,

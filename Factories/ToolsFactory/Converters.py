@@ -4,12 +4,16 @@ from typing import Type
 from Factories.DataManagementFactory.data_holders import DataHolder
 from Factories.ControllersFactory.control_tools.SaturationManager import SaturationManager
 class MPC_output_converter():
-    def __init__(self, parameters_holder: Type[DataHolder], angular_velocity_range, mode='proprietary'):
+    def __init__(self, parameters_holder: Type[DataHolder], angular_velocity_range, mode='proprietary', direct_thrust_to_throttle=False):
         self.parameters_holder = parameters_holder
-        self.angular_vel_min = angular_velocity_range[0]
-        self.angular_vel_max = angular_velocity_range[1]
-        self.thrust_converter = ThrustToAngularVelocity(self.parameters_holder.Kt)
-        self.angular_vel_normalizer = Normalizer(min=self.angular_vel_min, max=self.angular_vel_max)
+        if not direct_thrust_to_throttle:
+            self.angular_vel_min = angular_velocity_range[0]
+            self.angular_vel_max = angular_velocity_range[1]
+            self.thrust_converter = ThrustToAngularVelocity(self.parameters_holder.Kt)
+            self.angular_vel_normalizer = Normalizer(min=self.angular_vel_min, max=self.angular_vel_max)
+        else:
+            self.thrust_throttle_converter = ThrustThrottleConverter(parameters_holder.throttle_thrust_slope,
+                                                                     parameters_holder.throttle_thrust_intercept)
         self.nominal_u = None
         self.valid_modes = {'proprietary', 'ardupilot', 'transDynamicsModel'}
         if mode not in self.valid_modes:
@@ -19,6 +23,7 @@ class MPC_output_converter():
             self.u_ss = np.array([0, 0, self.parameters_holder.m * self.parameters_holder.g])
         elif self.mode == 'proprietary':
             self.u_ss = np.array([self.parameters_holder.m * self.parameters_holder.g, 0, 0])
+        self.direct_thrust_to_throttle = direct_thrust_to_throttle
         self.epsilon = 1e-15
     def __call__(self, delta_u, throttle=True):
         u = delta_u + self.u_ss
@@ -28,16 +33,22 @@ class MPC_output_converter():
             u = self.convert_force_vector_to_u(u)
             print("After  conversion:", u)
         if throttle:
-            omega = self.thrust_converter(u[0])
-            throttle = self.angular_vel_normalizer(omega)
+            if not self.direct_thrust_to_throttle:
+                omega = self.thrust_converter(u[0])
+                throttle = self.angular_vel_normalizer(omega)
+            else:
+                throttle = self.thrust_throttle_converter.thrust_to_throttle(u[0])
             u[0] = throttle
             #u[3] = 0
         return u
 
     def convert_throttle(self, u):
         u = deepcopy(u)
-        omega = self.thrust_converter(u[0])
-        throttle = self.angular_vel_normalizer(omega)
+        if not self.direct_thrust_to_throttle:
+            omega = self.thrust_converter(u[0])
+            throttle = self.angular_vel_normalizer(omega)
+        else:
+            throttle = self.thrust_throttle_converter.thrust_to_throttle(u[0])
         u[0] = throttle
         # u[3] = 0
         return u
@@ -61,7 +72,8 @@ class MPC_output_converter():
             self.u_ss = np.array([0, 0, self.parameters_holder.m * self.parameters_holder.g])
         elif self.mode == 'proprietary':
             self.u_ss = np.array([self.parameters_holder.m * self.parameters_holder.g, 0, 0])
-        self.thrust_converter = ThrustToAngularVelocity(self.parameters_holder.Kt)
+        if not self.direct_thrust_to_throttle:
+            self.thrust_converter = ThrustToAngularVelocity(self.parameters_holder.Kt)
         print("Output converter parameters updated!")
 
 class MPC_input_converter():
@@ -179,6 +191,18 @@ class AngularVelocityToThrust():
         thrust = 4*self.Kt*angular_velocity**2
         return thrust
 
+class ThrustThrottleConverter:
+    def __init__(self, slope, intercept):
+        self.slope = slope
+        self.intercept = intercept
+
+    def thrust_to_throttle(self, thrust):
+        throttle = (thrust - self.intercept) / self.slope
+        return throttle
+
+    def throttle_to_thrust(self, throttle):
+        thrust = self.slope * throttle + self.intercept
+        return thrust
 
 class RampSaturation:
     def __init__(self, slope, Ts):

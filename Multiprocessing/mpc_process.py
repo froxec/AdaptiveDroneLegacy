@@ -20,7 +20,7 @@ if __name__ == "__main__":
     prediction_model = LinearizedQuadNoYaw(parameters_holder, Ts=1 / FREQ)
     controller_conf = CustomMPCConfig(prediction_model, None, FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE,
-                                      MPC_IMPLEMENTATION='SPARSE')
+                                      MPC_IMPLEMENTATION='SPARSE', direct_thrust_to_throttle=True)
     controller_conf.position_controller.switch_modes(MPC_MODE)
     position_controller = PositionController(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
@@ -43,6 +43,7 @@ if __name__ == "__main__":
     u_prev = np.array([parameters_holder.m*parameters_holder.g, 0, 0])
 
     while True:
+        t1 = time.time()
         # get current drone state from db
         db_interface.fetch_db()
         # get current state
@@ -65,3 +66,4 @@ if __name__ == "__main__":
         db_interface.update_db()
         # watchdog
         timer.checkpt()
+        print(time.time() - t1)

@@ -205,6 +205,9 @@ class LowPassLiveFilter(LiveFilter):
             signals_processed.append(y)
         return np.array(signals_processed)
 
+    def reset(self):
+        self.x_que = [deque([0] * len(self.b[i]), maxlen=len(self.b[i])) for i in range(self.signals_num)]
+        self.y_que = [deque([0] * (len(self.a[i]) - 1), maxlen=len(self.a[i]) - 1) for i in range(self.signals_num)]
 class BidirectionalDict(dict):
     def __init__(self):
         super().__init__()

@@ -35,31 +35,32 @@ if __name__ == "__main__":
     # init input and output converters
     x_ss = np.zeros(6)
     parameters_holder = DataHolder(PREDICTOR_PARAMETERS)
-    output_converter = MPC_output_converter(parameters_holder, ANGULAR_VELOCITY_RANGE)
+    output_converter = MPC_output_converter(parameters_holder, ANGULAR_VELOCITY_RANGE, direct_thrust_to_throttle=True) # angular velocity range not used anymore
     input_converter = MPC_input_converter(x_ss, parameters_holder)
-
-    # init redis interface
-    db_interface = Adaptive_Interface(input_converter=input_converter,
-                                      output_converter=output_converter)
-
-    # flush db on startup
-    db_interface.redis_database.flushdb()
-
-    db_interface.fetch_db()
+    # init model
+    uncertain_model = LinearQuadUncertain(parameters_holder)
 
 
     # init adaptive controller
-    x0 = db_interface.get_drone_state()
-    if None in x0:
-        x0 = np.zeros(6)
+    x0 = np.zeros(6)
     z0 = x0[3:6]
     u0 = np.zeros(3)
-    uncertain_model = LinearQuadUncertain(parameters_holder)
     l1_predictor = L1_Predictor(uncertain_model, z0, 1 / FREQ, As)
     l1_adaptive_law = L1_AdaptiveLaw(uncertain_model, 1 / FREQ, As)
     l1_filter = L1_LowPass(bandwidths=BANDWIDTHS, fs=FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, saturator=None)
+
+    # init redis interface
+    db_interface = Adaptive_Interface(input_converter=input_converter,
+                                      output_converter=output_converter,
+                                      prediction_model=uncertain_model,
+                                      adaptive_controller=adaptive_controller)
+
+    # flush db on startup
+    db_interface.redis_database.flushdb()
+
+    db_interface.fetch_db()
 
     # init Timer
     timer = Timer(interval=DELTA_T)
@@ -91,6 +92,8 @@ if __name__ == "__main__":
                 z_prev = z
                 u_prev = u
                 u_output = output_converter(u_output, throttle=False)
+            else:
+                adaptive_controller.reset()
         elif db_interface.is_mpc_running():
             # reset adaptive_controller
             #adaptive_controller.reset()

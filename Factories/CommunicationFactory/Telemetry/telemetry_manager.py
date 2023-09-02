@@ -125,6 +125,8 @@ class TelemetryManager:
                     break
                 time.sleep(0.1)
 
+    def identification_procedure_callback(self, topic, data, opts):
+        raise NotImplementedError
     def update_controllers_callback(self, topic, data, opts):
         raise NotImplementedError
 
@@ -407,16 +409,16 @@ class TelemetryManagerUAV(TelemetryManager):
             elif data == 0:
                 print("TELEM_MANAGER: ADAPTIVE_CONTROLLER OFF")
                 self.db_interface.telemetry_manager_state['adaptive_running'] = False
+        if comm_split[0] == 'ESTIMATOR':
+            if data == 1:
+                print("TELEM_MANAGER: ESTIMATOR ON")
+                self.db_interface.telemetry_manager_state['estimator_running'] = True
+            elif data == 0:
+                print("TELEM_MANAGER: ESTIMATOR OFF")
+                self.db_interface.telemetry_manager_state['estimator_running'] = False
 
         # update db
         self.db_interface.update_telemetry_manager_db()
-        # if comm_split[0] == 'ESTIMATOR':
-        #     if data == 1:
-        #         print("TELEM_MANAGER: ESTIMATOR ON")
-        #         self.control_supervisor.estimation_on = True
-        #     elif data == 0:
-        #         print("TELEM_MANAGER: ESTIMATOR OFF")
-        #         self.control_supervisor.estimation_on = False
 
     def publish_telemetry(self):
         update_telemetry(self.telemetry, self.vehicle)
@@ -424,6 +426,7 @@ class TelemetryManagerUAV(TelemetryManager):
             self._add_estimation_to_telemetry(self.telemetry)
         if self.data_writer is not None:
             self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
+        self._add_mass_estimation_to_telemetry(self.telemetry)
         available_telemetry = self.telemetry.keys()
         for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
             if not isinstance(indices, tuple):
@@ -481,6 +484,28 @@ class TelemetryManagerUAV(TelemetryManager):
             telemetry['u_output'] = u_output
         self.telemetry = telemetry
         return self.telemetry
+
+    def _add_mass_estimation_to_telemetry(self, telemetry):
+        mass = self.db_interface.get_estimated_mass()
+        telemetry['estimated_mass'] = mass
+        self.telemetry = telemetry
+        return self.telemetry
+
+    def auxiliary_command_callback(self, topic, data, opts):
+        super().auxiliary_command_callback(topic, data, opts)
+        command = AUXILIARY_COMMANDS_MAPPING[data]
+        if command == 'ACCEPT_ESTIMATION':
+            print("TELEMETRY MANAGER: ESTIMATION ACCEPTED -> PUBLISHING PARAMETERS")
+            self.db_interface.publish_parameters()
+
+    def identification_procedure_callback(self, topic, data, opts):
+        throttle = data
+        if data >= 0.0:
+            self.db_interface.start_identification_procedure(throttle)
+        else:
+            self.db_interface.stop_identification_procedure()
+
+
 
     def run(self):
         if self.send_telemetry:

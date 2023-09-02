@@ -8,7 +8,9 @@ COMMAND_NAMES = [
     'DATA_WRITE',
     'POSITION_CONTROLLER_ON_OFF',
     'ADAPTIVE_CONTROLLER_ON_OFF',
+    'IDENTIFICATION_THROTTLE',
     'ESTIMATOR_ON_OFF',
+    'TELEMETRY_ESTIMATED_MASS',
     'TELEMETRY_HEADING',
     'TELEMETRY_FLIGHT_MODE',
     'TELEMETRY_THROTTLE_REF',
@@ -44,7 +46,9 @@ SUBSCRIPTIONS_MAPPING = {
     'DATA_WRITE': ['data_write_callback'],
     'POSITION_CONTROLLER_ON_OFF': ['update_controllers_callback'],
     'ADAPTIVE_CONTROLLER_ON_OFF': ['update_controllers_callback'],
+    'IDENTIFICATION_THROTTLE': ['identification_procedure_callback'],
     'ESTIMATOR_ON_OFF': ['update_controllers_callback'],
+    'TELEMETRY_ESTIMATED_MASS': ['update_telemetry_callback'],
     'TELEMETRY_POSITION_LOC': ['update_telemetry_callback'],
     'TELEMETRY_POSITION_GLOB': ['update_telemetry_callback'],
     'TELEMETRY_VELOCITY': ['update_telemetry_callback'],
@@ -72,7 +76,9 @@ COMMANDS_DATATYPES_MAPPING = {
     'DATA_WRITE': 'string',
     'POSITION_CONTROLLER_ON_OFF': 'int8',
     'ADAPTIVE_CONTROLLER_ON_OFF': 'int8',
+    'IDENTIFICATION_THROTTLE': 'float32',
     'ESTIMATOR_ON_OFF': 'int8',
+    'TELEMETRY_ESTIMATED_MASS': 'float32',
     'TELEMETRY_POSITION_LOC': 'float32',
     'TELEMETRY_POSITION_GLOB': 'float32',
     'TELEMETRY_VELOCITY': 'float32',
@@ -117,6 +123,7 @@ COMMANDS_TO_TELEMETRY_INDICES = {
     'TELEMETRY_CONTROL_OUTPUT:X': ('u_output', 0),
     'TELEMETRY_CONTROL_OUTPUT:Y': ('u_output', 1),
     'TELEMETRY_CONTROL_OUTPUT:Z': ('u_output', 2),
+    'TELEMETRY_ESTIMATED_MASS': 'estimated_mass',
     'TELEMETRY_HEADING': 'heading',
     'TELEMETRY_FLIGHT_MODE': 'flight_mode',
     'TELEMETRY_THROTTLE_REF': 'throttle',
@@ -147,6 +154,6 @@ SUFFIX_INDICES_MAPPING['Z'] = 2
 
 # AUXILIARY COMMANDS MAPPING
 AUXILIARY_COMMANDS_MAPPING = BidirectionalDict()
-AUXILIARY_COMMANDS = ['RETURN_TO_LAUNCH', 'LAND', 'TAKEOFF']
+AUXILIARY_COMMANDS = ['RETURN_TO_LAUNCH', 'LAND', 'TAKEOFF', 'ACCEPT_ESTIMATION']
 for i, mode in enumerate(AUXILIARY_COMMANDS):
     AUXILIARY_COMMANDS_MAPPING[mode] = i
