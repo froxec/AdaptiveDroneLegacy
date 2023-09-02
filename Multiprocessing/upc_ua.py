@@ -8,14 +8,10 @@ from dronekit import connect
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
-<<<<<<< HEAD
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from Factories.IdentificationProceduresFactory.throttle_to_thrust import ThrottleToThrustIdentification
-from gpio import 
-=======
 from gpiozero import Buzzer
 from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
->>>>>>> f560f67d782482296c02b8769b4b06f9391dc7be
 
 if __name__ == "__main__":
     # init Buzzer
