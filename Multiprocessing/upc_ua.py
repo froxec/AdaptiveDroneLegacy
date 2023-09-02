@@ -10,6 +10,7 @@ from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from Factories.IdentificationProceduresFactory.throttle_to_thrust import ThrottleToThrustIdentification
+from gpio import 
 
 if __name__ == "__main__":
     # set params
