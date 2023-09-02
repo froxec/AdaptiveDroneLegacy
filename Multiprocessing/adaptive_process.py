@@ -35,7 +35,7 @@ if __name__ == "__main__":
     # init input and output converters
     x_ss = np.zeros(6)
     parameters_holder = DataHolder(PREDICTOR_PARAMETERS)
-    output_converter = MPC_output_converter(parameters_holder, ANGULAR_VELOCITY_RANGE)
+    output_converter = MPC_output_converter(parameters_holder, ANGULAR_VELOCITY_RANGE, direct_thrust_to_throttle=True) # angular velocity range not used anymore
     input_converter = MPC_input_converter(x_ss, parameters_holder)
     # init model
     uncertain_model = LinearQuadUncertain(parameters_holder)

@@ -1,6 +1,6 @@
 from Factories.ConfigurationsFactory.modes import MPCModes
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint
-from Factories.ModelsFactory.model_parameters import Z550_parameters
+from Factories.ModelsFactory.model_parameters import Z550_parameters, Iris_parameters
 import numpy as np
 
 # OPC SERVER
@@ -25,7 +25,7 @@ PWM_RANGE = [1120, 1920]
 HORIZON = 10
 MPC_MODE = MPCModes.CONSTRAINED
 TRAJECTORY = SinglePoint([0, 0, 3])
-PREDICTOR_PARAMETERS = Z550_parameters
+PREDICTOR_PARAMETERS = Iris_parameters
 
 
 # ADAPTIVE_PARAMETERS:

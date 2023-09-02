@@ -20,7 +20,7 @@ if __name__ == "__main__":
     prediction_model = LinearizedQuadNoYaw(parameters_holder, Ts=1 / FREQ)
     controller_conf = CustomMPCConfig(prediction_model, None, FREQ, ANGULAR_VELOCITY_RANGE,
                                       PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE,
-                                      MPC_IMPLEMENTATION='SPARSE')
+                                      MPC_IMPLEMENTATION='SPARSE', direct_thrust_to_throttle=True)
     controller_conf.position_controller.switch_modes(MPC_MODE)
     position_controller = PositionController(controller_conf.position_controller,
                                                    controller_conf.position_controller_input_converter,
