@@ -21,7 +21,7 @@ if __name__ == "__main__":
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
-    #time.sleep(20)
+    time.sleep(20)
     # connect to drone
     drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     # init throttle to thrust identification
     identification_procedure = ThrottleToThrustIdentification(db_interface,
                                                               vehicle,
-                                                              logs_path ='./identification_logs/')
+                                                              logs_path ='/home/pi/AdaptiveDrone/identification_logs/')
 
 
     # init velocity filter
