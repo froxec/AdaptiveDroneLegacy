@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, ANGULAR_VELOCITY_RANGE, PWM_RANGE, NORMALIZE, HORIZON, MPC_MODE, \
-    TRAJECTORY, PREDICTOR_PARAMETERS, MIN_ATTITUDE
+    TRAJECTORY, PREDICTOR_PARAMETERS, MIN_ATTITUDE, MPC_CONSTRAINTS
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from Factories.ConfigurationsFactory.configurations import CustomMPCConfig
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parameters_holder = DataHolder(PREDICTOR_PARAMETERS)
     prediction_model = LinearizedQuadNoYaw(parameters_holder, Ts=1 / FREQ)
     controller_conf = CustomMPCConfig(prediction_model, None, FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE,
+                                      PWM_RANGE, MPC_CONSTRAINTS, horizon=HORIZON, normalize_system=NORMALIZE,
                                       MPC_IMPLEMENTATION='SPARSE', direct_thrust_to_throttle=True)
     controller_conf.position_controller.switch_modes(MPC_MODE)
     position_controller = PositionController(controller_conf.position_controller,

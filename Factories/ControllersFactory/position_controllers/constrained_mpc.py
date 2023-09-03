@@ -6,6 +6,7 @@ import numpy as np
 from qpsolvers import solve_qp
 import qpSWIFT
 from typing import Type
+from copy import deepcopy
 import time
 class ConstrainedMPC:
     def __init__(self,
@@ -27,6 +28,12 @@ class ConstrainedMPC:
         self.pred_horizon = pred_horizon
         self.soft_constraints = soft_constraints
         self.opts = {'MAXITER':100,'VERBOSE':0,'OUTPUT':2}
+        # convert thrust_constraint to delta thrust
+        self.thrust_constraints = {'lower': u_bounds['lower'][0],
+                                   'upper': u_bounds['upper'][0]}
+        self.u_bounds_nominal = deepcopy(u_bounds)
+        u_bounds['lower'][0] = self.thrust_constraints['lower'] - self.model.parameters_holder.m * self.model.parameters_holder.g
+        u_bounds['upper'][0] = self.thrust_constraints['upper'] - self.model.parameters_holder.m * self.model.parameters_holder.g
         if not normalize_system:
             self.x_bounds = x_bounds
             self.u_bounds = u_bounds
@@ -240,6 +247,18 @@ class ConstrainedMPC:
         self.setpoint=setpoint
         extended_ref = np.repeat(np.zeros_like(self.setpoint), self.pred_horizon, axis=1).transpose(1, 0)
         self.ref = extended_ref
+
+    def update_parameters(self):
+        self.model.update_parameters()
+        u_bounds = deepcopy(self.u_bounds_nominal)
+        u_bounds['lower'][0] = self.thrust_constraints['lower'] - self.model.parameters_holder.m * self.model.parameters_holder.g
+        u_bounds['upper'][0] = self.thrust_constraints['upper'] - self.model.parameters_holder.m * self.model.parameters_holder.g
+        if not self.normalize_state:
+            self.u_bounds = u_bounds
+        else:
+            _, u_bounds['lower'] = self._normalize_state(u=u_bounds['lower'])
+            _, u_bounds['upper'] = self._normalize_state(u=u_bounds['upper'])
+            self.u_bounds = u_bounds
 
 if __name__ == "__main__":
     from Factories.ModelsFactory.model_parameters import arducopter_parameters, Z550_parameters

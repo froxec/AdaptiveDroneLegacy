@@ -143,7 +143,7 @@ class MPC_Interface(Interface):
             parameters_holder = self.position_controller.input_converter.parameters_holder
             for key in parameters.keys():
                 parameters_holder.__setattr__(key, parameters[key])
-            self.position_controller.controller.model.update_parameters()
+            self.position_controller.controller.update_parameters()
             self.position_controller.output_converter.update()
             self.position_controller.input_converter.update(update_u_ss=True)
 
@@ -296,7 +296,8 @@ class Estimator_Interface(Interface):
     def update_db(self):
         self.redis_database.set("estimator_state", json.dumps(self.estimator_interface_state))
     def update_parameters(self, parameters):
-        parameters['I'] = list(parameters['I'])
+        if 'I' in parameters.keys():
+            parameters['I'] = list(parameters['I'])
         self.estimator_interface_state['parameters'] = parameters
 
     def get_u_output(self):

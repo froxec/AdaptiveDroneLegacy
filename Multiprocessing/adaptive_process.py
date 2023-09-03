@@ -10,7 +10,7 @@ import numpy as np
 from oclock import Timer
 import time
 
-def command_convert(u):
+def command_convert(u, throttle_max):
     thrust = u[0]
     # for i, angle in enumerate(u[1:], 1):
     #     if angle > np.pi/4:
@@ -18,8 +18,8 @@ def command_convert(u):
     #     elif angle < -np.pi/4:
     #         u[i] = -np.pi/4
     u = -u
-    if thrust > 1:
-        thrust_converted = 1
+    if thrust > throttle_max:
+        thrust_converted = throttle_max
     elif thrust < 0:
         thrust_converted = 0
     else:
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             # process thrust to throttle
             u_output = output_converter.convert_throttle(np.array(u_output).astype(float))
             # convert command
-            u_output = command_convert(u_output)
+            u_output = command_convert(u_output, parameters_holder.throttle_max)
             # set output
             db_interface.set_control(u_output)
             # set additional data
