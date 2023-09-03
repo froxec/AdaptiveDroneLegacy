@@ -49,14 +49,18 @@ class QuadConfiguration(Configuration):
 
 class CustomMPCConfig(ControllerConfigurationBase):
     def __init__(self, prediction_model, INNER_LOOP_FREQ,
-                 OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, horizon=10, normalize_system=False,
+                 OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE, PWM_RANGE, MPC_CONSTRAINTS, horizon=10, normalize_system=False,
                  MPC_IMPLEMENTATION='SPARSE', direct_thrust_to_throttle=False):
         if isinstance(prediction_model, LinearTranslationalMotionDynamics):
             mode = 'transDynamicsModel'
         elif isinstance(prediction_model, LinearizedQuad):
             mode = 'proprietary'
         if MPC_IMPLEMENTATION == 'SPARSE':
-            self.position_controller = ConstrainedMPC(prediction_model, OUTER_LOOP_FREQ, horizon, normalize_system=normalize_system)
+            self.position_controller = ConstrainedMPC(prediction_model, OUTER_LOOP_FREQ, horizon, normalize_system=normalize_system,
+                                                      x_bounds=MPC_CONSTRAINTS['x_bounds'],
+                                                      u_bounds=MPC_CONSTRAINTS['u_bounds'],
+                                                      delta_x_bounds=MPC_CONSTRAINTS['delta_x_bounds'],
+                                                      delta_u_bounds=MPC_CONSTRAINTS['delta_u_bounds'])
         else:
             self.position_controller = ModelPredictiveControl(prediction_model, OUTER_LOOP_FREQ, horizon, normalize_system=normalize_system)
         x_ss = np.zeros(prediction_model.A.shape[0])

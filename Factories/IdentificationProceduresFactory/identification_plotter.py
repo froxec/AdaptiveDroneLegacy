@@ -6,8 +6,10 @@ from scipy import stats
 import os
 import csv
 from datetime import datetime
+import plotly.express as px
 class DataPlotter():
-    def __init__(self, path):
+    def __init__(self, path,
+                 beggining_id=0):
         self.path = path
         self.df = pd.read_csv(path)
         self.font_dict = dict(family='Arial',
@@ -30,17 +32,18 @@ class DataPlotter():
                          'tickwidth':2.4,  # tick width
                          'tickcolor':'black',  # tick color
                          }
+        self.beggining_id = beggining_id
 
     def get_acceleration(self):
-        t = self.df['time']
-        x = self.df['x']
+        t = self.df['time'][self.beggining_id:]
+        x = self.df['x'][self.beggining_id:]
         throttle = self.df['throttle'][10]
         data = np.array([ast.literal_eval(row) for row in x])
         velocity = data[:, 3:]
         velocity_norm = np.linalg.norm(velocity, axis=1) * np.sign(velocity[:, 2])
         slope, intercept, r_value, p_value, std_err = stats.linregress(t, velocity_norm)
         reg_y = slope*t + intercept
-        fig = go.Figure()
+        fig = go.Figure(layout={'title': self.path})
         fig.add_trace(go.Scatter(x=t, y=velocity_norm))
         fig.add_trace(go.Scatter(x=t, y=reg_y))
         fig.show()
@@ -70,18 +73,18 @@ class ThrottleThrustCharacteristics:
         fig.show()
         print("Equation: thrust = {} * throttle + {}".format(slope, intercept))
 if __name__ == "__main__":
-    print(os.getcwd())
-    throttle_thrust_csv_path = './identification_data/throttle_thrust_data/iris/'
-
-    # collect throttle - acceleration data
-
-    # csv_files_path = './identification_logs/iris/'
+    # print(os.getcwd())
+    throttle_thrust_csv_path = './identification_data/throttle_thrust_data/zd550/'
+    #
+    # # collect throttle - acceleration data
+    #
+    # csv_files_path = './identification_logs/rpi_zd550/'
     # files = os.listdir(csv_files_path)
     # throttle_list = []
     # acceleration_list = []
     # for file in files:
     #     path = csv_files_path + file
-    #     data_plotter = DataPlotter(path)
+    #     data_plotter = DataPlotter(path, beggining_id=30)
     #     a, throttle = data_plotter.get_acceleration()
     #     throttle_list.append(throttle)
     #     acceleration_list.append(a)
@@ -102,6 +105,6 @@ if __name__ == "__main__":
     # calculate characteristics
 
     throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle.csv',
-                                                    mass=1.5,
-                                                    max_idx=6)
+                                                    mass=1.658,
+                                                    max_idx=10)
     throttle_thrust.calculate_characteristics()
