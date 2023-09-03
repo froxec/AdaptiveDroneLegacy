@@ -20,7 +20,7 @@ DB_NUM = 0
 NORMALIZE = True
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
-MASS_PERTURBATION = 0.5
+MASS_PERTURBATION = 0.0
 PREDICTOR_PARAMETERS = Iris_parameters
 PREDICTOR_PARAMETERS['m'] = PREDICTOR_PARAMETERS['m'] + MASS_PERTURBATION
 
@@ -37,8 +37,8 @@ MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5
                                 'upper': np.array([THRUST_MAX, np.pi/6, np.pi/6])},
                    "delta_x_bounds": {'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
                                    'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
-                   "delta_u_bounds": {'lower': np.array([-8, -np.pi/12, -np.pi/12]),
-                                   'upper': np.array([8, np.pi/12,np.pi/12])}}
+                   "delta_u_bounds": {'lower': np.array([-3, -np.pi/12, -np.pi/12]),
+                                   'upper': np.array([3, np.pi/12,np.pi/12])}}
 
 # ADAPTIVE_PARAMETERS:
 As = np.diag([-15, -15, -0.1])
