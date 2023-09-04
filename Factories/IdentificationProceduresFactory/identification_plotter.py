@@ -76,9 +76,9 @@ if __name__ == "__main__":
     # print(os.getcwd())
     throttle_thrust_csv_path = './identification_data/throttle_thrust_data/zd550/'
     #
-    # # collect throttle - acceleration data
-    #
-    # csv_files_path = './identification_logs/rpi_zd550/'
+    # collect throttle - acceleration data
+
+    # csv_files_path = './identification_logs/all_zd550/'
     # files = os.listdir(csv_files_path)
     # throttle_list = []
     # acceleration_list = []
@@ -103,8 +103,8 @@ if __name__ == "__main__":
     #         writer.writerow(data)
 
     # calculate characteristics
-
-    throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle.csv',
-                                                    mass=1.658,
+    # #
+    throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle_2.csv',
+                                                    mass=1.628,
                                                     max_idx=10)
     throttle_thrust.calculate_characteristics()
