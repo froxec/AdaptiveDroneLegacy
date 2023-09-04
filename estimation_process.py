@@ -34,7 +34,8 @@ if __name__ == "__main__":
                                                          gp=gp,
                                                          convergence_checker=convergence_checker,
                                                          mode='VELOCITY_CONTROL',
-                                                         save_images=False)
+                                                         save_images=False,
+                                                         logs_path='/home/pi/AdaptiveDrone/logs/')
 
     # init Timer
     timer = Timer(interval=DELTA_T)

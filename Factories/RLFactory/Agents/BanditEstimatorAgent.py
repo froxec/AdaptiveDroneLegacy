@@ -496,7 +496,8 @@ class BanditEstimatorAccelerationProcess(BanditEstimatorAcceleration):
                  epsilon_episode_steps=0,
                  max_steps=np.Inf,
                  testing_mode=False,
-                 save_images=False):
+                 save_images=False,
+                 logs_path='./logs/'):
         BanditEstimatorAcceleration.__init__(self,
                                              None,
                                              prediction_model,
@@ -510,7 +511,8 @@ class BanditEstimatorAccelerationProcess(BanditEstimatorAcceleration):
                                              epsilon_episode_steps,
                                              max_steps,
                                              testing_mode,
-                                             save_images)
+                                             save_images,
+                                             logs_path)
         self.db_interface = db_interface
     def update_parameters(self, parameters):
         self.db_interface.update_parameters(parameters)
