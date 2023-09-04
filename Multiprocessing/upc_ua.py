@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
 
     # init velocity filter
-    velocity_filter = LowPassLiveFilter([5, 5, 5], fs=FREQUENCY, signals_num=3)
+    velocity_filter = LowPassLiveFilter([15, 15, 15], fs=FREQUENCY, signals_num=3)
 
     #init timer
     timer = Timer(interval=DELTA_T)
