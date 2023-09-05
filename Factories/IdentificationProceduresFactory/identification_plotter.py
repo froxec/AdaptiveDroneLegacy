@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
     # calculate characteristics
     # #
-    throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle_2.csv',
+    throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle.csv',
                                                     mass=1.628,
                                                     max_idx=10)
     throttle_thrust.calculate_characteristics()
