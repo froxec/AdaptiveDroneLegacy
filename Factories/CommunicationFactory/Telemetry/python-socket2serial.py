@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description='Creates a virtual pty for a remote
 parser.add_argument('rhost', type=str)
 parser.add_argument('rport', type=int)
 parser.add_argument('lhost', type=str)
-parser.add_argument('rport', type=int)
+parser.add_argument('lport', type=int)
 parser.add_argument('-u', '--udp', action='store_true')
 args = parser.parse_args()
 
