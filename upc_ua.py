@@ -39,7 +39,7 @@ if __name__ == "__main__":
     data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pi/AdaptiveDrone/logs/')
 
     # setup telemetry managers
-    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyS0',
+    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/8',
                              baudrate=115200,
                              update_freq=5,
                              vehicle=vehicle,
@@ -51,7 +51,7 @@ if __name__ == "__main__":
                              lora_freq=868,
                              remote_lora_address=40,
                              remote_lora_freq=868)
-    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyUSB0',
+    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/8',
                                       baudrate=115200,
                                       update_freq=10,
                                       vehicle=vehicle,
