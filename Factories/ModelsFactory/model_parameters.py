@@ -28,11 +28,11 @@ Z550_parameters = {
 }
 
 Z550_parameters_new = {
-    'm': 1.658,
+    'm': 1.628,
     'g': 9.81,
-    'throttle_thrust_slope': 21.274,
-    'throttle_thrust_intercept': 8.29,
-    'throttle_max': 0.7,
+    'throttle_thrust_slope': 37.82, #19.57
+    'throttle_thrust_intercept': 0.0, # 8.53
+    'throttle_max': 0.5
 }
 
 Iris_parameters = {
