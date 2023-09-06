@@ -31,7 +31,7 @@ class NonlinearQuadUncertain:
         pass
 
 class LinearQuadUncertain(LinearizedQuadNoYaw):
-    def __init__(self, parameters_holder: Type[DataHolder] ,yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
+    def __init__(self, parameters_holder: Type[DataHolder],yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0):
         super().__init__(parameters_holder, Ts=None, yaw_ss=yaw_ss, x_ref=x_ref, y_ref=y_ref, z_ref=z_ref)
         self.A = self.A[3:6, 3:6]
         self.B = self.B[3:6, :]
