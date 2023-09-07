@@ -10,20 +10,19 @@ import argparse
 parser = argparse.ArgumentParser(description='Creates a virtual pty for a remote tcp/udp socket')
 parser.add_argument('rhost', type=str)
 parser.add_argument('rport', type=int)
-parser.add_argument('lhost', type=str)
 parser.add_argument('lport', type=int)
 parser.add_argument('-u', '--udp', action='store_true')
 args = parser.parse_args()
 
 rhost = args.rhost
 rport = args.rport
-lhost = args.lhost
+lhost = ""
 lport = args.lport
 
 
 def main():
     s_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM if args.udp else socket.SOCK_STREAM)
-    s_local.connect((lhost, lport))
+    s_local.bind((lhost, lport))
     s_remote = socket.socket(socket.AF_INET, socket.SOCK_DGRAM if args.udp else socket.SOCK_STREAM)
     s_remote.connect((rhost, rport))
     master, slave = pty.openpty()
@@ -40,7 +39,10 @@ def main():
                 data = os.read(fd, 4096)
                 print(data)
                 write_fd = s_remote.fileno() if fd == master else master
-                os.write(write_fd, data)
+                try:
+                    os.write(write_fd, data)
+                except:
+                    print("Couldnt write data")
     finally:
         s_local.close()
         s_remote.close()
