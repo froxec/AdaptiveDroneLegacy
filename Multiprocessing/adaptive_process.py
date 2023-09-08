@@ -108,7 +108,6 @@ if __name__ == "__main__":
             u_output = output_converter.convert_throttle(np.array(u_output).astype(float))
             # convert command
             u_output = command_convert(u_output, parameters_holder.throttle_max)
-            print(u_output)
             # set output
             db_interface.set_control(u_output)
             # set additional data
