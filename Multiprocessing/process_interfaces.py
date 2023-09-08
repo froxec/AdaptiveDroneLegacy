@@ -32,7 +32,7 @@ telemetry_manager_proxy_definition = {
     'estimator_running': False,
     'identification_procedure_running': False,
     'identification_procedure_throttle': None,
-    'setpoint': None,
+    'setpoint':  [None, None, None],
 }
 
 estimator_proxy_definition = {
@@ -203,6 +203,7 @@ class Adaptive_Interface(Interface):
         if None not in setpoint:
             print("Adaptive interface: setpoint change", setpoint)
             self.input_converter.update(x_ss=np.array(setpoint))
+            
     def parameters_change_callback(self, message):
         data = message['data']
         parameters_dict = json.loads(data.decode("utf-8"))

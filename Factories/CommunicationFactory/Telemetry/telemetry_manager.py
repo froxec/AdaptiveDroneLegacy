@@ -448,13 +448,14 @@ class TelemetryManagerUAV(TelemetryManager):
             comm = comm_decoupled[0]
         elif len(comm_decoupled) == 2:
             comm, suffix = comm_decoupled
-            current_setpoint = self.db_interface.mpc_interface_state['current_setpoint']
+            current_setpoint = self.db_interface.telemetry_manager_state['setpoint']
             current_setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
             self.db_interface.telemetry_manager_state['setpoint'] = current_setpoint
-
+        self.db_interface.update_telemetry_manager_db()
         #update db
         if None not in self.db_interface.telemetry_manager_state['setpoint']:
             self.db_interface.publish_setpoint(self.db_interface.telemetry_manager_state['setpoint'])
+            self.db_interface.telemetry_manager_state['setpoint'] = [None, None, None]
 
     def data_write_callback(self, topic, data, opts):
         if self.data_writer is None:
