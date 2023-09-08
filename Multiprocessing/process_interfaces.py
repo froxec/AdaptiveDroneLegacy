@@ -202,6 +202,7 @@ class Adaptive_Interface(Interface):
         setpoint = setpoint_dict['setpoint']
         if None not in setpoint:
             print("Adaptive interface: setpoint change", setpoint)
+            setpoint.extend([0, 0, 0])
             self.input_converter.update(x_ss=np.array(setpoint))
             
     def parameters_change_callback(self, message):
