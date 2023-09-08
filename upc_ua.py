@@ -39,20 +39,20 @@ if __name__ == "__main__":
     data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pi/AdaptiveDrone/logs/')
 
     # setup telemetry managers
-    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/',
-                             baudrate=921600,
-                             update_freq=10,
+    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyS0',
+                             baudrate=115200,
+                             update_freq=5,
                              vehicle=vehicle,
                              db_interface=db_interface,
                              data_writer=data_writer,
                              subscribed_comms='ALL',  # subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
                              send_telemetry=True,
                              lora_address=2,
-                             lora_freq=868,
+                             lora_freq=878,
                              remote_lora_address=40,
-                             remote_lora_freq=868)
-    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/11',
-                                      baudrate=921600,
+                             remote_lora_freq=878)
+    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyUSB0',
+                                      baudrate=115200,
                                       update_freq=10,
                                       vehicle=vehicle,
                                       db_interface=db_interface,
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
 
     # init velocity filter
-    velocity_filter = LowPassLiveFilter([15, 15, 15], fs=FREQUENCY, signals_num=3)
+    velocity_filter = LowPassLiveFilter([5, 5, 5], fs=FREQUENCY, signals_num=3)
 
     #init timer
     timer = Timer(interval=DELTA_T)
