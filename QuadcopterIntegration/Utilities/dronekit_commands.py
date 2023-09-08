@@ -10,6 +10,8 @@ def initialize_drone(vehicle):
     vehicle.parameters['FENCE_RADIUS'] = 30
     vehicle.parameters['RTL_ALT'] = 5
     vehicle.parameters['WP_YAW_BEHAVIOR'] = 0 #never change yaw
+    vehicle.parameters['ATC_RAT_YAW_I'] = 0.18
+    vehicle.parameters['ATC_ANG_YAW_P'] = 6.5
 
     # commands below dont affect the behaviour..
     # message_rates = [

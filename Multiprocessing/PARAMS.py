@@ -31,8 +31,8 @@ TRAJECTORY = SinglePoint([0, 0, 3])
 THROTTLE_MIN = 0.1
 THRUST_MIN, THRUST_MAX = THROTTLE_MIN * PREDICTOR_PARAMETERS['throttle_thrust_slope'] + PREDICTOR_PARAMETERS['throttle_thrust_intercept'],\
                         PREDICTOR_PARAMETERS['throttle_max'] * PREDICTOR_PARAMETERS['throttle_thrust_slope'] + PREDICTOR_PARAMETERS['throttle_thrust_intercept']
-MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -10, -10, -10]),
-                                'upper': np.array([100000, 100000, 100000, 10, 10, 10])},
+MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5, -5, -5]),
+                                'upper': np.array([100000, 100000, 100000, 5, 5, 5])},
                    "u_bounds": {'lower': np.array([THRUST_MIN, -np.pi/6, -np.pi/6]),
                                 'upper': np.array([THRUST_MAX, np.pi/6, np.pi/6])},
                    "delta_x_bounds": {'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
