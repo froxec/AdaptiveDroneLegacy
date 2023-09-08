@@ -12,6 +12,7 @@ from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from Factories.IdentificationProceduresFactory.throttle_to_thrust import ThrottleToThrustIdentification
 
 if __name__ == "__main__":
+
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
@@ -32,7 +33,7 @@ if __name__ == "__main__":
     data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs')
 
     # setup telemetry managers
-    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/5',
+    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/2',
                              baudrate=115200,
                              update_freq=5,
                              vehicle=vehicle,
@@ -41,10 +42,10 @@ if __name__ == "__main__":
                              subscribed_comms='ALL',  # subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
                              send_telemetry=True,
                              lora_address=2,
-                             lora_freq=868,
+                             lora_freq=878,
                              remote_lora_address=40,
-                             remote_lora_freq=868)
-    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/5',
+                             remote_lora_freq=878)
+    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyUSB0',
                                       baudrate=115200,
                                       update_freq=10,
                                       vehicle=vehicle,
@@ -62,7 +63,7 @@ if __name__ == "__main__":
 
 
     # init velocity filter
-    velocity_filter = LowPassLiveFilter([15, 15, 15], fs=FREQUENCY, signals_num=3)
+    velocity_filter = LowPassLiveFilter([5, 5, 5], fs=FREQUENCY, signals_num=3)
 
     #init timer
     timer = Timer(interval=DELTA_T)

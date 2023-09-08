@@ -8,7 +8,7 @@ OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
 DATA_FREQ = 100
 
 # Drone addresses
-SIM_IP = 'localhost:8000'
+SIM_IP = 'udp:169.254.112.124:8500'
 REAL_DRONE_IP = '/dev/ttyAMA1'
 
 # REDIS DATABASE
@@ -25,14 +25,14 @@ PREDICTOR_PARAMETERS = Iris_parameters
 PREDICTOR_PARAMETERS['m'] = PREDICTOR_PARAMETERS['m'] + MASS_PERTURBATION
 
 # MPC PARAMES
-HORIZON = 20
+HORIZON = 10
 MPC_MODE = MPCModes.CONSTRAINED
 TRAJECTORY = SinglePoint([0, 0, 3])
 THROTTLE_MIN = 0.1
 THRUST_MIN, THRUST_MAX = THROTTLE_MIN * PREDICTOR_PARAMETERS['throttle_thrust_slope'] + PREDICTOR_PARAMETERS['throttle_thrust_intercept'],\
                         PREDICTOR_PARAMETERS['throttle_max'] * PREDICTOR_PARAMETERS['throttle_thrust_slope'] + PREDICTOR_PARAMETERS['throttle_thrust_intercept']
-MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -7, -7, -7]),
-                                'upper': np.array([100000, 100000, 100000, 7, 7, 7])},
+MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5, -5, -5]),
+                                'upper': np.array([100000, 100000, 100000, 5, 5, 5])},
                    "u_bounds": {'lower': np.array([THRUST_MIN, -np.pi/6, -np.pi/6]),
                                 'upper': np.array([THRUST_MAX, np.pi/6, np.pi/6])},
                    "delta_x_bounds": {'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
