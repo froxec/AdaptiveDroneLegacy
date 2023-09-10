@@ -338,9 +338,9 @@ if __name__ == "__main__":
                                    baudrate=115200,
                                    update_freq=50,
                                    lora_address=40,
-                                   lora_freq=878,
+                                   lora_freq=863,
                                    remote_lora_address=1,
-                                   remote_lora_freq=880)
+                                   remote_lora_freq=870)
     app = QApplication(sys.argv)
     window = MainWindow(tm)
     Thread(target=window.update_plots, args=window.data_connectors).start()

@@ -4,6 +4,7 @@ from typing import Type
 from dronekit import Vehicle, VehicleMode
 from pytelemetry import Pytelemetry
 from pytelemetry.transports.serialtransport import SerialTransport
+import paho.mqtt.client as mqtt
 
 from Factories.CommunicationFactory.Telemetry.mappings import *
 from Factories.CommunicationFactory.Telemetry.aux_functions import update_telemetry
@@ -552,3 +553,32 @@ class TelemetryManagerUAVMultiprocessingThread(TelemetryManagerUAV, Thread):
                 self.publish_telemetry()
             self.update()
             time.sleep(1 / self.update_freq)
+
+class MQTT_TelemetryManager:
+    def __init__(self,
+                 mqtt_host,
+                 mqtt_port,
+                 vehicle,
+                 subscribed_comms='ALL'):
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_client.connect(mqtt_host, mqtt_port, 60)
+        self.COM_ASCII_MAP = COMMANDS_ASCII_MAPPING
+        self.subscriptions_mapping = SUBSCRIPTIONS_MAPPING
+        self._subscription_mapping_isvalid(self.subscriptions_mapping)
+        if subscribed_comms == 'ALL':
+            self.subscribed_comms = self.COM_ASCII_MAP.nominal_keys
+        else:
+            self.subscribed_comms = subscribed_comms
+        self.subscribe(self.subscribed_comms)
+        self._init_telemetry()
+        self.vehicle = vehicle
+    def subscribe(self, comms):
+        for comm in comms:
+            comm_decoupled = comm.split(':')
+            comm_stem = comm_decoupled[0]
+            comm_asci = self.COM_ASCII_MAP[comm]
+            for function in self.subscriptions_mapping[comm_stem]:
+                method = getattr(self, function)
+                self.mqtt_client.subscribe(comm_asci)
+                self.mqtt_client.message_callback_add(comm_asci, callback=method)
+        print("TELEM_MANAGER: Subscriptions attached.")

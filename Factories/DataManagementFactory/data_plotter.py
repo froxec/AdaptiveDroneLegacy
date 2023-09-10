@@ -14,7 +14,7 @@ class DataPlotter():
                           'plot_bgcolor':'white',  # background color
                           'width' :850,  # figure width
                           'height':700,  # figure height
-                          'margin': dict(r=20, t=20, b=10)  # remove white space
+                          'margin': dict(r=20, t=50, b=10)  # remove white space
                        }
         self.axeslayout = { # axis label
                          'showline':True,  # add line at x=0
@@ -28,33 +28,33 @@ class DataPlotter():
                          }
     def plot_velocity(self):
         column_names = ['VELOCITY:X', 'VELOCITY:Y', 'VELOCITY:Z']
-        self._plotting_3rows(column_names)
+        self._plotting_3rows(column_names, 'velocity')
 
     def plot_position_local(self):
         column_names = ['POSITION_LOCAL:X', 'POSITION_LOCAL:Y', 'POSITION_LOCAL:Z']
-        self._plotting_3rows(column_names)
+        self._plotting_3rows(column_names, 'position_local')
 
     def plot_attitude(self):
         column_names = ['ATTITUDE:X', 'ATTITUDE:Y', 'ATTITUDE:Z']
-        self._plotting_3rows(column_names)
+        self._plotting_3rows(column_names, 'attitude')
 
     def plot_output_control(self):
         column_names = ['U_OUTPUT:X', 'U_OUTPUT:Y', 'U_OUTPUT:Z']
-        self._plotting_3rows(column_names)
+        self._plotting_3rows(column_names, 'u_output')
 
     def plot_u_l1(self):
         column_names = ['u_l1:X', 'u_l1:Y', 'u_l1:Z']
-        self._plotting_3rows(column_names)
+        self._plotting_3rows(column_names, 'u_l1')
 
     def plot_sigma(self):
         column_names = ['sigma_hat:X', 'sigma_hat:Y', 'sigma_hat:Z']
-        self._plotting_3rows(column_names)
+        self._plotting_3rows(column_names, 'sigma_hat')
 
     def plot_u_ref(self):
         column_names = ['U_REF:X', 'U_REF:Y', 'U_REF:Z']
-        self._plotting_3rows(column_names)
+        self._plotting_3rows(column_names, 'u_reference')
 
-    def _plotting_3rows(self, column_names):
+    def _plotting_3rows(self, column_names, title):
         t = pd.to_datetime(self.df['TIME'])
         t = t - t[0]
         t = t.dt.total_seconds()
@@ -63,13 +63,14 @@ class DataPlotter():
         fig.update_layout(**self.layout)
         fig.update_xaxes(**self.axeslayout)
         fig.update_yaxes(**self.axeslayout)
+        fig.update_layout(title_text=title)
         for i, col in enumerate(data, 1):
             fig.add_trace(go.Scatter(x=t, y=data[col]), row=i, col=1)
         fig.show()
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    path = 'test1_field.csv'
+    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/tests_0909/sim/test2.csv'
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []
@@ -83,6 +84,7 @@ if __name__ == "__main__":
     print(os.listdir(os.getcwd()))
     data_plotter = DataPlotter(path)
     data_plotter.plot_position_local()
+    data_plotter.plot_velocity()
     data_plotter.plot_output_control()
     data_plotter.plot_u_l1()
     data_plotter.plot_u_ref()
