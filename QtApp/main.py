@@ -17,11 +17,12 @@ import io
 from threading import Thread
 from datetime import datetime
 import time
-from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManagerThreadGCS
+from Factories.CommunicationFactory.Telemetry.telemetry_manager import MQTT_TelemetryManagerGCS
 from Factories.CommunicationFactory.Telemetry.mappings import AUXILIARY_COMMANDS_MAPPING, FLIGHT_MODES_MAPPING
 from Factories.CommunicationFactory.Telemetry.lidia_telemetry_sender import LidiaTelemetrySender
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_GCS, FIELDNAMES_TELEMETRY_NAMES_MAPPING
+from Multiprocessing.PARAMS import MQTT_HOST, MQTT_PORT
 class MainWindow(QMainWindow):
     def __init__(self,
                  telemetry_manager,
@@ -334,13 +335,9 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    tm = TelemetryManagerThreadGCS(serialport='/dev/ttyUSB0',
-                                   baudrate=115200,
-                                   update_freq=50,
-                                   lora_address=40,
-                                   lora_freq=863,
-                                   remote_lora_address=1,
-                                   remote_lora_freq=870)
+    tm = MQTT_TelemetryManagerGCS(MQTT_HOST,
+                                  MQTT_PORT,
+                                  update_freq=50)
     app = QApplication(sys.argv)
     window = MainWindow(tm)
     Thread(target=window.update_plots, args=window.data_connectors).start()

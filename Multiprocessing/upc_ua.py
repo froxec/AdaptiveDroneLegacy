@@ -1,9 +1,9 @@
 import time
-from Factories.CommunicationFactory.Telemetry.telemetry_manager import TelemetryManagerUAVMultiprocessingThread
+from Factories.CommunicationFactory.Telemetry.telemetry_manager import MQTT_TelemetryManager
 from Factories.CommunicationFactory.Telemetry.subscriptions import UAV_TELEMETRY_AGENT_SUBS, UAV_COMMAND_AGENT_SUBS
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
-from Multiprocessing.PARAMS import DATA_FREQ, SIM_IP, REAL_DRONE_IP
+from Multiprocessing.PARAMS import DATA_FREQ, SIM_IP, REAL_DRONE_IP, MQTT_HOST, MQTT_PORT
 from dronekit import connect
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
@@ -33,28 +33,21 @@ if __name__ == "__main__":
     data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='./logs')
 
     # setup telemetry managers
-    tm = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/pts/2',
-                             baudrate=115200,
+    tm = MQTT_TelemetryManager(mqtt_host=MQTT_HOST,
+                               mqtt_port=MQTT_PORT,
                              update_freq=5,
                              vehicle=vehicle,
                              db_interface=db_interface,
                              data_writer=data_writer,
                              subscribed_comms='ALL',  # subscribed_comms=UAV_TELEMETRY_AGENT_SUBS,
-                             send_telemetry=True,
-                             lora_address=2,
-                             lora_freq=878,
-                             remote_lora_address=40,
-                             remote_lora_freq=878)
-    tm_commands = TelemetryManagerUAVMultiprocessingThread(serialport='/dev/ttyUSB0',
-                                      baudrate=115200,
+                             send_telemetry=True)
+    tm_commands = MQTT_TelemetryManager(mqtt_host=MQTT_HOST,
+                                       mqtt_port=MQTT_PORT,
                                       update_freq=10,
                                       vehicle=vehicle,
                                       db_interface=db_interface,
                                       data_writer=data_writer,
-                                      subscribed_comms=UAV_COMMAND_AGENT_SUBS,
-                                      send_telemetry=False,
-                                      lora_address=1,
-                                      lora_freq=880)
+                                      subscribed_comms=UAV_COMMAND_AGENT_SUBS)
 
     # init throttle to thrust identification
     identification_procedure = ThrottleToThrustIdentification(db_interface,

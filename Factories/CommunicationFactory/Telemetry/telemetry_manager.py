@@ -5,7 +5,7 @@ from dronekit import Vehicle, VehicleMode
 from pytelemetry import Pytelemetry
 from pytelemetry.transports.serialtransport import SerialTransport
 import paho.mqtt.client as mqtt
-
+import paho.mqtt.publish as publish
 from Factories.CommunicationFactory.Telemetry.mappings import *
 from Factories.CommunicationFactory.Telemetry.aux_functions import update_telemetry
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
@@ -25,11 +25,12 @@ class TelemetryManager:
                  lora_freq = None,
                  remote_lora_address=None,
                  remote_lora_freq=None):
-        self.serialport = serialport
-        self.baudrate = baudrate
-        self.transport = SerialTransport()
-        self.tlm = Pytelemetry(self.transport, lora_address, lora_freq)
-        self.transport.connect({'port': serialport, 'baudrate': self.baudrate})
+        if serialport is not None:
+            self.serialport = serialport
+            self.baudrate = baudrate
+            self.transport = SerialTransport()
+            self.tlm = Pytelemetry(self.transport, lora_address, lora_freq)
+            self.transport.connect({'port': serialport, 'baudrate': self.baudrate})
         self.lora_info = {'lora_address': lora_address,
                           'lora_freq': lora_freq,
                           'remote_lora_address': remote_lora_address,
@@ -92,6 +93,7 @@ class TelemetryManager:
             print("TELEM_MANAGER: Arming!")
 
     def change_setpoint_callback(self, topic, data, opts):
+        print("Change setpoint_callback", topic, data)
         comm = COMMANDS_ASCII_MAPPING[topic]
         comm_decoupled = comm.split(":")
         if len(comm_decoupled) == 1:
@@ -551,27 +553,40 @@ class TelemetryManagerUAVMultiprocessingThread(TelemetryManagerUAV, Thread):
         while True:
             if self.send_telemetry:
                 self.publish_telemetry()
-            self.update()
             time.sleep(1 / self.update_freq)
 
-class MQTT_TelemetryManager:
+class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
     def __init__(self,
                  mqtt_host,
                  mqtt_port,
                  vehicle,
-                 subscribed_comms='ALL'):
+                 update_freq,
+                 db_interface=None,
+                 data_writer=None,
+                 send_telemetry=False,
+                 subscribed_comms='ALL',
+                 additional_telemetry=['reference', 'estimation_and_ref', 'output_and_throttle']):
+        self.mqtt_host = mqtt_host
+        self.mqtt_port = mqtt_port
         self.mqtt_client = mqtt.Client()
         self.mqtt_client.connect(mqtt_host, mqtt_port, 60)
-        self.COM_ASCII_MAP = COMMANDS_ASCII_MAPPING
-        self.subscriptions_mapping = SUBSCRIPTIONS_MAPPING
-        self._subscription_mapping_isvalid(self.subscriptions_mapping)
-        if subscribed_comms == 'ALL':
-            self.subscribed_comms = self.COM_ASCII_MAP.nominal_keys
-        else:
-            self.subscribed_comms = subscribed_comms
-        self.subscribe(self.subscribed_comms)
-        self._init_telemetry()
-        self.vehicle = vehicle
+        TelemetryManagerUAVMultiprocessingThread.__init__(self,
+                                                          serialport=None,
+                                                          baudrate=None,
+                                                          update_freq=update_freq,
+                                                          vehicle=vehicle,
+                                                          db_interface=db_interface,
+                                                          data_writer=data_writer,
+                                                          subscribed_comms=subscribed_comms,
+                                                          additional_telemetry=additional_telemetry,
+                                                          send_telemetry=send_telemetry)
+    def run(self):
+        while True:
+            if self.send_telemetry:
+                self.publish_telemetry()
+            self.mqtt_client.loop()
+            time.sleep(1 / self.update_freq)
+
     def subscribe(self, comms):
         for comm in comms:
             comm_decoupled = comm.split(':')
@@ -582,3 +597,182 @@ class MQTT_TelemetryManager:
                 self.mqtt_client.subscribe(comm_asci)
                 self.mqtt_client.message_callback_add(comm_asci, callback=method)
         print("TELEM_MANAGER: Subscriptions attached.")
+    def publish(self, comm, value):
+        if value is None:
+            return
+        comm_decoupled = comm.split(":")
+        if len(comm_decoupled) > 1:
+            comm_no_suffix, suffix = comm_decoupled
+        elif len(comm_decoupled) == 1:
+            comm_no_suffix = comm_decoupled[0]
+        data_type = COMMANDS_DATATYPES_MAPPING[comm_no_suffix]
+        comm_asci = self.COM_ASCII_MAP[comm]
+        self.mqtt_client.publish(comm_asci, str(value))
+
+    def printer_callback(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload
+        print("Topic {} Payload {}", topic, payload)
+
+    def update_telemetry_callback(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload
+        comm = self.COM_ASCII_MAP[topic]
+        data = mqtt_map_datatype(payload, comm)
+        indices = COMMANDS_TO_TELEMETRY_INDICES[comm]
+        if isinstance(indices, tuple):
+            key, id = indices
+            self.telemetry[key][id] = data
+        else:
+            key = indices
+            self.telemetry[key] = data
+        if hasattr(self, 'telemetry_set_event'):
+            self.telemetry_set_event.set()
+
+    def arm_disarm_callback(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload
+        comm = self.COM_ASCII_MAP[topic]
+        data = mqtt_map_datatype(payload, comm)
+        if self.vehicle is None:
+            print("Cannot arm/disarm - no vehicle attached to manager")
+            return
+        if comm != 'ARM_DISARM':
+            print("Command type {} not valid for arm/disarm.. Command should be 'ARM_DISARM'".format(comm))
+            return
+        if data==0:
+            self.vehicle.disarm()
+            print("TELEM_MANAGER: Disarming!")
+        if data==1:
+            self.vehicle.arm()
+            print("TELEM_MANAGER: Arming!")
+
+    def change_setpoint_callback(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload
+        comm = self.COM_ASCII_MAP[topic]
+        data = mqtt_map_datatype(payload, comm)
+        comm_decoupled = comm.split(":")
+        if len(comm_decoupled) == 1:
+            comm = comm_decoupled[0]
+        elif len(comm_decoupled) == 2:
+            comm, suffix = comm_decoupled
+        if comm == 'SET_SPIRAL_SETPOINT':
+            if not isinstance(self.position_controller.trajectory, SinglePoint):
+                print("SET_SPIRAL_SETPOINT COMMAND REJECTED - Change trajectory type to single point first!")
+                return
+            setpoint = self.position_controller.trajectory.setpoint
+            setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
+            self.position_controller.change_trajectory(SinglePoint(setpoint))
+
+    def auxiliary_command_callback(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload
+        comm = self.COM_ASCII_MAP[topic]
+        data = mqtt_map_datatype(payload, comm)
+        command = AUXILIARY_COMMANDS_MAPPING[data]
+        if command == 'RETURN_TO_LAUNCH':
+            self.vehicle.mode = VehicleMode('RTL')
+        if command == 'LAND':
+            self.vehicle.mode = VehicleMode('LAND')
+        if command == 'TAKEOFF':
+            if self.vehicle.armed == False or self.vehicle.mode != VehicleMode("GUIDED"):
+                print("TAKEOFF_COMM: COMMAND REJECTED: PLEASE CHECK VEHICLE IS ARMED AND IN GUIDED MODE!")
+                return
+            target_attitude = 3
+            self.vehicle.simple_takeoff(target_attitude)
+            while True:
+                print(" Altitude: ", self.vehicle.location.global_relative_frame.alt)
+                # Break and return from function just below target altitude.
+                if self.vehicle.location.global_relative_frame.alt >= target_attitude * 0.95:
+                    print("Reached target altitude")
+                    break
+                time.sleep(0.1)
+
+    def update_controllers_callback(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload
+        comm = self.COM_ASCII_MAP[topic]
+        data = mqtt_map_datatype(payload, comm)
+        comm_split = comm.split("_")
+
+        # update flags
+        if comm_split[0] == 'POSITION':
+            if data == 1:
+                print("TELEM_MANAGER: POSITION_CONTROLLER ON")
+                self.db_interface.telemetry_manager_state['mpc_running'] = True
+            elif data == 0:
+                print("TELEM_MANAGER: POSITION_CONTROLLER OFF")
+                self.db_interface.telemetry_manager_state['mpc_running'] = False
+        if comm_split[0] == 'ADAPTIVE':
+            if data == 1:
+                print("TELEM_MANAGER: ADAPTIVE_CONTROLLER ON")
+                self.db_interface.telemetry_manager_state['adaptive_running'] = True
+            elif data == 0:
+                print("TELEM_MANAGER: ADAPTIVE_CONTROLLER OFF")
+                self.db_interface.telemetry_manager_state['adaptive_running'] = False
+        if comm_split[0] == 'ESTIMATOR':
+            if data == 1:
+                print("TELEM_MANAGER: ESTIMATOR ON")
+                self.db_interface.telemetry_manager_state['estimator_running'] = True
+            elif data == 0:
+                print("TELEM_MANAGER: ESTIMATOR OFF")
+                self.db_interface.telemetry_manager_state['estimator_running'] = False
+
+        # update db
+        self.db_interface.update_telemetry_manager_db()
+
+    def data_write_callback(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload
+        comm = self.COM_ASCII_MAP[topic]
+        data = mqtt_map_datatype(payload, comm)
+        if self.data_writer is None:
+            raise "TELEM_MANAGER: write request, data_writer is None"
+        commands = data.split("_")
+        if len(commands) == 1 and commands[0] == "R":
+            self.data_writer.writing_event.clear()
+            print("TELEM_MANAGER: REQUESTED TO STOP WRITING DATA")
+        elif commands[0] == "S":
+            filename = commands[1]
+            self.data_writer.filename = filename
+            self.data_writer.writing_event.set()
+            print("TELEM_MANAGER: REQUESTED WRITING DATA TO FILE {}".format(filename))
+
+    def identification_procedure_callback(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload
+        comm = self.COM_ASCII_MAP[topic]
+        data = mqtt_map_datatype(payload, comm)
+        throttle = data
+        if data >= 0.0:
+            self.db_interface.start_identification_procedure(throttle)
+        else:
+            self.db_interface.stop_identification_procedure()
+
+class MQTT_TelemetryManagerGCS(MQTT_TelemetryManager):
+    def __init__(self,
+                 mqtt_host,
+                 mqtt_port,
+                 update_freq):
+        MQTT_TelemetryManager.__init__(self,mqtt_host=mqtt_host,
+                                            mqtt_port=mqtt_port,
+                                            vehicle=None,
+                                            update_freq=update_freq)
+        self.telemetry_set_event = threading.Event()
+    def run(self):
+        while True:
+            self.mqtt_client.loop()
+            time.sleep(1 / self.update_freq)
+
+if __name__ == "__main__":
+    from dronekit import connect
+    host = "192.168.0.27"
+    port = 8955
+    print("Connecting to drone {}".format("udp:localhost:8000"))
+    vehicle = connect("udp:localhost:8000", baud=921600, wait_ready=True, rate=100)
+    print("Connection established!")
+    tm = MQTT_TelemetryManager(host, port, vehicle)
+    while True:
+        tm.publish_telemetry()
+        time.sleep(0.01)

@@ -1,5 +1,5 @@
 from Factories.ToolsFactory.GeneralTools import BidirectionalDict
-
+from Multiprocessing.PARAMS import MQTT
 COMMAND_NAMES = [
     'ARM_DISARM',
     'SET_SPIRAL_SETPOINT:X', 'SET_SPIRAL_SETPOINT:Y', 'SET_SPIRAL_SETPOINT:Z',
@@ -31,11 +31,15 @@ COMMAND_NAMES = [
 
 # COMMANDS TO ASCII BIDIRECTIONAL MAPPING
 COMMANDS_ASCII_MAPPING = BidirectionalDict()
-id = 10
-for comm_name in COMMAND_NAMES:
-    COMMANDS_ASCII_MAPPING[comm_name] = "0,868," + chr(id)
-    id += 1
-del id
+if not MQTT:
+    id = 10
+    for comm_name in COMMAND_NAMES:
+        COMMANDS_ASCII_MAPPING[comm_name] = "0,868," + chr(id)
+        id += 1
+    del id
+else:
+    for comm_name in COMMAND_NAMES:
+        COMMANDS_ASCII_MAPPING[comm_name] = comm_name
 
 # COMMANDS to TelemetryManager methods mapping (subscriptions mapping)
 SUBSCRIPTIONS_MAPPING = {
@@ -96,6 +100,38 @@ COMMANDS_DATATYPES_MAPPING = {
     'TELEMETRY_MPC_RUNNING': 'int8',
     'TELEMETRY_ADAPTIVE_RUNNING': 'int8',
 }
+
+MQTT_DATATYPES_MAPPING = {
+    'ARM_DISARM': lambda data: int(data),
+    'AUXILIARY_COMMAND': lambda data: int(data),
+    'SET_SPIRAL_SETPOINT': lambda data: float(data),
+    'HEARTBEAT': lambda data: int(data),
+    'DATA_WRITE': lambda data: str(data),
+    'POSITION_CONTROLLER_ON_OFF': lambda data: int(data),
+    'ADAPTIVE_CONTROLLER_ON_OFF': lambda data: int(data),
+    'IDENTIFICATION_THROTTLE': lambda data: float(data),
+    'ESTIMATOR_ON_OFF': lambda data: int(data),
+    'TELEMETRY_ESTIMATED_MASS': lambda data: float(data),
+    'TELEMETRY_POSITION_LOC:X': lambda data: float(data), 'TELEMETRY_POSITION_LOC:Y': lambda data: float(data), 'TELEMETRY_POSITION_LOC:Z': lambda data: float(data),
+    'TELEMETRY_POSITION_GLOB:X': lambda data: float(data), 'TELEMETRY_POSITION_GLOB:Y': lambda data: float(data), 'TELEMETRY_POSITION_GLOB:Z': lambda data: float(data),
+    'TELEMETRY_VELOCITY:X': lambda data: float(data), 'TELEMETRY_VELOCITY:Y': lambda data: float(data), 'TELEMETRY_VELOCITY:Z': lambda data: float(data),
+    'TELEMETRY_ATTITUDE:X': lambda data: float(data),  'TELEMETRY_ATTITUDE:Y': lambda data: float(data),  'TELEMETRY_ATTITUDE:Z': lambda data: float(data),
+    'TELEMETRY_CONTROL:X': lambda data: float(data), 'TELEMETRY_CONTROL:Y': lambda data: float(data), 'TELEMETRY_CONTROL:Z': lambda data: float(data),
+    'TELEMETRY_ADAPTIVE_CONTROL:X': lambda data: float(data), 'TELEMETRY_ADAPTIVE_CONTROL:Y': lambda data: float(data), 'TELEMETRY_ADAPTIVE_CONTROL:Z': lambda data: float(data),
+    'TELEMETRY_UNC_ESTIMATION:X': lambda data: float(data), 'TELEMETRY_UNC_ESTIMATION:Y': lambda data: float(data), 'TELEMETRY_UNC_ESTIMATION:Z': lambda data: float(data),
+    'TELEMETRY_CONTROL_OUTPUT:X': lambda data: float(data), 'TELEMETRY_CONTROL_OUTPUT:Y': lambda data: float(data), 'TELEMETRY_CONTROL_OUTPUT:Z': lambda data: float(data),
+    'TELEMETRY_HEADING': lambda data: float(data),
+    'TELEMETRY_FLIGHT_MODE': lambda data: int(data),
+    'TELEMETRY_THROTTLE_REF':lambda data: float(data),
+    'TELEMETRY_BATTERY_VOLTAGE': lambda data: float(data),
+    'TELEMETRY_BATTERY_CURRENT': lambda data: float(data),
+    'TELEMETRY_WRITING_OK': lambda data: bool(data),
+    'TELEMETRY_MPC_RUNNING': lambda data: int(data),
+    'TELEMETRY_ADAPTIVE_RUNNING': lambda data: int(data),
+}
+
+def mqtt_map_datatype(data, command):
+    return MQTT_DATATYPES_MAPPING[command](data)
 
 # COMMANDS TO TELEMETRY NAMES MAPPING
 COMMANDS_TO_TELEMETRY_INDICES = {
