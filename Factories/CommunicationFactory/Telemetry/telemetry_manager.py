@@ -569,7 +569,7 @@ class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
         self.mqtt_host = mqtt_host
         self.mqtt_port = mqtt_port
         self.mqtt_client = mqtt.Client()
-        self.mqtt_client.connect(mqtt_host, mqtt_port, 60)
+        self.mqtt_client.connect(mqtt_host, mqtt_port, keepalive=0)
         TelemetryManagerUAVMultiprocessingThread.__init__(self,
                                                           serialport=None,
                                                           baudrate=None,
