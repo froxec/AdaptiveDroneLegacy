@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         loader.registerCustomWidget(QCustomSlideMenu)
         loader.registerCustomWidget(QCustomStackedWidget)
         loader.registerCustomWidget(LivePlotWidget)
-        print(loader.availableWidgets())
+        #print(loader.availableWidgets())
         self.window = loader.load("interface.ui", self)
         #connect signals
         #self.window.mainButton.clicked.connect(self.test)

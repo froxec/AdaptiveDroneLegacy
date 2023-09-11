@@ -106,7 +106,7 @@ MQTT_DATATYPES_MAPPING = {
     'AUXILIARY_COMMAND': lambda data: int(data),
     'SET_SPIRAL_SETPOINT:X': lambda data: float(data), 'SET_SPIRAL_SETPOINT:Y': lambda data: float(data), 'SET_SPIRAL_SETPOINT:Z': lambda data: float(data),
     'HEARTBEAT': lambda data: int(data),
-    'DATA_WRITE': lambda data: str(data),
+    'DATA_WRITE': lambda data: data,
     'POSITION_CONTROLLER_ON_OFF': lambda data: int(data),
     'ADAPTIVE_CONTROLLER_ON_OFF': lambda data: int(data),
     'IDENTIFICATION_THROTTLE': lambda data: float(data),
@@ -125,7 +125,7 @@ MQTT_DATATYPES_MAPPING = {
     'TELEMETRY_THROTTLE_REF':lambda data: float(data),
     'TELEMETRY_BATTERY_VOLTAGE': lambda data: float(data),
     'TELEMETRY_BATTERY_CURRENT': lambda data: float(data),
-    'TELEMETRY_WRITING_OK': lambda data: bool(data),
+    'TELEMETRY_WRITING_OK': lambda data: True if data == 'True' else False,
     'TELEMETRY_MPC_RUNNING': lambda data: int(data),
     'TELEMETRY_ADAPTIVE_RUNNING': lambda data: int(data),
 }
