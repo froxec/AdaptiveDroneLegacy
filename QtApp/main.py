@@ -23,6 +23,7 @@ from Factories.CommunicationFactory.Telemetry.lidia_telemetry_sender import Lidi
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_GCS, FIELDNAMES_TELEMETRY_NAMES_MAPPING
 from Multiprocessing.PARAMS import MQTT_HOST, MQTT_PORT
+from Factories.CommunicationFactory.Telemetry.subscriptions import GCS_SUBS
 class MainWindow(QMainWindow):
     def __init__(self,
                  telemetry_manager,
@@ -337,7 +338,8 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     tm = MQTT_TelemetryManagerGCS(MQTT_HOST,
                                   MQTT_PORT,
-                                  update_freq=50)
+                                  update_freq=50,
+                                  subscribed_comms=GCS_SUBS)
     app = QApplication(sys.argv)
     window = MainWindow(tm)
     Thread(target=window.update_plots, args=window.data_connectors).start()
