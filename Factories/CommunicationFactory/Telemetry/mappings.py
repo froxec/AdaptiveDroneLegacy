@@ -125,7 +125,7 @@ MQTT_DATATYPES_MAPPING = {
     'TELEMETRY_THROTTLE_REF':lambda data: float(data),
     'TELEMETRY_BATTERY_VOLTAGE': lambda data: float(data),
     'TELEMETRY_BATTERY_CURRENT': lambda data: float(data),
-    'TELEMETRY_WRITING_OK': lambda data: True if data == 'True' else False,
+    'TELEMETRY_WRITING_OK': lambda data: True if data.decode("utf-8") == 'True' else False,
     'TELEMETRY_MPC_RUNNING': lambda data: int(data),
     'TELEMETRY_ADAPTIVE_RUNNING': lambda data: int(data),
 }
