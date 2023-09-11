@@ -338,7 +338,7 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     tm = MQTT_TelemetryManagerGCS(MQTT_HOST,
                                   MQTT_PORT,
-                                  update_freq=50,
+                                  update_freq=1000,
                                   subscribed_comms=GCS_SUBS)
     app = QApplication(sys.argv)
     window = MainWindow(tm)
