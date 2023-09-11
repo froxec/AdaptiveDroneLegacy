@@ -334,13 +334,13 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    tm = TelemetryManagerThreadGCS(serialport='/dev/pts/9',
-                                   baudrate=921600,
+    tm = TelemetryManagerThreadGCS(serialport='/dev/ttyUSB0',
+                                   baudrate=115200,
                                    update_freq=50,
                                    lora_address=40,
-                                   lora_freq=868,
+                                   lora_freq=863,
                                    remote_lora_address=1,
-                                   remote_lora_freq=880)
+                                   remote_lora_freq=870)
     app = QApplication(sys.argv)
     window = MainWindow(tm)
     Thread(target=window.update_plots, args=window.data_connectors).start()
