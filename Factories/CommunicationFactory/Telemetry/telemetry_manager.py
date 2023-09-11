@@ -754,11 +754,13 @@ class MQTT_TelemetryManagerGCS(MQTT_TelemetryManager):
     def __init__(self,
                  mqtt_host,
                  mqtt_port,
-                 update_freq):
+                 update_freq,
+                 subscribed_comms):
         MQTT_TelemetryManager.__init__(self,mqtt_host=mqtt_host,
                                             mqtt_port=mqtt_port,
                                             vehicle=None,
-                                            update_freq=update_freq)
+                                            update_freq=update_freq,
+                                            subscribed_comms=subscribed_comms)
         self.telemetry_set_event = threading.Event()
     def run(self):
         while True:
