@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # setup telemetry managers
     tm = MQTT_TelemetryManager(mqtt_host=MQTT_HOST,
                                mqtt_port=MQTT_PORT,
-                             update_freq=5,
+                             update_freq=10,
                              vehicle=vehicle,
                              db_interface=db_interface,
                              data_writer=data_writer,

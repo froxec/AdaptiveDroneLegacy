@@ -585,6 +585,7 @@ class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
             if self.send_telemetry:
                 self.publish_telemetry()
             self.mqtt_client.loop()
+            print("Sending Data")
             time.sleep(1 / self.update_freq)
 
     def subscribe(self, comms):
