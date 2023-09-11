@@ -16,10 +16,8 @@ args = parser.parse_args()
 
 rhost = args.rhost
 rport = args.rport
-lhost = ""
 lport = args.lport
-
-
+lhost = ""
 def main():
     s_local = socket.socket(socket.AF_INET, socket.SOCK_DGRAM if args.udp else socket.SOCK_STREAM)
     s_local.bind((lhost, lport))
@@ -27,7 +25,7 @@ def main():
     s_remote.connect((rhost, rport))
     master, slave = pty.openpty()
 #    tty.setraw(master, termios.TCSANOW)
-    print('PTY: Opened {} for {}:{}'.format(os.ttyname(slave), rhost, rport))
+    print('PTY: Opened {} for {}:{}'.format(os.ttyname(slave), lhost, lport))
     mypoll = select.poll()
     mypoll.register(s_local, select.POLLIN)
     mypoll.register(master, select.POLLIN)
