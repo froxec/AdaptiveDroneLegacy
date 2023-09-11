@@ -32,14 +32,11 @@ def main():
 
     try:
         while True:
-            s_local.recv(4096)
             fdlist = mypoll.poll(1000)
             for fd,event in fdlist:
-                print(fd)
                 data = os.read(fd, 4096)
                 print(data)
                 write_fd = s_remote.fileno() if fd == master else master
-                print(write_fd)
                 try:
                     os.write(write_fd, data)
                 except:
