@@ -106,7 +106,7 @@ MQTT_DATATYPES_MAPPING = {
     'AUXILIARY_COMMAND': lambda data: int(data),
     'SET_SPIRAL_SETPOINT:X': lambda data: float(data), 'SET_SPIRAL_SETPOINT:Y': lambda data: float(data), 'SET_SPIRAL_SETPOINT:Z': lambda data: float(data),
     'HEARTBEAT': lambda data: int(data),
-    'DATA_WRITE': lambda data: str(data),
+    'DATA_WRITE': lambda data: data.decode("utf-8"),
     'POSITION_CONTROLLER_ON_OFF': lambda data: int(data),
     'ADAPTIVE_CONTROLLER_ON_OFF': lambda data: int(data),
     'IDENTIFICATION_THROTTLE': lambda data: float(data),

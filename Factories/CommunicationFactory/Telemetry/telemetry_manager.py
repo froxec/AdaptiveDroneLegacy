@@ -730,9 +730,7 @@ class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
         data = mqtt_map_datatype(payload, comm)
         if self.data_writer is None:
             raise "TELEM_MANAGER: write request, data_writer is None"
-        print(type(data))
         commands = data.split("_")
-        print(commands[0])
         if len(commands) == 1 and commands[0] == "R":
             self.data_writer.writing_event.clear()
             print("TELEM_MANAGER: REQUESTED TO STOP WRITING DATA")
