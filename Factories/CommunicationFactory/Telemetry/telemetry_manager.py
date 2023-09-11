@@ -585,7 +585,6 @@ class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
             if self.send_telemetry:
                 self.publish_telemetry()
             self.mqtt_client.loop()
-            print("Sending Data")
             time.sleep(1 / self.update_freq)
 
     def subscribe(self, comms):
@@ -732,6 +731,7 @@ class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
         if self.data_writer is None:
             raise "TELEM_MANAGER: write request, data_writer is None"
         commands = data.split("_")
+        print(commands[0])
         if len(commands) == 1 and commands[0] == "R":
             self.data_writer.writing_event.clear()
             print("TELEM_MANAGER: REQUESTED TO STOP WRITING DATA")
