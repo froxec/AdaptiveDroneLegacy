@@ -115,6 +115,7 @@ if __name__ == "__main__":
             db_interface.set_u_l1(adaptive_controller.lp_filter.u_l1)
             db_interface.set_ref(ref)
             db_interface.set_u_output(u_not_converter)
+            db_interface.set_throttle(u_output[0])
 
         # update db
         db_interface.update_db()
