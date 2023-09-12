@@ -16,7 +16,7 @@ from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_conne
 if __name__ == "__main__":
     # init Buzzer
     buzzer = Buzzer(23)
-    startup_signal(buzzer)
+    #startup_signal(buzzer)
 
     # set params
     FREQUENCY = DATA_FREQ
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-    vehicle_connected_signal(buzzer)
+    #vehicle_connected_signal(buzzer)
 
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
