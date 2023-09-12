@@ -619,9 +619,6 @@ class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
         payload = message.payload
         comm = self.COM_ASCII_MAP[topic]
         data = mqtt_map_datatype(payload, comm)
-        if topic == "TELEMETRY_WRITING_OK":
-            print(payload)
-            print(data)
         indices = COMMANDS_TO_TELEMETRY_INDICES[comm]
         if isinstance(indices, tuple):
             key, id = indices

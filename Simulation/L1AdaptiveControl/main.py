@@ -41,11 +41,23 @@ OUTER_LOOP_FREQ = 5
 MODULO_FACTOR = int(INNER_LOOP_FREQ/OUTER_LOOP_FREQ)
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
+
+
+#MPC CONSTRAINTS
+MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5, -5, -5]),
+                                'upper': np.array([100000, 100000, 100000, 5, 5, 5])},
+                   "u_bounds": {'lower': np.array([-1000, -np.pi/6, -np.pi/6]),
+                                'upper': np.array([1000, np.pi/6, np.pi/6])},
+                   "delta_x_bounds": {'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
+                                   'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
+                   "delta_u_bounds": {'lower': np.array([-3, -np.pi/12, -np.pi/12]),
+                                   'upper': np.array([3, np.pi/12,np.pi/12])}}
+
 trajectory = SinglePoint([10, 10, 50])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.0})
+    perturber({'m': 0.5})
 
     ## parameters holder
     parameters_holder = DataHolder(perturber.perturbed_parameters)
@@ -68,7 +80,7 @@ if __name__ == "__main__":
     elif MODEL == 1:
         prediction_model = LinearTranslationalMotionDynamics(parameters_holder, 1 / OUTER_LOOP_FREQ)
     controller_conf = CustomMPCConfig(prediction_model, INNER_LOOP_FREQ, OUTER_LOOP_FREQ, ANGULAR_VELOCITY_RANGE,
-                                      PWM_RANGE, horizon=HORIZON, normalize_system=NORMALIZE, MPC_IMPLEMENTATION='SPARSE')
+                                      PWM_RANGE, MPC_CONSTRAINTS=MPC_CONSTRAINTS, horizon=HORIZON, normalize_system=NORMALIZE, MPC_IMPLEMENTATION='SPARSE')
     controller_conf.position_controller.switch_modes(MPC_MODE)
     u0 = controller_conf.position_controller_input_converter.u_ss
 
