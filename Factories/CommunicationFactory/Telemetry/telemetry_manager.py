@@ -427,6 +427,8 @@ class TelemetryManagerUAV(TelemetryManager):
         update_telemetry(self.telemetry, self.vehicle)
         if hasattr(self, 'additional_telemetry') and 'estimation_and_ref' in self.additional_telemetry:
             self._add_estimation_to_telemetry(self.telemetry)
+        if hasattr(self, 'additional_telemetry') and 'output_and_throttle' in self.additional_telemetry:
+            self._add_throttle_to_telemetry(self.telemetry)
         if self.data_writer is not None:
             self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
         self._add_mass_estimation_to_telemetry(self.telemetry)
@@ -492,6 +494,12 @@ class TelemetryManagerUAV(TelemetryManager):
     def _add_mass_estimation_to_telemetry(self, telemetry):
         mass = self.db_interface.get_estimated_mass()
         telemetry['estimated_mass'] = mass
+        self.telemetry = telemetry
+        return self.telemetry
+    
+    def _add_throttle_to_telemetry(self, telemetry):
+        throttle = self.db_interface.get_output_throttle()
+        telemetry['throttle'] = throttle
         self.telemetry = telemetry
         return self.telemetry
 

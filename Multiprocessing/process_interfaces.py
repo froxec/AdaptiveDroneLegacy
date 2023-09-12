@@ -23,7 +23,8 @@ adaptive_proxy_definition = {
     'u_l1': None,
     'sigma_hat': None,
     'ref': None,
-    'u_output': None
+    'u_output': None,
+    'throttle': None
 }
 
 telemetry_manager_proxy_definition = {
@@ -193,6 +194,10 @@ class Adaptive_Interface(Interface):
     def set_u_output(self, u_output):
         u_output = list(u_output)
         self.adaptive_interface_state['u_output'] = u_output
+
+    def set_throttle(self, throttle):
+        self.adaptive_interface_state['throttle'] = throttle
+
     def reset_state(self):
         self.adaptive_interface_state = deepcopy(adaptive_proxy_definition)
 
@@ -202,6 +207,7 @@ class Adaptive_Interface(Interface):
         setpoint = setpoint_dict['setpoint']
         if None not in setpoint:
             print("Adaptive interface: setpoint change", setpoint)
+            setpoint.extend([0, 0, 0])
             self.input_converter.update(x_ss=np.array(setpoint))
             
     def parameters_change_callback(self, message):
@@ -288,6 +294,11 @@ class Supervisor_Interface(Interface):
     def get_throttle(self):
         throttle = self.telemetry_manager_state['identification_procedure_throttle']
         return throttle
+    
+    def get_output_throttle(self):
+        throttle = self.adaptive_interface_state['throttle']
+        return throttle
+    
     def reset(self):
         self.drone_state = deepcopy(drone_proxy_definition)
 
