@@ -176,7 +176,7 @@ class LiveFilter:
 
 class LowPassLiveFilter(LiveFilter):
     # implementation based on https://www.samproell.io/posts/yarppg/yarppg-live-digital-filter/
-    def __init__(self, bandwidths, fs, signals_num):
+    def __init__(self, bandwidths, fs, signals_num, filter_order=1):
         if isinstance(bandwidths, (list, np.ndarray)) == False:
             raise ValueError("bandwidths should be either list or np.ndarray")
         if len(list(bandwidths)) != signals_num:
@@ -184,10 +184,11 @@ class LowPassLiveFilter(LiveFilter):
         self.fs = fs
         self.bandwidth = bandwidths
         self.signals_num = signals_num
+        self.filter_order=filter_order
         a_list = []
         b_list = []
         for i in range(signals_num):
-            b, a = iirfilter(2, Wn=bandwidths[i], fs=fs, btype="low", ftype="butter")
+            b, a = iirfilter(self.filter_order, Wn=bandwidths[i], fs=fs, btype="low", ftype="butter")
             a_list.append(a)
             b_list.append(b)
         self.a = a_list
