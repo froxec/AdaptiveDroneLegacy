@@ -432,6 +432,10 @@ class TelemetryManagerUAV(TelemetryManager):
         if self.data_writer is not None:
             self.telemetry['telem_writing_ok'] = self.data_writer.writing_ok
         self._add_mass_estimation_to_telemetry(self.telemetry)
+        x = self.db_interface.get_x()
+        if x is not None:
+            self.telemetry['position_local'] = x[0:3]
+            self.telemetry['velocity'] = x[3:6]
         available_telemetry = self.telemetry.keys()
         for command, indices in zip(COMMANDS_TO_TELEMETRY_INDICES.keys(), COMMANDS_TO_TELEMETRY_INDICES.values()):
             if not isinstance(indices, tuple):

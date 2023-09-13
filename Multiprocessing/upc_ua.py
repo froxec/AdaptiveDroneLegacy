@@ -10,24 +10,22 @@ from QuadcopterIntegration.Utilities import dronekit_commands
 from oclock import Timer
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from Factories.IdentificationProceduresFactory.throttle_to_thrust import ThrottleToThrustIdentification
-from gpiozero import Buzzer
-from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
+import numpy as np
+
+def calculate_velocity(x, x_prev, dt):
+    velocity = (x - x_prev) / dt
+    return list(velocity)
+
 
 if __name__ == "__main__":
-    # init Buzzer
-    buzzer = Buzzer(23)
-    #startup_signal(buzzer)
-
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
     time.sleep(2)
-    # connect to drone
     drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-    #vehicle_connected_signal(buzzer)
 
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
@@ -62,11 +60,11 @@ if __name__ == "__main__":
 
 
     # init velocity filter
-    velocity_filter = LowPassLiveFilter([30, 30, 30], fs=FREQUENCY, signals_num=3)
+    velocity_filter = LowPassLiveFilter([5, 5, 5], fs=FREQUENCY, signals_num=3, filter_order=1)
 
     #init timer
     timer = Timer(interval=DELTA_T)
-
+    x_prev = dronekit_commands.get_state(vehicle)
     while True:
         t1 = time.time()
         # fetch db
@@ -74,6 +72,9 @@ if __name__ == "__main__":
 
         # update current state
         x = dronekit_commands.get_state(vehicle)
+        # if None not in x:
+        #     x[3:6] = calculate_velocity(np.array(x[0:3]), np.array(x_prev[0:3]), dt=1/FREQUENCY)
+        #print(x)
         x[3:6] = velocity_filter(x[3:6])
         db_interface.set_drone_state(x)
 
@@ -97,6 +98,8 @@ if __name__ == "__main__":
             if tm.telemetry is not None:
                 data_writer.data = tm.telemetry
                 data_writer.data_set.set()
+
+        x_prev = x
 
         timer.checkpt()
         #print(time.time() - t1)

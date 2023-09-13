@@ -7,12 +7,13 @@ from Factories.ConfigurationsFactory.configurations import CustomMPCConfig
 from Factories.ModelsFactory.linear_models import LinearizedQuadNoYaw
 from Factories.DataManagementFactory.data_holders import DataHolder
 from  Multiprocessing.process_interfaces import MPC_Interface
+from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from oclock import Timer
 import redis
 
 if __name__ == "__main__":
     # parameters
-    FREQ = 10
+    FREQ = 50
     DELTA_T = 1/FREQ
 
     # init position controler
@@ -27,8 +28,6 @@ if __name__ == "__main__":
                                                    controller_conf.position_controller_output_converter,
                                                    TRAJECTORY,
                                                    ramp_saturation=None)
-
-
     # create redis interface
     db_interface = MPC_Interface(position_controller)
 

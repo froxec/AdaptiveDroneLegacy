@@ -25,7 +25,7 @@ PREDICTOR_PARAMETERS = Iris_parameters
 PREDICTOR_PARAMETERS['m'] = PREDICTOR_PARAMETERS['m'] + MASS_PERTURBATION
 
 # MPC PARAMES
-HORIZON = 30
+HORIZON = 80
 MPC_MODE = MPCModes.CONSTRAINED
 TRAJECTORY = SinglePoint([0, 0, 3])
 THROTTLE_MIN = 0.1
@@ -41,9 +41,9 @@ MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -1
                                    'upper': np.array([8, np.pi/24,np.pi/24])}}
 
 # ADAPTIVE_PARAMETERS:
-As = np.diag([-15, -15, -0.1])
+As = np.diag([-5, -5, -0.1])
 BANDWIDTHS = [0.5, 0.1, 0.1]
-
+L1_INPUT_BANDWIDTHS = [5, 2, 2]
 # ESTIMATOR PARAMETERS
 SAMPLING_FREQ = 20
 MASS_MIN, MASS_MAX = (0.2, 2.0)

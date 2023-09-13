@@ -278,6 +278,9 @@ class Supervisor_Interface(Interface):
         parameters = self.estimator_interface_state['parameters']
         return parameters
 
+    def get_x(self):
+        x = self.drone_state['x']
+        return x
     def start_identification_procedure(self, throttle):
         if throttle is not None and throttle <= 1.0 and throttle >= 0.0:
             self.telemetry_manager_state['identification_procedure_running'] = True

@@ -50,10 +50,10 @@ MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5
                                 'upper': np.array([1000, np.pi/6, np.pi/6])},
                    "delta_x_bounds": {'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
                                    'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
-                   "delta_u_bounds": {'lower': np.array([-3, -np.pi/12, -np.pi/12]),
-                                   'upper': np.array([3, np.pi/12,np.pi/12])}}
+                   "delta_u_bounds": {'lower': np.array([-3, -np.pi/24, -np.pi/24]),
+                                   'upper': np.array([3, np.pi/24,np.pi/24])}}
 
-trajectory = SinglePoint([10, 10, 50])
+trajectory = SinglePoint([10, 10, 5])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
@@ -87,8 +87,8 @@ if __name__ == "__main__":
     ## Adaptive Controller configuration
     z0 = x0[3:6]
     if MODEL == 0:
-        As = np.diag([-0.1, -0.1, -0.1])
-        bandwidths = [15, 0.2, 0.2]
+        As = np.diag([-0.5, -0.5, -0.5])
+        bandwidths = [15, 0.1, 0.1]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]

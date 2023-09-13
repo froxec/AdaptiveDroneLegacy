@@ -1,11 +1,12 @@
 from Multiprocessing.process_interfaces  import Adaptive_Interface
 from Multiprocessing.PARAMS import OPC_SERVER_ADDRESS, BANDWIDTHS, As, ANGULAR_VELOCITY_RANGE, \
-    TRAJECTORY, PREDICTOR_PARAMETERS, MIN_ATTITUDE
+    TRAJECTORY, PREDICTOR_PARAMETERS, MIN_ATTITUDE, L1_INPUT_BANDWIDTHS
 from Factories.ModelsFactory.uncertain_models import LinearQuadUncertain
 from Factories.DataManagementFactory.data_holders import DataHolder
 from Factories.ControllersFactory.adaptive_augmentation.l1_augmentation import L1_Predictor, L1_AdaptiveLaw, L1_LowPass, \
     L1_ControlConverter, L1_Augmentation
 from Factories.ToolsFactory.Converters import MPC_input_converter, MPC_output_converter
+from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 import numpy as np
 from oclock import Timer
 import time
@@ -29,7 +30,7 @@ def command_convert(u, throttle_max):
 
 if __name__ == "__main__":
     # parameters
-    FREQ = 100
+    FREQ = 50
     DELTA_T = 1 / FREQ
 
     # init input and output converters
@@ -50,6 +51,7 @@ if __name__ == "__main__":
     l1_filter = L1_LowPass(bandwidths=BANDWIDTHS, fs=FREQ, signals_num=z0.shape[0], no_filtering=False)
     l1_converter = L1_ControlConverter()
     adaptive_controller = L1_Augmentation(l1_predictor, l1_adaptive_law, l1_filter, l1_converter, saturator=None)
+    l1_input_filter = LowPassLiveFilter(bandwidths=L1_INPUT_BANDWIDTHS, fs=FREQ, signals_num=z0.shape[0])
 
     # init redis interface
     db_interface = Adaptive_Interface(input_converter=input_converter,
@@ -77,6 +79,7 @@ if __name__ == "__main__":
         if db_interface.is_adaptive_running():
             # get reference and current state
             ref = db_interface.get_ref()
+            #ref = l1_input_filter(ref)
             x = db_interface.get_drone_state()
             if (None not in ref
                     and None not in x

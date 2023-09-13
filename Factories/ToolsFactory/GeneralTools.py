@@ -188,7 +188,7 @@ class LowPassLiveFilter(LiveFilter):
         a_list = []
         b_list = []
         for i in range(signals_num):
-            b, a = iirfilter(filter_order, Wn=bandwidths[i], fs=fs, btype="low", ftype="butter")
+            b, a = iirfilter(filter_order, Wn=bandwidths[i], fs=fs, btype="low", ftype="bessel")
             a_list.append(a)
             b_list.append(b)
         self.a = a_list
