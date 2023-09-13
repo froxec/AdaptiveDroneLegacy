@@ -9,7 +9,7 @@
 # new parameters for sparse mpc
 MPC_PARAMETERS_MAPPING = {
     "LINEARIZED": {'Q_base': [0.5, 0.5, 0.5, 1, 1, 1], 'P_base': [1, 100, 100]},
-    "LINEARIZED_NORMALIZED": {'Q_base': [100, 100, 100, 1, 1, 0.1], 'P_base': [1, 1, 1], 'Qn_base': [100, 100, 100, 10, 10, 10]},
+    "LINEARIZED_NORMALIZED": {'Q_base': [200, 200, 200, 0.1, 0.1, 0.1], 'P_base': [1, 1, 1], 'Qn_base': [500, 500, 500, 10, 10, 10]},
     "TRANSLATIONAL_DYNAMICS": {'Q_base': [10, 10, 5, 0.1, 0.1, 0.1], 'P_base': [1, 1, 1]},
     "TRANSLATIONAL_DYNAMICS_NORMALIZED": {'Q_base': [1, 1, 1, 0.01, 0.01, 0.01], 'P_base':[1, 1, 0.01]}
 }
