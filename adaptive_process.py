@@ -30,7 +30,7 @@ def command_convert(u, throttle_max):
 
 if __name__ == "__main__":
     # parameters
-    FREQ = 50
+    FREQ = 30
     DELTA_T = 1 / FREQ
 
     # init input and output converters
