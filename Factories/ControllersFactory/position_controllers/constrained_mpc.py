@@ -27,7 +27,7 @@ class ConstrainedMPC:
         self.freq = freq
         self.pred_horizon = pred_horizon
         self.soft_constraints = soft_constraints
-        self.opts = {'MAXITER':100,'VERBOSE':0,'OUTPUT':2}
+        self.opts = {'MAXITER':50,'VERBOSE':0,'OUTPUT':2}
         # convert thrust_constraint to delta thrust
         self.thrust_constraints = {'lower': u_bounds['lower'][0],
                                    'upper': u_bounds['upper'][0]}

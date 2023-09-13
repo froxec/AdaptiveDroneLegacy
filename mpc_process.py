@@ -13,7 +13,7 @@ import redis
 
 if __name__ == "__main__":
     # parameters
-    FREQ = 30
+    FREQ = 20
     DELTA_T = 1/FREQ
 
     # init position controler
