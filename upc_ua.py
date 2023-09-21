@@ -11,6 +11,8 @@ from oclock import Timer
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from Factories.IdentificationProceduresFactory.throttle_to_thrust import ThrottleToThrustIdentification
 import numpy as np
+from gpiozero import Buzzer
+from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
 
 def calculate_velocity(x, x_prev, dt):
     velocity = (x - x_prev) / dt
@@ -18,15 +20,18 @@ def calculate_velocity(x, x_prev, dt):
 
 
 if __name__ == "__main__":
+    buzzer = Buzzer(23)
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
+
+    startup_signal(buzzer)
     time.sleep(2)
-    drone_addr = SIM_IP
+    drone_addr = REAL_DRONE_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-
+    vehicle_connected_signal(buzzer)
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
 
@@ -39,7 +44,7 @@ if __name__ == "__main__":
     # setup telemetry managers
     tm = MQTT_TelemetryManager(mqtt_host=MQTT_HOST,
                                mqtt_port=MQTT_PORT,
-                             update_freq=10,
+                             update_freq=5,
                              vehicle=vehicle,
                              db_interface=db_interface,
                              data_writer=data_writer,

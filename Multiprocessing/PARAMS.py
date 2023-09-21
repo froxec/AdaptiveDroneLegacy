@@ -5,10 +5,10 @@ import numpy as np
 
 # OPC SERVER
 OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
-DATA_FREQ = 100
+DATA_FREQ = 20
 
 # Drone addresses
-SIM_IP = 'udp:192.168.0.27:8500'
+SIM_IP = 'udp:169.254.112.124:8500'
 REAL_DRONE_IP = '/dev/ttyAMA1'
 
 # REDIS DATABASE
@@ -58,5 +58,5 @@ MIN_ATTITUDE = 2.5
 
 # TELEMETRY MANAGER
 MQTT = True
-MQTT_HOST = "192.168.0.27"
+MQTT_HOST = "10.42.0.57"
 MQTT_PORT = 8955
