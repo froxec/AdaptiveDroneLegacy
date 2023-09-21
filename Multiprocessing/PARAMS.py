@@ -5,7 +5,7 @@ import numpy as np
 
 # OPC SERVER
 OPC_SERVER_ADDRESS = "opc.tcp://localhost:8085"
-DATA_FREQ = 20
+DATA_FREQ = 100
 
 # Drone addresses
 SIM_IP = 'udp:169.254.112.124:8500'
