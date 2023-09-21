@@ -70,7 +70,7 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/tests_0909/sim/test2.csv'
+    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/first_field_tests/test2_field.csv'
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []
@@ -87,6 +87,6 @@ if __name__ == "__main__":
     data_plotter.plot_velocity()
     data_plotter.plot_output_control()
     data_plotter.plot_u_l1()
-    data_plotter.plot_u_ref()
+    #data_plotter.plot_u_ref()
     data_plotter.plot_sigma()
     data_plotter.plot_attitude()

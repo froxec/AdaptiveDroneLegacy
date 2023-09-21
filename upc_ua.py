@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
 
     # init velocity filter
-    velocity_filter = LowPassLiveFilter([5, 5, 5], fs=FREQUENCY, signals_num=3, filter_order=1)
+    #velocity_filter = LowPassLiveFilter([5, 5, 5], fs=FREQUENCY, signals_num=3, filter_order=1)
 
     #init timer
     timer = Timer(interval=DELTA_T)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         # if None not in x:
         #     x[3:6] = calculate_velocity(np.array(x[0:3]), np.array(x_prev[0:3]), dt=1/FREQUENCY)
         #print(x)
-        x[3:6] = velocity_filter(x[3:6])
+        #x[3:6] = velocity_filter(x[3:6])
         db_interface.set_drone_state(x)
 
         identification_running = identification_procedure.run(x)
