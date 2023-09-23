@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # init throttle to thrust identification
     identification_procedure = ThrottleToThrustIdentification(db_interface,
                                                               vehicle,
-                                                              logs_path ='/home/pi/AdaptiveDrone/identification_logs/')
+                                                              logs_path='/home/pete/PycharmProjects/AdaptiveDrone/identification_logs/')
 
 
     # init velocity filter
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         # set vehicle control
         u = db_interface.get_control()
         if u is not None and vehicle.armed == True \
-        and vehicle.location.global_relative_frame.alt > 0.95 * 2.5 \
+        and vehicle.location.global_relative_frame.alt > 0.95 * 1 \
         and db_interface.is_mpc_running():
             dronekit_commands.set_attitude(vehicle, u[1], u[2], 0.0, u[0])
 

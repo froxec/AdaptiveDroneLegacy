@@ -70,7 +70,7 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/first_field_tests/test2_field.csv'
+    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/21_09_simulation_tests/test2.csv'
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []

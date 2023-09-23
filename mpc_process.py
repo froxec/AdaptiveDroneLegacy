@@ -58,7 +58,6 @@ if __name__ == "__main__":
             db_interface.set_control(u)
             # save previous control
             u_prev = u
-            print(u)
         # update current setpoint info
         db_interface.update_setpoint(position_controller.setpoint)
         # update mpc state

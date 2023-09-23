@@ -38,23 +38,23 @@ MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5
                    "delta_x_bounds": {'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
                                    'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
                    "delta_u_bounds": {'lower': np.array([-100, -np.pi/24, -np.pi/24]),
-                                   'upper': np.array([100, np.pi/24,np.pi/24])}}
+                                   'upper': np.array([100, np.pi/24, np.pi/24])}}
 
 # ADAPTIVE_PARAMETERS:
 As = np.diag([-5, -5, -5])
-BANDWIDTHS = [5, 0.5, 0.5]
+BANDWIDTHS = [2.5, 0.5, 0.5]
 L1_INPUT_BANDWIDTHS = [5, 2, 2]
 # ESTIMATOR PARAMETERS
-SAMPLING_FREQ = 20
-MASS_MIN, MASS_MAX = (0.2, 2.0)
+SAMPLING_FREQ = 50
+MASS_MIN, MASS_MAX = (1.0, 3.0)
 domain = (MASS_MIN, MASS_MAX)
 samples_num = 100
 X0 = np.linspace(domain[0], domain[1], samples_num).reshape(-1, 1)
-CONVERGENCE_SAMPLES_REQUIRED = 15
+CONVERGENCE_SAMPLES_REQUIRED = 5
 CONVERGENCE_EPSILON_NEIGHBOURHOOD = 0.05
 
 # CONTROLERS
-MIN_ATTITUDE = 2.5
+MIN_ATTITUDE = 1
 
 # TELEMETRY MANAGER
 MQTT = True
