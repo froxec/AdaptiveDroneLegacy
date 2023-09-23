@@ -13,7 +13,7 @@ from Factories.IdentificationProceduresFactory.throttle_to_thrust import Throttl
 import numpy as np
 from gpiozero import Buzzer
 from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
-
+from copy import deepcopy
 def calculate_velocity(x, x_prev, dt):
     velocity = (x - x_prev) / dt
     return list(velocity)
@@ -25,13 +25,13 @@ if __name__ == "__main__":
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
 
-    startup_signal(buzzer)
+    #startup_signal(buzzer)
     time.sleep(2)
-    drone_addr = REAL_DRONE_IP
+    drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-    vehicle_connected_signal(buzzer)
+    #vehicle_connected_signal(buzzer)
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         # update data writer
         if data_writer.writing_event.is_set():
             if tm.telemetry is not None:
-                data_writer.data = tm.telemetry
+                data_writer.data = deepcopy(tm.telemetry)
                 data_writer.data_set.set()
 
         x_prev = x

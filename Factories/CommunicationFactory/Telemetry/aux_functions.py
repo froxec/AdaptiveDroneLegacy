@@ -4,6 +4,7 @@ def update_telemetry(telemetry, vehicle):
    state = get_state(vehicle)
    telemetry['position_local'] = state[:3]
    telemetry['velocity'] = state[3:]
+   print(state)
    telemetry['armed'] = vehicle.armed
    telemetry['attitude'] = [vehicle.attitude.pitch,
                             vehicle.attitude.roll,
