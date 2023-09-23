@@ -72,9 +72,57 @@ class ThrottleThrustCharacteristics:
         fig.add_trace(go.Scatter(x=throttle, y=reg_y))
         fig.show()
         print("Equation: thrust = {} * throttle + {}".format(slope, intercept))
+
+class ThrottleThrustCharacteristicsMastTest:
+    def __init__(self, data_path, max_idx=11):
+        self.data_path = data_path
+        self.g = 9.81
+        self.df = pd.read_csv(data_path, delimiter=',', decimal=',')
+        self.max_idx = max_idx
+
+    def calculate_thrust(self, mass):
+        thrust = list(np.array(mass) * self.g)
+        return thrust
+
+    def calculate_characteristics(self):
+        mass = list(self.df['mass'])[:self.max_idx]
+        throttle = list(self.df['throttle'])[:self.max_idx]
+        thrust = self.calculate_thrust(mass)
+        slope, intercept, r_value, p_value, std_err = stats.linregress(throttle, thrust)
+        reg_y = slope * np.array(throttle) + intercept
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=throttle, y=thrust))
+        fig.add_trace(go.Scatter(x=throttle, y=reg_y))
+        fig.show()
+        print("Equation: thrust = {} * throttle + {}".format(slope, intercept))
+
+class ThrottleThrustTestStand:
+    def __init__(self, data_path, min_idx=4, max_idx=18):
+        self.data_path = data_path
+        self.g = 9.81
+        self.df = pd.read_csv(data_path, delimiter=';', decimal=',')
+        self.max_idx = max_idx
+        self.min_idx = min_idx
+
+    def calculate_thrust(self, thrust_in_g):
+        thrust = list((np.array(thrust_in_g) * self.g / 1000))
+        return thrust
+
+    def calculate_characteristics(self):
+        thrust_g = list(self.df['thrust'])[self.min_idx:self.max_idx]
+        throttle = list(self.df['throttle'])[self.min_idx:self.max_idx]
+        thrust = self.calculate_thrust(thrust_g)
+        slope, intercept, r_value, p_value, std_err = stats.linregress(throttle, thrust)
+        reg_y = slope * np.array(throttle) + intercept
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=throttle, y=thrust))
+        fig.add_trace(go.Scatter(x=throttle, y=reg_y))
+        fig.show()
+        print("Equation: thrust = {} * throttle + {}".format(slope, intercept))
+
 if __name__ == "__main__":
     # print(os.getcwd())
-    throttle_thrust_csv_path = './identification_data/throttle_thrust_data/zd550/'
+    throttle_thrust_csv_path = './identification_data/test_stand/z550.csv'
     #
     # collect throttle - acceleration data
 
@@ -104,7 +152,9 @@ if __name__ == "__main__":
 
     # calculate characteristics
     # #
-    throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle.csv',
-                                                    mass=1.628,
-                                                    max_idx=10)
+    # throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle.csv',
+    #                                                 mass=1.628,
+    #                                                 max_idx=10)
+    #throttle_thrust = ThrottleThrustCharacteristicsMastTest(data_path=throttle_thrust_csv_path)
+    throttle_thrust = ThrottleThrustTestStand(data_path=throttle_thrust_csv_path)
     throttle_thrust.calculate_characteristics()

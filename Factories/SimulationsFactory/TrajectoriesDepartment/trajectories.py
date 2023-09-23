@@ -48,3 +48,13 @@ class SinglePoint(Trajectory):
     def __init__(self, ref):
         self.setpoint = ref
         self.generated_trajectory = np.array(ref).reshape(1, -1)
+
+class SquareTrajectory(Trajectory):
+    def __init__(self, max_length):
+        self.max_length = max_length
+        self.generated_trajectory = np.array([[-max_length, -max_length, 3.5],
+                                             [-max_length, max_length, 3.5],
+                                              [max_length, max_length, 3.5],
+                                              [max_length, -max_length, 3.5],
+                                              [-max_length, -max_length, 3.5]])
+

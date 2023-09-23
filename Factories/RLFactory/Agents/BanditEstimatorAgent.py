@@ -281,18 +281,14 @@ class BanditEstimatorAcceleration:
 
     def __call__(self, measurement, force_norm, angles, deltaT=None):
         mode = self.mode.split('_')
-        if mode[0] == 'VELOCITY':
-            if self.velocity_prev is None:
-                self.velocity_prev = measurement
-                return
-            acceleration = self._convert_velocity_to_acceleration(measurement, deltaT)
-        else:
-            acceleration = measurement
+        a = self.get_acceleration(mode, measurement, deltaT)
+        if a is None:
+            return
         if not self.converged:
             self.memory['actions'].append(self.estimated_parameters_holder.m)
             print("Action:", self.estimated_parameters_holder.m)
             a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
-            penalty = self._calculate_penalty(a_hat, acceleration)
+            penalty = self._calculate_penalty(a_hat, a)
             self.memory['penalty'].append(penalty)
             # penalty = self._normalize_penalty_max_a(penalty, acceleration)
             # self.memory['normalized_penalty'].append(penalty)
@@ -303,7 +299,7 @@ class BanditEstimatorAcceleration:
             self.estimated_parameters_holder.m = self.action
             self.converged = self.convergence_checker(self.action)
             # append data
-            self.history['acceleration'].append(list(acceleration))
+            self.history['acceleration'].append(list(a))
             self.history['a_hat'].append(list(a_hat))
             self.history['action'].append(self.action)
             self.history['penalty'].append(penalty)
@@ -351,6 +347,16 @@ class BanditEstimatorAcceleration:
         parameters = self.estimated_parameters_holder.get_data()
         parameters['m'] = self.convergence_checker.average
         return parameters
+
+    def get_acceleration(self, mode, measurement, deltaT):
+        if mode[0] == 'VELOCITY':
+            if self.velocity_prev is None:
+                self.velocity_prev = measurement
+                return
+            acceleration = self._convert_velocity_to_acceleration(measurement, deltaT)
+        else:
+            acceleration = measurement
+        return acceleration
 
     def reset(self):
         # reset gp
@@ -482,7 +488,98 @@ class BanditEstimatorThread(BanditEstimatorAcceleration, Thread):
         self.data_set_event.wait()
         return self.data['measurement'], self.data['force'], self.data['angles']
 
-class BanditEstimatorAccelerationProcess(BanditEstimatorAcceleration):
+class BanditEstimatorAccelerationQQ(BanditEstimatorAcceleration):
+    def __init__(self,
+                 parameters_manager: Type[ParametersManager],
+                 prediction_model,
+                 gp: Type[EfficientGaussianProcess],
+                 convergence_checker,
+                 atomic_traj_samples_num,
+                 deltaT,
+                 sleeptime=1,
+                 mode='ACCELERATION',
+                 pen_moving_window=None,
+                 actions_moving_window=None,
+                 variance_threshold=0.2,
+                 epsilon_episode_steps=0,
+                 max_steps=np.Inf,
+                 testing_mode=False,
+                 save_images=False,
+                 logs_path='./logs/'
+                 ):
+        BanditEstimatorAcceleration.__init__(self,
+                                               parameters_manager=parameters_manager,
+                                               prediction_model=prediction_model,
+                                               gp=gp,
+                                               convergence_checker=convergence_checker,
+                                               sleeptime=sleeptime,
+                                               mode=mode,
+                                               pen_moving_window=pen_moving_window,
+                                               actions_moving_window=actions_moving_window,
+                                               variance_threshold=variance_threshold,
+                                               epsilon_episode_steps=epsilon_episode_steps,
+                                               max_steps=max_steps,
+                                               testing_mode=testing_mode,
+                                               save_images=save_images,
+                                               logs_path=logs_path)
+        self.trajectory_buffer = RollBuffers(['a', 'a_hat'],
+                                             [(3,), (3,)],
+                                             buffer_size=atomic_traj_samples_num)
+        self.actions_buffer = RollBuffers(['actions'], [(1,)], buffer_size=3)
+        self.penalties_buffer = RollBuffers(['penalties'], [(1,)], buffer_size=3)
+        self.deltaT = deltaT
+        self.samples_num = atomic_traj_samples_num
+
+    def __call__(self, measurement, force_norm, angles, deltaT=None):
+        mode = self.mode.split('_')
+        a = self.get_acceleration(mode, measurement, deltaT)
+        if a is None:
+            return
+        if self.trajectory_buffer.full['a'] == False:
+            a_hat = self.prediction_model(force_norm=force_norm, angles=angles)
+            self.add_sample_to_buffer(a, a_hat)
+            self.a_hat_prev = a_hat
+            self.history['acceleration'].append(list(a))
+            self.history['a_hat'].append(list(a_hat))
+            self.history['force_norm'].append(force_norm)
+            self.history['angles'].append(angles)
+        elif self.trajectory_buffer.full['a']:
+            penalty = self._calculate_penalty()
+            self.penalties_buffer.add_sample(['penalties'], [penalty])
+            if not self.converged:
+                self.update_gp(self.estimated_parameters_holder.m, penalty)
+                if self.save_images:
+                    self.gp.plot('./images/gp/')
+                self.action = self.take_action()
+                print("Action taken {}".format(self.action))
+                self.history['action'].append(self.action)
+                self.estimated_parameters_holder.m = self.action
+                self.converged = self.convergence_checker(self.action)
+                self.history['action'].append(self.action)
+                self.history['penalty'].append(penalty)
+            if self.converged and not self.parameters_changed:
+                parameters = self.get_parameters()
+                print("Converged to {}".format(parameters))
+                self.update_parameters(parameters)
+                self.parameters_changed = True
+            else:
+                pass
+            self.current_step += 1
+            if self.current_step > self.max_steps or self.converged:
+                self.process_finished = True
+            self.trajectory_buffer.flush()
+
+    def add_sample_to_buffer(self, a, a_hat):
+        self.trajectory_buffer.add_sample(['a', 'a_hat'], [a, a_hat])
+
+    def _calculate_penalty(self):
+        reward = 0
+        a, a_hat = self.trajectory_buffer['a'], self.trajectory_buffer['a_hat']
+        for i in range(len(self.trajectory_buffer)):
+            reward += manhattan_distance(a[i], a_hat[i])*self.deltaT
+        return reward
+
+class BanditEstimatorAccelerationProcess(BanditEstimatorAccelerationQQ, BanditEstimatorAcceleration):
     def __init__(self,
                  db_interface,
                  prediction_model,
@@ -496,21 +593,41 @@ class BanditEstimatorAccelerationProcess(BanditEstimatorAcceleration):
                  epsilon_episode_steps=0,
                  max_steps=np.Inf,
                  testing_mode=False,
-                 save_images=False):
-        BanditEstimatorAcceleration.__init__(self,
-                                             None,
-                                             prediction_model,
-                                             gp,
-                                             convergence_checker,
-                                             sleeptime,
-                                             mode,
-                                             pen_moving_window,
-                                             actions_moving_window,
-                                             variance_threshold,
-                                             epsilon_episode_steps,
-                                             max_steps,
-                                             testing_mode,
-                                             save_images)
+                 save_images=False,
+                 atomic_traj_samples_num=None,
+                 deltaT=None):
+        if atomic_traj_samples_num is not None:
+            BanditEstimatorAccelerationQQ.__init__(self,
+                                                None,
+                                                 prediction_model,
+                                                 gp,
+                                                 convergence_checker,
+                                                 atomic_traj_samples_num,
+                                                 deltaT,
+                                                 sleeptime,
+                                                 mode,
+                                                 pen_moving_window,
+                                                 actions_moving_window,
+                                                 variance_threshold,
+                                                 epsilon_episode_steps,
+                                                 max_steps,
+                                                 testing_mode,
+                                                 save_images)
+        else:
+            BanditEstimatorAcceleration.__init__(self,
+                                                 None,
+                                                 prediction_model,
+                                                 gp,
+                                                 convergence_checker,
+                                                 sleeptime,
+                                                 mode,
+                                                 pen_moving_window,
+                                                 actions_moving_window,
+                                                 variance_threshold,
+                                                 epsilon_episode_steps,
+                                                 max_steps,
+                                                 testing_mode,
+                                                 save_images)
         self.db_interface = db_interface
     def update_parameters(self, parameters):
         self.db_interface.update_parameters(parameters)

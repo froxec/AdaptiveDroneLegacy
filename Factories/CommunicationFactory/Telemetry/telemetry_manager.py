@@ -107,6 +107,9 @@ class TelemetryManager:
             setpoint = self.position_controller.trajectory.setpoint
             setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
             self.position_controller.change_trajectory(SinglePoint(setpoint))
+        if comm == 'SET_SQUARE_SETPOINT':
+            print("setting square setpoint")
+            self.position_controller.change_trajectory(SquareTrajectory(max_length=data))
 
     def auxiliary_command_callback(self, topic, data, opts):
         command = AUXILIARY_COMMANDS_MAPPING[data]
@@ -457,13 +460,20 @@ class TelemetryManagerUAV(TelemetryManager):
             comm = comm_decoupled[0]
         elif len(comm_decoupled) == 2:
             comm, suffix = comm_decoupled
-            current_setpoint = self.db_interface.telemetry_manager_state['setpoint']
-            current_setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
-            self.db_interface.telemetry_manager_state['setpoint'] = current_setpoint
+            if comm == 'SET_SPIRAL_SETPOINT':
+                current_setpoint = self.db_interface.telemetry_manager_state['setpoint']
+                current_setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
+                self.db_interface.telemetry_manager_state['setpoint'] = current_setpoint
+                self.db_interface.telemetry_manager_state['setpoint_type'] = 'single_point'
+            if comm == 'SET_SQUARE_SETPOINT':
+                current_setpoint = [data]
+                self.db_interface.telemetry_manager_state['setpoint'] = current_setpoint
+                self.db_interface.telemetry_manager_state['setpoint_type'] = 'square'
         self.db_interface.update_telemetry_manager_db()
         #update db
         if None not in self.db_interface.telemetry_manager_state['setpoint']:
-            self.db_interface.publish_setpoint(self.db_interface.telemetry_manager_state['setpoint'])
+            self.db_interface.publish_setpoint(self.db_interface.telemetry_manager_state['setpoint'],
+                                               self.db_interface.telemetry_manager_state['setpoint_type'])
             self.db_interface.telemetry_manager_state['setpoint'] = [None, None, None]
 
     def data_write_callback(self, topic, data, opts):
@@ -667,15 +677,24 @@ class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
         comm_decoupled = comm.split(":")
         if len(comm_decoupled) == 1:
             comm = comm_decoupled[0]
+            if comm == 'SET_SQUARE_SETPOINT':
+                current_setpoint = [data]
+                self.db_interface.telemetry_manager_state['setpoint'] = current_setpoint
+                self.db_interface.telemetry_manager_state['setpoint_type'] = 'square'
         elif len(comm_decoupled) == 2:
             comm, suffix = comm_decoupled
-            current_setpoint = self.db_interface.telemetry_manager_state['setpoint']
-            current_setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
-            self.db_interface.telemetry_manager_state['setpoint'] = current_setpoint
+            if comm == 'SET_SPIRAL_SETPOINT':
+                current_setpoint = self.db_interface.telemetry_manager_state['setpoint']
+                if len(current_setpoint) != 3:
+                    current_setpoint = [None, None, None]
+                current_setpoint[SUFFIX_INDICES_MAPPING[suffix]] = data
+                self.db_interface.telemetry_manager_state['setpoint'] = current_setpoint
+                self.db_interface.telemetry_manager_state['setpoint_type'] = 'single_point'
         self.db_interface.update_telemetry_manager_db()
         # update db
         if None not in self.db_interface.telemetry_manager_state['setpoint']:
-            self.db_interface.publish_setpoint(self.db_interface.telemetry_manager_state['setpoint'])
+            self.db_interface.publish_setpoint(self.db_interface.telemetry_manager_state['setpoint'],
+                                               self.db_interface.telemetry_manager_state['setpoint_type'])
             self.db_interface.telemetry_manager_state['setpoint'] = [None, None, None]
 
     def auxiliary_command_callback(self, client, userdata, message):
@@ -697,10 +716,13 @@ class MQTT_TelemetryManager(TelemetryManagerUAVMultiprocessingThread):
             while True:
                 print(" Altitude: ", self.vehicle.location.global_relative_frame.alt)
                 # Break and return from function just below target altitude.
-                if self.vehicle.location.global_relative_frame.alt >= target_attitude * 0.95:
+                if self.vehicle.location.global_relative_frame.alt >= target_attitude * 0.5:
                     print("Reached target altitude")
                     break
                 time.sleep(0.1)
+        if command == 'ACCEPT_ESTIMATION':
+            print("TELEMETRY MANAGER: ESTIMATION ACCEPTED -> PUBLISHING PARAMETERS")
+            self.db_interface.publish_parameters()
 
     def update_controllers_callback(self, client, userdata, message):
         topic = message.topic

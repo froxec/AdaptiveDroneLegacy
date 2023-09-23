@@ -44,7 +44,6 @@ class PositionController():
                 xnum = self.controller.model.x_num
                 self.x = np.array(data[:xnum])
                 self.xref = np.array(data[xnum:])
-                print(self.xref)
                 trajectory = SinglePoint(self.xref)
                 self.change_trajectory(trajectory)
         else:
@@ -66,11 +65,14 @@ class PositionController():
 
     def change_trajectory(self, trajectory):
         self.trajectory = trajectory
+        self.current_waypoint_id = 0
 
     def set_reference(self, ref, x):
         if self.setpoint is not None and self.check_if_reached_waypoint(x) and self.current_waypoint_id < len(
                 self.trajectory) - 1:
             self.current_waypoint_id += 1
+        if self.current_waypoint_id == len(self.trajectory) - 1:
+            self.current_waypoint_id = 0
         if isinstance(ref, Trajectory):
             self.trajectory = ref
             self.setpoint = self.trajectory.generated_trajectory[self.current_waypoint_id]
@@ -88,10 +90,14 @@ class PositionController():
         self.input_converter.update(x_ss=self.setpoint.flatten())
 
     def check_if_reached_waypoint(self, x):
+        x = np.concatenate([x[:2], x[3:]])
         if self.setpoint.shape != x.shape:
-            distance = euclidean_distance(self.setpoint.flatten(), x)
+            setpoint = self.setpoint.flatten()
+            setpoint = np.concatenate([setpoint[:2], setpoint[3:]])
+            distance = euclidean_distance(setpoint, x)
         else:
-            distance = euclidean_distance(self.setpoint, x)
+            setpoint = np.concatenate([self.setpoint[:2], self.setpoint[3:]])
+            distance = euclidean_distance(setpoint, x)
         if distance < 0.1:
             return True
         else:

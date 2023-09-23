@@ -1,7 +1,7 @@
 import json
 import redis
 from Multiprocessing.PARAMS import REDIS_HOST, REDIS_PORT, DB_NUM
-from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint
+from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint, SquareTrajectory
 from QuadcopterIntegration.Utilities import dronekit_commands
 import numpy as np
 from copy import deepcopy
@@ -34,6 +34,7 @@ telemetry_manager_proxy_definition = {
     'identification_procedure_running': False,
     'identification_procedure_throttle': None,
     'setpoint':  [None, None, None],
+    'setpoint_type': None,
 }
 
 estimator_proxy_definition = {
@@ -123,6 +124,8 @@ class MPC_Interface(Interface):
         if not None in setpoint:
             setpoint = list(setpoint.flatten())
             self.mpc_interface_state['current_setpoint'] = setpoint
+            setpoint_dict = json.dumps({"setpoint": setpoint})
+            self.redis_database.publish('mpc_setpoint_change', setpoint_dict)
     def reset_state(self):
         self.mpc_interface_state = deepcopy(mpc_proxy_defintion)
 
@@ -130,10 +133,14 @@ class MPC_Interface(Interface):
         data = message['data']
         setpoint_dict = json.loads(data.decode("utf-8"))
         setpoint = setpoint_dict['setpoint']
+        type = setpoint_dict['type']
         if None not in setpoint:
-            print("MPC interface: setpoint change", setpoint)
-            self.position_controller.change_trajectory(SinglePoint(setpoint))
-            self.mpc_interface_state['current_setpoint'] = setpoint
+            print("MPC interface: setpoint change", setpoint, "type", type)
+            if type=='single_point':
+                self.position_controller.change_trajectory(SinglePoint(setpoint))
+                self.mpc_interface_state['current_setpoint'] = setpoint
+            elif type=='square':
+                self.position_controller.change_trajectory(SquareTrajectory(setpoint[0]))
 
     def parameters_change_callback(self, message):
         data = message['data']
@@ -156,7 +163,7 @@ class Adaptive_Interface(Interface):
                  adaptive_controller):
         Interface.__init__(self)
         self.pubsub = self.redis_database.pubsub()
-        self.pubsub.subscribe(**{'setpoint_change': self.setpoint_change_callback,
+        self.pubsub.subscribe(**{'mpc_setpoint_change': self.setpoint_change_callback,
                                  'parameters_change': self.parameters_change_callback})
         #get converters representations
         self.input_converter = input_converter
@@ -207,7 +214,7 @@ class Adaptive_Interface(Interface):
         setpoint = setpoint_dict['setpoint']
         if None not in setpoint:
             print("Adaptive interface: setpoint change", setpoint)
-            setpoint.extend([0, 0, 0])
+            #setpoint.extend([0, 0, 0])
             self.input_converter.update(x_ss=np.array(setpoint))
             
     def parameters_change_callback(self, message):
@@ -246,8 +253,9 @@ class Supervisor_Interface(Interface):
     def update_telemetry_manager_db(self):
         self.redis_database.set("telemetry_manager_state", json.dumps(self.telemetry_manager_state))
 
-    def publish_setpoint(self, setpoint):
-        setpoint = json.dumps({"setpoint": setpoint})
+    def publish_setpoint(self, setpoint, type):
+        setpoint = json.dumps({"setpoint": setpoint,
+                               "type": type})
         self.redis_database.publish('setpoint_change', setpoint)
 
     def set_drone_state(self, x):

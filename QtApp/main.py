@@ -103,12 +103,15 @@ class MainWindow(QMainWindow):
         self.window.disarmBtn.clicked.connect(lambda: self.arm_disarm_vehicle("disarm"))
 
         #change mode
-        self.window.stabilizeButton.clicked.connect(lambda: self.change_flight_mode("STABILIZE"))
-        self.window.guidedButton.clicked.connect(lambda: self.change_flight_mode("GUIDED"))
-        self.window.acroButton.clicked.connect(lambda: self.change_flight_mode("ACRO"))
+        # self.window.stabilizeButton.clicked.connect(lambda: self.change_flight_mode("STABILIZE"))
+        # self.window.guidedButton.clicked.connect(lambda: self.change_flight_mode("GUIDED"))
+        # self.window.acroButton.clicked.connect(lambda: self.change_flight_mode("ACRO"))
 
         # change reference value
-        self.window.confirmReference.clicked.connect(self.change_setpoint)
+        self.window.confirmReference.clicked.connect(lambda: self.change_setpoint('single_point'))
+
+        # set square reference
+        self.window.setSquareRefButton.clicked.connect(lambda: self.change_setpoint('square'))
 
         # RETURN TO LAUNCH
         self.window.returnToLaunchBtn.clicked.connect(lambda: self.auxiliary_command('RETURN_TO_LAUNCH'))
@@ -154,6 +157,7 @@ class MainWindow(QMainWindow):
         self.window.batteryPixmap.setStyleSheet("color: white")
         # show
         self.show()
+
 
     @Slot()
     def arm_disarm_vehicle(self, mode):
@@ -223,11 +227,13 @@ class MainWindow(QMainWindow):
         self.lidia_telemetry(self.telemetry)
 
     @Slot()
-    def change_setpoint(self):
-        self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:X', self.window.x_ref.value())
-        self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:Y', self.window.y_ref.value())
-        self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:Z', self.window.z_ref.value())
-
+    def change_setpoint(self, setpoint_type):
+        if setpoint_type == 'single_point':
+            self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:X', self.window.x_ref.value())
+            self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:Y', self.window.y_ref.value())
+            self.telemetry_manager.publish('SET_SPIRAL_SETPOINT:Z', self.window.z_ref.value())
+        elif setpoint_type == 'square':
+            self.telemetry_manager.publish('SET_SQUARE_SETPOINT', self.window.square_setpoint_length.value())
     @Slot()
     def auxiliary_command(self, comm_name):
         comm_code = AUXILIARY_COMMANDS_MAPPING[comm_name]
