@@ -2,6 +2,19 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
 import datetime
+import moviepy.editor as mpy
+
+import io
+from PIL import Image
+import numpy as np
+
+def plotly_fig2array(fig):
+    #convert Plotly fig to  an array
+    fig_bytes = fig.to_image(format="png")
+    buf = io.BytesIO(fig_bytes)
+    img = Image.open(buf)
+    return np.asarray(img)
+
 class DataPlotter():
     def __init__(self, path):
         self.path = path
@@ -14,7 +27,8 @@ class DataPlotter():
                           'plot_bgcolor':'white',  # background color
                           'width' :850,  # figure width
                           'height':700,  # figure height
-                          'margin': dict(r=20, t=50, b=10)  # remove white space
+                          'margin': dict(r=20, t=50, b=10),  # remove white space
+                          'showlegend': False
                        }
         self.axeslayout = { # axis label
                          'showline':True,  # add line at x=0
@@ -54,6 +68,10 @@ class DataPlotter():
         column_names = ['U_REF:X', 'U_REF:Y', 'U_REF:Z']
         self._plotting_3rows(column_names, 'u_reference')
 
+    def animate_position_local(self):
+        column_names = ['POSITION_LOCAL:X', 'POSITION_LOCAL:Y', 'POSITION_LOCAL:Z']
+        self._animate_3_rows(column_names, title='position_local')
+
     def _plotting_3rows(self, column_names, title):
         t = pd.to_datetime(self.df['TIME'])
         t = t - t[0]
@@ -67,10 +85,49 @@ class DataPlotter():
         for i, col in enumerate(data, 1):
             fig.add_trace(go.Scatter(x=t, y=data[col]), row=i, col=1)
         fig.show()
+
+
+    def _animate_3_rows(self, column_names, title):
+        duration=20
+        animation_steps = np.arange(0, 20, step=0.02)
+        animation_mapping = {}
+        df = self.df.iloc[::10, :]
+        df = df.reset_index()
+        for i in range(animation_steps.shape[0]):
+            animation_mapping[animation_steps[i]] = i
+        t = pd.to_datetime(df['TIME'])
+        t = t - t[0]
+        t = t.dt.total_seconds()
+        n = t.size
+        data = df[column_names]
+        fig = make_subplots(rows=3, cols=1)
+        fig.update_layout(**self.layout)
+        fig.update_xaxes(**self.axeslayout)
+        fig.update_yaxes(**self.axeslayout)
+        fig.update_layout(title_text=title)
+        traces = [go.Scatter(x=t, y=data[col]) for col in data]
+        for i, trace in enumerate(traces, 1):
+            fig.add_trace(trace=trace, row=i, col=1)
+        def mpy_make_frame(time_stamp):
+            fig.data = fig.data[:3]
+            time_index = animation_mapping[time_stamp]
+            for i, trace in enumerate(traces, 1):
+                fig.add_scatter(x=[t[time_index]],
+                                           y=[data[column_names[i-1]][time_index]],
+                                           mode="markers",
+                                           marker=dict(color="red", size=10), row=i, col=1)
+            return plotly_fig2array(fig)
+        animation = mpy.VideoClip(mpy_make_frame, duration=duration)
+        animation.write_gif(title + ".gif", fps=50)
+
+
+
+
+
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/21_09_simulation_tests/test2.csv'
+    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/21_09_simulation_tests/test3.csv'
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []
@@ -83,10 +140,11 @@ if __name__ == "__main__":
     # path = candidates[0]
     print(os.listdir(os.getcwd()))
     data_plotter = DataPlotter(path)
-    data_plotter.plot_position_local()
-    data_plotter.plot_velocity()
-    data_plotter.plot_output_control()
-    data_plotter.plot_u_l1()
-    #data_plotter.plot_u_ref()
-    data_plotter.plot_sigma()
-    data_plotter.plot_attitude()
+    # data_plotter.plot_position_local()
+    # data_plotter.plot_velocity()
+    # data_plotter.plot_output_control()
+    # data_plotter.plot_u_l1()
+    # #data_plotter.plot_u_ref()
+    # data_plotter.plot_sigma()
+    # data_plotter.plot_attitude()
+    data_plotter.animate_position_local()
