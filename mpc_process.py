@@ -12,7 +12,7 @@ from oclock import Timer
 import redis
 
 if __name__ == "__main__":
-    # parameters
+    # parameters<
     FREQ = 5
     DELTA_T = 1/FREQ
 
@@ -64,4 +64,4 @@ if __name__ == "__main__":
         db_interface.update_db()
         # watchdog
         timer.checkpt()
-        print(time.time() - t1)
+        #print(time.time() - t1)

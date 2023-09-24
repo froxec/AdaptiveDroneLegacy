@@ -25,13 +25,13 @@ if __name__ == "__main__":
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
 
-    #startup_signal(buzzer)
+    startup_signal(buzzer)
     time.sleep(2)
     drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-    #vehicle_connected_signal(buzzer)
+    vehicle_connected_signal(buzzer)
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # init throttle to thrust identification
     identification_procedure = ThrottleToThrustIdentification(db_interface,
                                                               vehicle,
-                                                              logs_path='/home/pete/PycharmProjects/AdaptiveDrone/identification_logs/')
+                                                              logs_path='/home/pi/AdaptiveDrone/identification_logs/')
 
 
     # init velocity filter

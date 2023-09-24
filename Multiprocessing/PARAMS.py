@@ -41,8 +41,8 @@ MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5
                                    'upper': np.array([100, np.pi/24, np.pi/24])}}
 
 # ADAPTIVE_PARAMETERS:
-As = np.diag([-5, -5, -5])
-BANDWIDTHS = [2.5, 0.5, 0.5]
+As = np.diag([-15, -15, -1])
+BANDWIDTHS = [15, 2.5, 2.5]
 L1_INPUT_BANDWIDTHS = [5, 2, 2]
 # ESTIMATOR PARAMETERS
 SAMPLING_FREQ = 50
