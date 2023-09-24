@@ -43,9 +43,11 @@ class DataWriterThread(DataWriter, Thread):
             indices = FIELDNAMES_TELEMETRY_NAMES_MAPPING[data_field]
             if isinstance(indices, tuple):
                 key, id = indices
-                data_to_write[data_field] = data[key][id]
+                if key in data.keys():
+                    data_to_write[data_field] = data[key][id]
             else:
-                data_to_write[data_field] = data[indices]
+                if indices in data.keys():
+                    data_to_write[data_field] = data[indices]
         self.data_set.clear()
         return data_to_write
 

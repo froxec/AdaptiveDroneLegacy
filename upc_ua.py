@@ -18,6 +18,28 @@ def calculate_velocity(x, x_prev, dt):
     velocity = (x - x_prev) / dt
     return list(velocity)
 
+def collect_telemetry(db_interface, vehicle):
+    telemetry = {}
+    dronekit_commands.update_telemetry(telemetry, vehicle)
+    sigma_hat = db_interface.adaptive_interface_state['sigma_hat']
+    u_l1 = db_interface.adaptive_interface_state['u_l1']
+    ref = db_interface.adaptive_interface_state['ref']
+    u_output = db_interface.adaptive_interface_state['u_output']
+    if sigma_hat is not None:
+        telemetry['sigma_hat'] = sigma_hat
+    if u_l1 is not None:
+        telemetry['u_l1'] = u_l1
+    if ref is not None:
+        telemetry['u'] = ref
+    if u_output is not None:
+        telemetry['u_output'] = u_output
+    mass = db_interface.get_estimated_mass()
+    if mass is not None:
+        telemetry['estimated_mass'] = mass
+    throttle = db_interface.get_output_throttle()
+    if throttle is not None:
+        telemetry['throttle'] = throttle
+    return telemetry
 
 if __name__ == "__main__":
     buzzer = Buzzer(23)
@@ -70,6 +92,7 @@ if __name__ == "__main__":
     #init timer
     timer = Timer(interval=DELTA_T)
     x_prev = dronekit_commands.get_state(vehicle)
+
     while True:
         t1 = time.time()
         # fetch db
@@ -100,8 +123,9 @@ if __name__ == "__main__":
 
         # update data writer
         if data_writer.writing_event.is_set():
-            if tm.telemetry is not None:
-                data_writer.data = deepcopy(tm.telemetry)
+            telemetry = collect_telemetry(db_interface, vehicle)
+            if telemetry is not None:
+                data_writer.data = telemetry
                 data_writer.data_set.set()
 
         x_prev = x
