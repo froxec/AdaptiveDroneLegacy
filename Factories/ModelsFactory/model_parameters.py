@@ -40,7 +40,7 @@ Iris_parameters = {
     'm': 1.5,
     'g': 9.81,
     'throttle_thrust_slope': 90.279, #44.567,
-    'throttle_thrust_intercept': -14.277, #0.17,
+    'throttle_thrust_intercept': -11.824, #0.17,
     'throttle_max': 0.5
 }
 

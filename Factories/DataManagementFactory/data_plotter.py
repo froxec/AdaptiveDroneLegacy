@@ -127,7 +127,7 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/21_09_simulation_tests/test3.csv'
+    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/official_sim_tests/load_500_adaptive_ON.csv'
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []
@@ -140,11 +140,11 @@ if __name__ == "__main__":
     # path = candidates[0]
     print(os.listdir(os.getcwd()))
     data_plotter = DataPlotter(path)
-    # data_plotter.plot_position_local()
-    # data_plotter.plot_velocity()
-    # data_plotter.plot_output_control()
-    # data_plotter.plot_u_l1()
-    # #data_plotter.plot_u_ref()
-    # data_plotter.plot_sigma()
-    # data_plotter.plot_attitude()
-    data_plotter.animate_position_local()
+    data_plotter.plot_position_local()
+    data_plotter.plot_velocity()
+    data_plotter.plot_output_control()
+    data_plotter.plot_u_l1()
+    #data_plotter.plot_u_ref()
+    data_plotter.plot_sigma()
+    data_plotter.plot_attitude()
+    #data_plotter.animate_position_local()

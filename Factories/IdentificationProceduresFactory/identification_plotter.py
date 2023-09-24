@@ -77,7 +77,7 @@ class ThrottleThrustCharacteristicsMastTest:
     def __init__(self, data_path, max_idx=11):
         self.data_path = data_path
         self.g = 9.81
-        self.df = pd.read_csv(data_path, delimiter=',', decimal=',')
+        self.df = pd.read_csv(data_path, delimiter=';', decimal=',')
         self.max_idx = max_idx
 
     def calculate_thrust(self, mass):
@@ -122,7 +122,8 @@ class ThrottleThrustTestStand:
 
 if __name__ == "__main__":
     # print(os.getcwd())
-    throttle_thrust_csv_path = './identification_data/test_stand/z550.csv'
+    #throttle_thrust_csv_path = './identification_data/test_stand/z550.csv'
+    throttle_thrust_csv_path = './identification_data/throttle_mass_equillibrium_data/iris.csv'
     #
     # collect throttle - acceleration data
 
@@ -155,6 +156,6 @@ if __name__ == "__main__":
     # throttle_thrust = ThrottleThrustCharacteristics(data_path=throttle_thrust_csv_path + 'thrust_throttle.csv',
     #                                                 mass=1.628,
     #                                                 max_idx=10)
-    #throttle_thrust = ThrottleThrustCharacteristicsMastTest(data_path=throttle_thrust_csv_path)
-    throttle_thrust = ThrottleThrustTestStand(data_path=throttle_thrust_csv_path)
+    throttle_thrust = ThrottleThrustCharacteristicsMastTest(data_path=throttle_thrust_csv_path)
+    #throttle_thrust = ThrottleThrustTestStand(data_path=throttle_thrust_csv_path)
     throttle_thrust.calculate_characteristics()

@@ -5,6 +5,7 @@ from ui_interface import *
 from PySide6.QtWidgets import QMainWindow
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtUiTools import QUiLoader
+from PySide6.QtGui import QShortcut, QKeySequence
 from Custom_Widgets.Widgets import *
 from PySide6.QtCore import Slot, QTimer
 from QuadcopterIntegration.Utilities.comm_definitions import commands
@@ -153,6 +154,11 @@ class MainWindow(QMainWindow):
         self.window.dataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
         self.window.remoteDataWritingStatus.setText("DATA NO WRITING")
         self.window.remoteDataWritingStatus.setStyleSheet("QLabel {background-color: lightcoral}")
+        self.record_data_shortcut = QShortcut(QKeySequence('Ctrl+5'), self)
+        self.stop_data_shortcut = QShortcut(QKeySequence('Ctrl+6'), self)
+        self.record_data_shortcut.activated.connect(lambda: self.shortcut_data_write('start'))
+        self.stop_data_shortcut.activated.connect(lambda: self.shortcut_data_write('stop'))
+
         # STATUS
         self.window.batteryPixmap.setStyleSheet("color: white")
         # show
@@ -290,6 +296,21 @@ class MainWindow(QMainWindow):
             self.data_writer.writing_event.set()
             self.telemetry_manager.publish('DATA_WRITE', 'S_{}RPI'.format(filename))
         else:
+            self.window.saveDataBtn.setText("SAVING OFF")
+            self.window.saveDataBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
+            self.telemetry_manager.publish('DATA_WRITE', 'R')
+            self.data_writer.writing_event.clear()
+
+    @Slot()
+    def shortcut_data_write(self, mode):
+        if mode == 'start':
+            self.window.saveDataBtn.setText("DATA SAVING")
+            self.window.saveDataBtn.setStyleSheet("QPushButton {background-color: lightgreen}")
+            filename = self.window.dataFilenameTextbox.toPlainText()
+            self.data_writer.filename = filename
+            self.data_writer.writing_event.set()
+            self.telemetry_manager.publish('DATA_WRITE', 'S_{}RPI'.format(filename))
+        elif mode == 'stop':
             self.window.saveDataBtn.setText("SAVING OFF")
             self.window.saveDataBtn.setStyleSheet("QPushButton {background-color: lightcoral}")
             self.telemetry_manager.publish('DATA_WRITE', 'R')
