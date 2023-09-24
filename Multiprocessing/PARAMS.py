@@ -1,3 +1,4 @@
+
 from Factories.ConfigurationsFactory.modes import MPCModes
 from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint
 from Factories.ModelsFactory.model_parameters import Z550_parameters_new, Iris_parameters
@@ -21,7 +22,7 @@ NORMALIZE = True
 ANGULAR_VELOCITY_RANGE = [0, 800]
 PWM_RANGE = [1120, 1920]
 MASS_PERTURBATION = 0.0
-PREDICTOR_PARAMETERS = Iris_parameters
+PREDICTOR_PARAMETERS = Z550_parameters_new
 PREDICTOR_PARAMETERS['m'] = PREDICTOR_PARAMETERS['m'] + MASS_PERTURBATION
 
 # MPC PARAMES
@@ -42,7 +43,7 @@ MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5
 
 # ADAPTIVE_PARAMETERS:
 As = np.diag([-15, -15, -1])
-BANDWIDTHS = [15, 2.5, 2.5]
+BANDWIDTHS = [2.5, 0.5, 0.5]
 L1_INPUT_BANDWIDTHS = [5, 2, 2]
 # ESTIMATOR PARAMETERS
 SAMPLING_FREQ = 50
