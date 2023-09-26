@@ -27,15 +27,15 @@ if __name__ == "__main__":
 
     # init estimator agent
     prediction_model = NonlinearTranslationalModel(parameters_holder=parameters_holder)
-    rbf_kernel = RBF_Kernel(length=0.2)
-    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.3, max_samples=100, overflow_handling_mode='IMPORTANCE')
+    rbf_kernel = RBF_Kernel(length=0.3)
+    gp = EfficientGaussianProcess(X0, rbf_kernel, noise_std=0.08, max_samples=100, overflow_handling_mode='IMPORTANCE')
     convergence_checker = ConvergenceChecker(CONVERGENCE_SAMPLES_REQUIRED, CONVERGENCE_EPSILON_NEIGHBOURHOOD)
     estimator_agent = BanditEstimatorAccelerationProcess(db_interface=db_interface,
                                                          prediction_model=prediction_model,
                                                          gp=gp,
                                                          convergence_checker=convergence_checker,
                                                          deltaT=DELTA_T,
-                                                         atomic_traj_samples_num=20,
+                                                         atomic_traj_samples_num=15,
                                                          mode='VELOCITY_CONTROL',
                                                          save_images=False)
     # velocity filter

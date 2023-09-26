@@ -47,13 +47,13 @@ if __name__ == "__main__":
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
 
-    startup_signal(buzzer)
+    #startup_signal(buzzer)
     time.sleep(2)
-    drone_addr = REAL_DRONE_IP
+    drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
-    vehicle_connected_signal(buzzer)
+    #vehicle_connected_signal(buzzer)
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
 
