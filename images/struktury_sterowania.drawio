@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-09-27T17:18:20.577Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0" etag="RNqOx0CZyezBGA1snrQ3" version="21.7.5" type="github">
+<mxfile host="app.diagrams.net" modified="2023-09-27T20:03:51.242Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0" etag="jlX1we5U7k21m9QDA1UD" version="21.7.5" type="github">
   <diagram name="Page-1" id="J81h2vpOOWW3btrM4r2T">
     <mxGraphModel dx="1645" dy="1240" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1654" pageHeight="2336" background="none" math="1" shadow="0">
       <root>
@@ -2997,7 +2997,7 @@
         <mxCell id="0ca9hNXvj5SiAV5Y1gV5-3" value="" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;fillColor=#003057;strokeColor=#003057;opacity=80;" parent="1" vertex="1">
           <mxGeometry x="4561.360000000001" y="11240" width="317.27" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="0ca9hNXvj5SiAV5Y1gV5-4" value="&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;font style=&quot;font-size: 30px;&quot; color=&quot;#e3e4e5&quot;&gt;Sterownik&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;font style=&quot;font-size: 30px;&quot; color=&quot;#e3e4e5&quot;&gt;bazowy MPC&lt;br&gt;&lt;/font&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontFamily=Arial;fontColor=default;" parent="1" vertex="1">
+        <mxCell id="0ca9hNXvj5SiAV5Y1gV5-4" value="&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;font style=&quot;font-size: 30px;&quot; color=&quot;#e3e4e5&quot;&gt;System sterowania&lt;br&gt;&lt;/font&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontFamily=Arial;fontColor=default;" parent="1" vertex="1">
           <mxGeometry x="4625.990000000001" y="11310" width="197.37" height="25" as="geometry" />
         </mxCell>
         <mxCell id="0ca9hNXvj5SiAV5Y1gV5-5" value="" style="rounded=0;whiteSpace=wrap;html=1;fontSize=16;fillColor=#003057;strokeColor=#003057;opacity=80;" parent="1" vertex="1">
@@ -3028,7 +3028,7 @@
           <mxGeometry x="4878.63" y="11240" width="135" height="30" as="geometry" />
         </mxCell>
         <mxCell id="3_pw7fFuXpFlC6VQk4nf-5" value="&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;b style=&quot;font-size: 30px;&quot;&gt;$$\textbf{u}$$&lt;/b&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=30;fontFamily=Arial;fontColor=#75787B;" vertex="1" parent="1">
-          <mxGeometry x="4986.37" y="11320" width="135" height="30" as="geometry" />
+          <mxGeometry x="5000" y="11320" width="135" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
