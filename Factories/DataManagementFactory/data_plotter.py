@@ -1,9 +1,9 @@
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
+import matplotlib.pyplot as plt
 import datetime
-import moviepy.editor as mpy
-
+import matplotlib.animation as animation
 import io
 from PIL import Image
 import numpy as np
@@ -86,40 +86,71 @@ class DataPlotter():
             fig.add_trace(go.Scatter(x=t, y=data[col]), row=i, col=1)
         fig.show()
 
+    #
+    # def _animate_3_rows(self, column_names, title):
+    #     duration=20
+    #     animation_steps = np.arange(0, 20, step=0.02)
+    #     animation_mapping = {}
+    #     df = self.df.iloc[::10, :]
+    #     df = df.reset_index()
+    #     for i in range(animation_steps.shape[0]):
+    #         animation_mapping[animation_steps[i]] = i
+    #     t = pd.to_datetime(df['TIME'])
+    #     t = t - t[0]
+    #     t = t.dt.total_seconds()
+    #     n = t.size
+    #     data = df[column_names]
+    #     fig = make_subplots(rows=3, cols=1)
+    #     fig.update_layout(**self.layout)
+    #     fig.update_xaxes(**self.axeslayout)
+    #     fig.update_yaxes(**self.axeslayout)
+    #     fig.update_layout(title_text=title)
+    #     traces = [go.Scatter(x=t, y=data[col]) for col in data]
+    #     for i, trace in enumerate(traces, 1):
+    #         fig.add_trace(trace=trace, row=i, col=1)
+    #     def mpy_make_frame(time_stamp):
+    #         fig.data = fig.data[:3]
+    #         time_index = animation_mapping[time_stamp]
+    #         for i, trace in enumerate(traces, 1):
+    #             fig.add_scatter(x=[t[time_index]],
+    #                                        y=[data[column_names[i-1]][time_index]],
+    #                                        mode="markers",
+    #                                        marker=dict(color="red", size=10), row=i, col=1)
+    #         return plotly_fig2array(fig)
+    #     animation = mpy.VideoClip(mpy_make_frame, duration=duration)
+    #     animation.write_gif(title + ".gif", fps=50)
 
     def _animate_3_rows(self, column_names, title):
-        duration=20
-        animation_steps = np.arange(0, 20, step=0.02)
-        animation_mapping = {}
+        # get data
         df = self.df.iloc[::10, :]
         df = df.reset_index()
-        for i in range(animation_steps.shape[0]):
-            animation_mapping[animation_steps[i]] = i
         t = pd.to_datetime(df['TIME'])
         t = t - t[0]
         t = t.dt.total_seconds()
-        n = t.size
+        intervals = np.array(t.tolist())[1:] - np.array(t.to_list())[:-1]
+        mean_interval = intervals.mean()*1000
+        global scats
+        scats = []
         data = df[column_names]
-        fig = make_subplots(rows=3, cols=1)
-        fig.update_layout(**self.layout)
-        fig.update_xaxes(**self.axeslayout)
-        fig.update_yaxes(**self.axeslayout)
-        fig.update_layout(title_text=title)
-        traces = [go.Scatter(x=t, y=data[col]) for col in data]
-        for i, trace in enumerate(traces, 1):
-            fig.add_trace(trace=trace, row=i, col=1)
-        def mpy_make_frame(time_stamp):
-            fig.data = fig.data[:3]
-            time_index = animation_mapping[time_stamp]
-            for i, trace in enumerate(traces, 1):
-                fig.add_scatter(x=[t[time_index]],
-                                           y=[data[column_names[i-1]][time_index]],
-                                           mode="markers",
-                                           marker=dict(color="red", size=10), row=i, col=1)
-            return plotly_fig2array(fig)
-        animation = mpy.VideoClip(mpy_make_frame, duration=duration)
-        animation.write_gif(title + ".gif", fps=50)
+        indices_array = np.arange(t.size)
+        # create figure
+        fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True)
+        for i, axis in enumerate(ax):
+            axis.plot(t, data[column_names[i]], linewidth=2)
 
+        def update(time_step):
+            global scats
+            for scat in scats:
+                scat.remove()
+            scats = []
+            mask = indices_array==time_step
+            for i, axis in enumerate(ax):
+                scats.append(axis.scatter(t, data[column_names[i]], marker="o", c='red', zorder=2, alpha=mask))
+
+        ani = animation.FuncAnimation(fig=fig, func=update, frames=int(indices_array.shape[0]), interval=mean_interval)
+        writervideo = animation.FFMpegWriter(fps=1000/mean_interval)
+        ani.save(title + '.mp4', writer=writervideo)
+        plt.close()
 
 
 
@@ -127,7 +158,7 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/official_sim_tests/load_500_adaptive_ON.csv'
+    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/27/estimfreq1RPI.csv'
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []
@@ -138,13 +169,13 @@ if __name__ == "__main__":
     #         candidates.append(dir[i])
     # print(candidates)
     # path = candidates[0]
-    print(os.listdir(os.getcwd()))
+    #print(os.listdir(os.getcwd()))
     data_plotter = DataPlotter(path)
     data_plotter.plot_position_local()
     data_plotter.plot_velocity()
     data_plotter.plot_output_control()
     data_plotter.plot_u_l1()
-    #data_plotter.plot_u_ref()
+    data_plotter.plot_u_ref()
     data_plotter.plot_sigma()
     data_plotter.plot_attitude()
-    #data_plotter.animate_position_local()
+    # data_plotter.animate_position_local()
