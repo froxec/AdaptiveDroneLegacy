@@ -37,7 +37,7 @@ Z550_parameters_new = {
 
 Iris_parameters = {
     # less parameters required for HIL (only translational motion model used)
-    'm': 1.5,
+    'm': 1.75,
     'g': 9.81,
     'throttle_thrust_slope': 90.279, #44.567,
     'throttle_thrust_intercept': -11.824, #0.17,

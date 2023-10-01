@@ -7,6 +7,7 @@ import matplotlib.animation as animation
 import io
 from PIL import Image
 import numpy as np
+from Factories.ToolsFactory.GeneralTools import euclidean_distance
 
 def plotly_fig2array(fig):
     #convert Plotly fig to  an array
@@ -16,9 +17,13 @@ def plotly_fig2array(fig):
     return np.asarray(img)
 
 class DataPlotter():
-    def __init__(self, path):
-        self.path = path
-        self.df = pd.read_csv(path)
+    def __init__(self, paths, save_path, timeshifts, legend=None, use_plt = True):
+        self.paths = paths
+        if isinstance(paths, list):
+            self.df = [pd.read_csv(path) for path in paths]
+        else:
+            raise ValueError("paths should be a list")
+        self.save_path = save_path
         self.font_dict = dict(family='Arial',
                          size=26,
                          color='black'
@@ -40,33 +45,74 @@ class DataPlotter():
                          'tickwidth':2.4,  # tick width
                          'tickcolor':'black',  # tick color
                          }
+        self.use_plt = use_plt
+        if legend is not None:
+            self.legend=legend
+        else:
+            self.legend=['none']*len(self.paths)
+        self.timeshifts = timeshifts
     def plot_velocity(self):
         column_names = ['VELOCITY:X', 'VELOCITY:Y', 'VELOCITY:Z']
-        self._plotting_3rows(column_names, 'velocity')
+        ylabels = [r'$V_x [m/s]$', r'$V_x [m/s]$', r'$V_x [m/s]$']
+        xlabel = '$t [s]$'
+        if self.use_plt:
+            self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe predkości', xlabel, ylabels)
+        else:
+            self._plotting_3rows(column_names, 'velocity')
 
-    def plot_position_local(self):
+    def plot_position_local(self, reference_points=None, reference_shift=None):
         column_names = ['POSITION_LOCAL:X', 'POSITION_LOCAL:Y', 'POSITION_LOCAL:Z']
-        self._plotting_3rows(column_names, 'position_local')
+        ylabels = [r'$x [m]$', r'$y [m]$', r'$z [m]$']
+        xlabel = '$t [s]$'
+        if self.use_plt:
+            self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe położenia', xlabel, ylabels, reference_points, reference_shift)
+        else:
+            self._plotting_3rows(column_names, 'position_local')
 
     def plot_attitude(self):
         column_names = ['ATTITUDE:X', 'ATTITUDE:Y', 'ATTITUDE:Z']
-        self._plotting_3rows(column_names, 'attitude')
+        ylabels = [r'$\phi [rad]$', r'$\theta [rad]$', r'$\psi [rad]$']
+        xlabel = '$t [s]$'
+        if self.use_plt:
+            self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe orientacji', xlabel, ylabels)
+        else:
+            self._plotting_3rows(column_names, 'attitude')
 
     def plot_output_control(self):
         column_names = ['U_OUTPUT:X', 'U_OUTPUT:Y', 'U_OUTPUT:Z']
-        self._plotting_3rows(column_names, 'u_output')
+        ylabels = [r'$T_{out} [N]$', r'$\phi_{out} [rad]$', r'$\theta_{out} [rad]$']
+        xlabel = '$t [s]$'
+        if self.use_plt:
+            self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe sterowań wyjściowych', xlabel, ylabels)
+        else:
+            self._plotting_3rows(column_names, 'u_output')
 
     def plot_u_l1(self):
         column_names = ['u_l1:X', 'u_l1:Y', 'u_l1:Z']
-        self._plotting_3rows(column_names, 'u_l1')
+        ylabels = [r'$u_{l1,0} [N]$', r'$u_{l1,1}[rad]$', r'$u_{l1,2} [rad]$']
+        xlabel = '$t [s]$'
+        if self.use_plt:
+            self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe sterowań adaptacyjnych', xlabel, ylabels)
+        else:
+            self._plotting_3rows(column_names, 'u_l1')
 
     def plot_sigma(self):
         column_names = ['sigma_hat:X', 'sigma_hat:Y', 'sigma_hat:Z']
-        self._plotting_3rows(column_names, 'sigma_hat')
+        ylabels = [r'$\hat{\sigma}_{0} [N]$', r'$\hat{\sigma}_{1}[rad]$', r'$\hat{\sigma}_{2} [rad]$']
+        xlabel = '$t [s]$'
+        if self.use_plt:
+            self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe estymowanej niepewności', xlabel, ylabels)
+        else:
+            self._plotting_3rows(column_names, 'sigma_hat')
 
     def plot_u_ref(self):
         column_names = ['U_REF:X', 'U_REF:Y', 'U_REF:Z']
-        self._plotting_3rows(column_names, 'u_reference')
+        ylabels = [r'$T_{zad} [N]$', r'$\phi_{zad} [rad]$', r'$\theta_{zad} [rad]$']
+        xlabel = '$t [s]$'
+        if self.use_plt:
+            self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe sterowań bazowych', xlabel, ylabels)
+        else:
+            self._plotting_3rows(column_names, 'u_reference')
 
     def animate_position_local(self):
         column_names = ['POSITION_LOCAL:X', 'POSITION_LOCAL:Y', 'POSITION_LOCAL:Z']
@@ -86,7 +132,34 @@ class DataPlotter():
             fig.add_trace(go.Scatter(x=t, y=data[col]), row=i, col=1)
         fig.show()
 
-    #
+    def _plotting_3_rows_matplotlib(self, column_names, title, xlabel, ylabels, reference_points=None, reference_shift=None):
+        plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
+        fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
+        for k, df in enumerate(self.df):
+            t = pd.to_datetime(df['TIME'])
+            t = t[timeshifts[k]:]
+            t = t - t[timeshifts[k]]
+            t = t.dt.total_seconds()
+            data = df[column_names][timeshifts[k]:]
+            for i, col in enumerate(data):
+                ax[i].plot(t, data[col], label=self.legend[k])
+                ax[i].set_ylabel(ylabels[i])
+                ax[i].legend()
+        if reference_points is not None:
+            reference_points = np.array(reference_points)
+            ref = np.empty_like(data)
+            for i, point in enumerate(np.array(data)):
+                closest_ref_id = np.argmin(np.abs(reference_points - point), axis=0)
+                indices = zip(closest_ref_id, range(3))
+                closest_ref = [reference_points[id] for id in indices]
+                ref[i] = closest_ref
+            ref = np.roll(ref, -reference_shift, axis=0)
+            for i, line in enumerate(ref.T):
+                ax[i].plot(t, line, label='trajektoria referencyjna', color='red', linestyle='dashed')
+                ax[i].legend()
+        ax[-1].set_xlabel(xlabel)
+        fig.suptitle(title)
+        plt.savefig(self.save_path+title+'.png')
     # def _animate_3_rows(self, column_names, title):
     #     duration=20
     #     animation_steps = np.arange(0, 20, step=0.02)
@@ -158,7 +231,17 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/27/estimfreq1RPI.csv'
+    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/official_sim_tests/'
+    save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
+    path = [base_path+'load0_adaptiveON.csv', base_path+'load_300_adaptiveON.csv', base_path+'load_500_adaptiveON.csv']
+    timeshifts = [0, 35, 0]
+    reference_points = [[-10, -10, 5],
+                        [-10, 10, 5],
+                        [10, 10, 5],
+                        [-10, 10, 5],
+                        [-10, -10, 5]]
+    reference_shift = 200
+    legend = [r'm_{load} = 0.0 kg', r'm_{load} = 0.3 kg', r'm_{load} = 0.5 kg']
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []
@@ -170,12 +253,13 @@ if __name__ == "__main__":
     # print(candidates)
     # path = candidates[0]
     #print(os.listdir(os.getcwd()))
-    data_plotter = DataPlotter(path)
-    data_plotter.plot_position_local()
+    data_plotter = DataPlotter(path, save_path, timeshifts, legend)
+    data_plotter.plot_position_local(reference_points, reference_shift)
     data_plotter.plot_velocity()
     data_plotter.plot_output_control()
     data_plotter.plot_u_l1()
     data_plotter.plot_u_ref()
     data_plotter.plot_sigma()
     data_plotter.plot_attitude()
+    plt.show(block=True)
     # data_plotter.animate_position_local()

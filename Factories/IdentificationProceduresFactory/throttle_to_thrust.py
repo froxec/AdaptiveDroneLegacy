@@ -22,8 +22,9 @@ class ThrottleToThrustIdentification:
         if not self.is_running():
             if self.procedure_started == True:
                 self.procedure_started = False
-                self.vehicle.mode = VehicleMode("RTL")
-                self.save_history_to_file()
+                #self.vehicle.mode = VehicleMode("RTL")
+                #self.save_history_to_file()
+                self.set_throttle(0.0)
                 self.reset_history()
                 self.throttle = None
             return False
@@ -31,10 +32,10 @@ class ThrottleToThrustIdentification:
             self.t_start = time.time()
             self.procedure_started = True
         throttle = self.db_interface.get_throttle()
-        if throttle is not None and x[2] > 2.5:
+        if throttle is not None:
             self.throttle = throttle
             self.set_throttle(throttle)
-        if time.time() - self.t_start > 0.5:
+        if time.time() - self.t_start > 2.5:
             self.db_interface.stop_identification_procedure()
         # append data to history
         self.history['time'].append(time.time() - self.t_start)
@@ -47,7 +48,7 @@ class ThrottleToThrustIdentification:
         return self.db_interface.is_identification_running()
 
     def set_throttle(self, throttle):
-        dronekit_commands.set_attitude(self.vehicle, 0.0, 0.0, 0.0, throttle)
+        dronekit_commands.set_throttle(self.vehicle, throttle)
 
     def save_history_to_file(self):
         fieldnames = self.history.keys()

@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
                              self.window.throttle_plot]
         self.telemetry_to_plot = [('position_local', 0), ('position_local', 1), ('position_local', 2),
                                   ('velocity', 0), ('velocity', 1), ('velocity', 2),
-                                  ('sigma_hat', 0), ('sigma_hat', 1), ('sigma_hat', 2),
+                                  ('u_l1', 0), ('u_l1', 1), ('u_l1', 2),
                                   ('u', 0), ('u', 1), ('u', 2),
                                   ('u_output', 0), ('u_output', 1), ('u_output', 2),
                                   'throttle']
