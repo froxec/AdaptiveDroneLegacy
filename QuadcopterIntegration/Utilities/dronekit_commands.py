@@ -9,9 +9,11 @@ def initialize_drone(vehicle):
     vehicle.parameters['FENCE_ALT_MIN'] = 0
     vehicle.parameters['FENCE_RADIUS'] = 30
     vehicle.parameters['RTL_ALT'] = 5
+    vehicle.parameters['RLT_LOIT_TIME'] = 1000 # ms
     vehicle.parameters['WP_YAW_BEHAVIOR'] = 0 #never change yaw
     vehicle.parameters['ATC_RAT_YAW_I'] = 0.018
-    vehicle.parameters['ATC_ANG_YAW_P'] = 4.5
+    vehicle.parameters['ATC_ANG_YAW_P'] = 6.5
+    vehicle.parameters['ATC_RAT_RLL_D'] = 0.001
 
     # commands below dont affect the behaviour..
     # message_rates = [
@@ -85,8 +87,8 @@ def update_telemetry(telemetry, vehicle):
    telemetry['position_local'] = state[:3]
    telemetry['velocity'] = state[3:]
    telemetry['armed'] = vehicle.armed
-   telemetry['attitude'] = [vehicle.attitude.pitch, 
-                            vehicle.attitude.roll,
+   telemetry['attitude'] = [vehicle.attitude.roll,
+                            vehicle.attitude.pitch,
                             vehicle.attitude.yaw]
    telemetry['position_global'] = [vehicle.location.global_frame.lat, vehicle.location.global_frame.lon] 
    telemetry['heading'] = vehicle.heading
