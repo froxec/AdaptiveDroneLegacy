@@ -9,9 +9,9 @@ def initialize_drone(vehicle):
     vehicle.parameters['FENCE_ALT_MIN'] = 0
     vehicle.parameters['FENCE_RADIUS'] = 30
     vehicle.parameters['RTL_ALT'] = 5
-    vehicle.parameters['RLT_LOIT_TIME'] = 1000 # ms
+    vehicle.parameters['RLT_LOIT_TIME'] = int(1000) # ms
     vehicle.parameters['WP_YAW_BEHAVIOR'] = 0 #never change yaw
-    vehicle.parameters['ATC_RAT_YAW_I'] = 0.018
+    vehicle.parameters['ATC_RAT_YAW_I'] = 0.18
     vehicle.parameters['ATC_ANG_YAW_P'] = 6.5
     vehicle.parameters['ATC_RAT_RLL_D'] = 0.001
 
@@ -54,6 +54,18 @@ def set_attitude(vehicle, roll, pitch, yaw, thrust):
     # msg = mavutil.mavlink.MAVLink_set_attitude_target_message(1, 0, 0, 7, quaternion, 0, 0, 0, thrust)
     vehicle.send_mavlink(msg)
 
+def set_throttle(vehicle, throttle):
+    dummy_quaternion = euler_to_quaternion(0, 0, 0)
+    msg = vehicle.message_factory.set_attitude_target_encode(
+        0,
+        0, 0,
+        6, # ignore attitude
+        dummy_quaternion,
+        0, 0, 0,
+        throttle
+    )
+    # msg = mavutil.mavlink.MAVLink_set_attitude_target_message(1, 0, 0, 7, quaternion, 0, 0, 0, thrust)
+    vehicle.send_mavlink(msg)
 def set_position_local(vehicle, x, y, z):
     msg = vehicle.message_factory.set_position_target_local_ned_encode(
         0,

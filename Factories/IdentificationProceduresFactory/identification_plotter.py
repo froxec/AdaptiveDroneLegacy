@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import ast
@@ -87,13 +88,18 @@ class ThrottleThrustCharacteristicsMastTest:
     def calculate_characteristics(self):
         mass = list(self.df['mass'])[:self.max_idx]
         throttle = list(self.df['throttle'])[:self.max_idx]
+        throttle_reg = np.linspace(0, 1)
         thrust = self.calculate_thrust(mass)
         slope, intercept, r_value, p_value, std_err = stats.linregress(throttle, thrust)
-        reg_y = slope * np.array(throttle) + intercept
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=throttle, y=thrust))
-        fig.add_trace(go.Scatter(x=throttle, y=reg_y))
-        fig.show()
+        reg_y = slope * np.array(throttle_reg) + intercept
+        plt.style.use('./Factories/PlottingFactory/plotstyle.mplstyle')
+        plt.scatter(throttle, thrust, label='Dane')
+        plt.plot(throttle_reg, reg_y, label='Model')
+        plt.xlabel(r'T_h')
+        plt.ylabel(r'T [N]')
+        plt.suptitle(r'Przybliżona charakterystyka T(T_h) dla drona Iris')
+        plt.legend()
+        plt.savefig("./images/charakterystyki/t-th.png")
         print("Equation: thrust = {} * throttle + {}".format(slope, intercept))
 
 class ThrottleThrustTestStand:
