@@ -124,4 +124,4 @@ if __name__ == "__main__":
         db_interface.update_db()
 
         timer.checkpt()
-        print(time.time() - t1)
+        #print(time.time() - t1)

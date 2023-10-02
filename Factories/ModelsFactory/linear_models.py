@@ -152,7 +152,7 @@ class LinearizedQuad():
         self.U_OP = np.array([self.m*self.g, 0, 0, u4_ss])
 
 class LinearizedQuadNoYaw(LinearizedQuad):
-    def __init__(self, parameters_holder, Ts, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0, max_distances=[50, 50, 50]):
+    def __init__(self, parameters_holder, Ts, yaw_ss=0.0, x_ref=0.0, y_ref=0.0, z_ref=0.0, max_distances=[10, 10, 10]):
         super().__init__(parameters_holder, u4_ss=yaw_ss, x_ref=x_ref, y_ref=y_ref, z_ref=z_ref)
         self.yaw_ss=yaw_ss
         self.B = np.array([[0.0, 0.0, 0.0],

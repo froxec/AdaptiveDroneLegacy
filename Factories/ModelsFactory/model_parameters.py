@@ -28,11 +28,11 @@ Z550_parameters = {
 }
 
 Z550_parameters_new = {
-    'm': 1.628,
+    'm': 1.599, #1.628
     'g': 9.81,
     'throttle_thrust_slope': 32.93, #37.82 #19.57
     'throttle_thrust_intercept': -4.81, # 8.53
-    'throttle_max': 0.6,
+    'throttle_max': 0.8,
 }
 
 Iris_parameters = {
@@ -43,6 +43,7 @@ Iris_parameters = {
     'throttle_thrust_intercept': -3.213, #-11.824, #0.17,
     'throttle_max': 0.5
 }
+
 
 arducopter_parameters = {
     'm': 1.0,

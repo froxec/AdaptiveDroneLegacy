@@ -27,14 +27,13 @@ class ConstrainedMPC:
         self.freq = freq
         self.pred_horizon = pred_horizon
         self.soft_constraints = soft_constraints
-        self.opts = {'MAXITER':100,'VERBOSE':0,'OUTPUT':2}
+        self.opts = {'MAXITER':50,'VERBOSE':0,'OUTPUT':2}
         # convert thrust_constraint to delta thrust
         self.thrust_constraints = {'lower': u_bounds['lower'][0],
                                    'upper': u_bounds['upper'][0]}
         self.u_bounds_nominal = deepcopy(u_bounds)
         u_bounds['lower'][0] = self.thrust_constraints['lower'] - self.model.parameters_holder.m * self.model.parameters_holder.g
         u_bounds['upper'][0] = self.thrust_constraints['upper'] - self.model.parameters_holder.m * self.model.parameters_holder.g
-        print(u_bounds)
         if not normalize_system:
             self.x_bounds = x_bounds
             self.u_bounds = u_bounds

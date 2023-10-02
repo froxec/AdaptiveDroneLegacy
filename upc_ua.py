@@ -3,7 +3,7 @@ from Factories.CommunicationFactory.Telemetry.telemetry_manager import MQTT_Tele
 from Factories.CommunicationFactory.Telemetry.subscriptions import UAV_TELEMETRY_AGENT_SUBS, UAV_COMMAND_AGENT_SUBS
 from Factories.DataManagementFactory.data_writer import DataWriterThread
 from Factories.DataManagementFactory.DataWriterConfigurations.online_writer_configuration import DATA_TO_WRITE_PI
-from Multiprocessing.PARAMS import DATA_FREQ, SIM_IP, REAL_DRONE_IP, MQTT_HOST, MQTT_PORT
+from Multiprocessing.PARAMS import DATA_FREQ, SIM_IP, REAL_DRONE_IP, MQTT_HOST, MQTT_PORT, IDENTIFICATION_PROCEDURE_OFF
 from dronekit import connect
 from Multiprocessing.process_interfaces import Supervisor_Interface
 from QuadcopterIntegration.Utilities import dronekit_commands
@@ -11,6 +11,10 @@ from oclock import Timer
 from Factories.ToolsFactory.GeneralTools import LowPassLiveFilter
 from Factories.IdentificationProceduresFactory.throttle_to_thrust import ThrottleToThrustIdentification
 import numpy as np
+from gpiozero import Buzzer
+from Factories.SoundFactory.buzzing_signals import startup_signal, vehicle_connected_signal
+from copy import deepcopy
+
 
 def calculate_velocity(x, x_prev, dt):
     velocity = (x - x_prev) / dt
@@ -40,14 +44,27 @@ def collect_telemetry(db_interface, vehicle):
     return telemetry
 
 if __name__ == "__main__":
+    buzzer = Buzzer(23)
     # set params
     FREQUENCY = DATA_FREQ
     DELTA_T = 1/FREQUENCY
+
+    startup_signal(buzzer)
     time.sleep(2)
     drone_addr = SIM_IP
     print("Connecting to drone {}".format(drone_addr))
     vehicle = connect(drone_addr, baud=921600, wait_ready=True, rate=DATA_FREQ)
     print("Connection established!")
+    vehicle_connected_signal(buzzer)
+
+    # add listener
+    @vehicle.on_message('LOCAL_POSITION_NED')
+    def listener(self, name, message):
+        vehicle.local_v = {'x': message.vx,
+                           'y': message.vy,
+                           'z': message.vz}
+
+
 
     #init vehicle
     dronekit_commands.initialize_drone(vehicle)
@@ -56,12 +73,12 @@ if __name__ == "__main__":
     db_interface = Supervisor_Interface(vehicle)
 
     # setup data writer
-    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pete/PycharmProjects/AdaptiveDrone/logs/')
+    data_writer = DataWriterThread(DATA_TO_WRITE_PI, path='/home/pi/AdaptiveDrone/logs/')
 
     # setup telemetry managers
     tm = MQTT_TelemetryManager(mqtt_host=MQTT_HOST,
                                mqtt_port=MQTT_PORT,
-                             update_freq=10,
+                             update_freq=5,
                              vehicle=vehicle,
                              db_interface=db_interface,
                              data_writer=data_writer,
@@ -78,7 +95,7 @@ if __name__ == "__main__":
     # init throttle to thrust identification
     identification_procedure = ThrottleToThrustIdentification(db_interface,
                                                               vehicle,
-                                                              logs_path='/home/pete/PycharmProjects/AdaptiveDrone/identification_logs/')
+                                                              logs_path='/home/pi/AdaptiveDrone/identification_logs/')
 
 
     # init velocity filter
@@ -95,17 +112,20 @@ if __name__ == "__main__":
 
         # update current state
         x = dronekit_commands.get_state(vehicle)
+        print(x)
         # if None not in x:
         #     x[3:6] = calculate_velocity(np.array(x[0:3]), np.array(x_prev[0:3]), dt=1/FREQUENCY)
         #print(x)
         #x[3:6] = velocity_filter(x[3:6])
         db_interface.set_drone_state(x)
-
-        identification_running = identification_procedure.run(x)
-        if identification_running:
-            # update db state
-            db_interface.update_db()
-            continue
+        
+        # identification procedure
+        if not IDENTIFICATION_PROCEDURE_OFF:
+            identification_running = identification_procedure.run(x)
+            if identification_running:
+                # update db state
+                db_interface.update_db()
+                continue
         # set vehicle control
         u = db_interface.get_control()
         if u is not None and vehicle.armed == True \

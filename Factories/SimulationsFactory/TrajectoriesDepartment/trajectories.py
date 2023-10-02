@@ -1,5 +1,6 @@
 import numpy as np
 import plotly.graph_objects as go
+from Multiprocessing.PARAMS import SQUARE_TRAJECTORY_HEIGHT
 class Trajectory():
     def __init__(self):
         self.waypoints_num = None
@@ -52,9 +53,9 @@ class SinglePoint(Trajectory):
 class SquareTrajectory(Trajectory):
     def __init__(self, max_length):
         self.max_length = max_length
-        self.generated_trajectory = np.array([[-max_length, -max_length, 3.5],
-                                             [-max_length, max_length, 3.5],
-                                              [max_length, max_length, 3.5],
-                                              [max_length, -max_length, 3.5],
-                                              [-max_length, -max_length, 3.5]])
+        self.generated_trajectory = np.array([[-max_length, -max_length, SQUARE_TRAJECTORY_HEIGHT],
+                                             [-max_length, max_length, SQUARE_TRAJECTORY_HEIGHT],
+                                              [max_length, max_length, SQUARE_TRAJECTORY_HEIGHT],
+                                              [max_length, -max_length, SQUARE_TRAJECTORY_HEIGHT],
+                                              [-max_length, -max_length, SQUARE_TRAJECTORY_HEIGHT]])
 

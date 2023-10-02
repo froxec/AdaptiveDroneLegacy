@@ -98,7 +98,7 @@ class PositionController():
         else:
             setpoint = np.concatenate([self.setpoint[:2], self.setpoint[3:]])
             distance = euclidean_distance(setpoint, x)
-        if distance < 0.1:
+        if distance < 0.25:
             return True
         else:
             return False

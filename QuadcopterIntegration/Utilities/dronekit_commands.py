@@ -14,7 +14,7 @@ def initialize_drone(vehicle):
     vehicle.parameters['ATC_RAT_YAW_I'] = 0.18
     vehicle.parameters['ATC_ANG_YAW_P'] = 6.5
     vehicle.parameters['ATC_RAT_RLL_D'] = 0.001
-
+    vehicle.local_v = None
     # commands below dont affect the behaviour..
     # message_rates = [
     #     (mavutil.mavlink.MAV_DATA_STREAM_POSITION, 100),
@@ -59,7 +59,7 @@ def set_throttle(vehicle, throttle):
     msg = vehicle.message_factory.set_attitude_target_encode(
         0,
         0, 0,
-        6, # ignore attitude
+        135, # ignore attitude, doesnt works
         dummy_quaternion,
         0, 0, 0,
         throttle
@@ -83,7 +83,7 @@ def set_position_local(vehicle, x, y, z):
 
 def get_state(vehicle):
     position = vehicle.location.local_frame
-    velocity = vehicle.velocity
+    velocity = [vehicle.local_v['x'], vehicle.local_v['y'], vehicle.local_v['z']]
     if None not in velocity:
         velocity[2] = -velocity[2]
     state = [position.north, position.east, position.down]
