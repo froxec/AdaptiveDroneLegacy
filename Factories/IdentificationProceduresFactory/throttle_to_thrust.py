@@ -22,7 +22,7 @@ class ThrottleToThrustIdentification:
         if not self.is_running():
             if self.procedure_started == True:
                 self.procedure_started = False
-                #self.vehicle.mode = VehicleMode("RTL")
+                self.vehicle.mode = VehicleMode("RTL")
                 #self.save_history_to_file()
                 self.set_throttle(0.0)
                 self.reset_history()

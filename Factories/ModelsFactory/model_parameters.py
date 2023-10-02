@@ -39,10 +39,11 @@ Iris_parameters = {
     # less parameters required for HIL (only translational motion model used)
     'm': 1.75,
     'g': 9.81,
-    'throttle_thrust_slope': 90.279, #44.567,
-    'throttle_thrust_intercept': -11.824, #0.17,
+    'throttle_thrust_slope': 67.485, #90.279, #44.567,
+    'throttle_thrust_intercept': -3.213, #-11.824, #0.17,
     'throttle_max': 0.5
 }
+
 
 arducopter_parameters = {
     'm': 1.0,
