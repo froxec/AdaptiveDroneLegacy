@@ -78,6 +78,9 @@ def set_position_local(vehicle, x, y, z):
         0, 0
     )
     vehicle.send_mavlink(msg)
+
+#def get_velocity(vehicle, )
+
 def get_state(vehicle):
     position = vehicle.location.local_frame
     velocity = vehicle.velocity

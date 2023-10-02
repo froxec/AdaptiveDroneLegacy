@@ -129,7 +129,7 @@ class ThrottleThrustTestStand:
 if __name__ == "__main__":
     # print(os.getcwd())
     #throttle_thrust_csv_path = './identification_data/test_stand/z550.csv'
-    throttle_thrust_csv_path = './identification_data/throttle_mass_equillibrium_data/iris.csv'
+    throttle_thrust_csv_path = './identification_data/throttle_mass_equillibrium_data/iris_new.csv'
     #
     # collect throttle - acceleration data
 
