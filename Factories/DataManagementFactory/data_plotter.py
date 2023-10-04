@@ -7,6 +7,7 @@ import matplotlib.animation as animation
 import io
 from PIL import Image
 import numpy as np
+from matplotlib.lines import Line2D
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
 
 def plotly_fig2array(fig):
@@ -53,7 +54,7 @@ class DataPlotter():
         self.timeshifts = timeshifts
     def plot_velocity(self):
         column_names = ['VELOCITY:X', 'VELOCITY:Y', 'VELOCITY:Z']
-        ylabels = [r'$V_x [m/s]$', r'$V_x [m/s]$', r'$V_x [m/s]$']
+        ylabels = [r'$V_x [m/s]$', r'$V_y [m/s]$', r'$V_z [m/s]$']
         xlabel = '$t [s]$'
         if self.use_plt:
             self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe predkości', xlabel, ylabels)
@@ -132,7 +133,7 @@ class DataPlotter():
             fig.add_trace(go.Scatter(x=t, y=data[col]), row=i, col=1)
         fig.show()
 
-    def _plotting_3_rows_matplotlib(self, column_names, title, xlabel, ylabels, reference_points=None, reference_shift=None):
+    def _plotting_3_rows_matplotlib(self, column_names, title, xlabel, ylabels, reference_points=None, reference_shift=None, linestyles=['solid', 'dashdot', 'dotted'], markers=['o', '*', 'P']):
         plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
         fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
         for k, df in enumerate(self.df):
@@ -142,7 +143,7 @@ class DataPlotter():
             t = t.dt.total_seconds()
             data = df[column_names][timeshifts[k]:]
             for i, col in enumerate(data):
-                ax[i].plot(t, data[col], label=self.legend[k])
+                ax[i].plot(t, data[col], label=self.legend[k], linestyle=linestyles[k])
                 ax[i].set_ylabel(ylabels[i])
                 ax[i].legend()
         if reference_points is not None:
@@ -233,14 +234,17 @@ if __name__ == "__main__":
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
     base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/official_sim_tests/'
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    path = [base_path+'load0_adaptiveON.csv', base_path+'load_300_adaptiveON.csv', base_path+'load_500_adaptiveON.csv']
-    timeshifts = [0, 35, 0]
-    reference_points = [[-10, -10, 5],
-                        [-10, 10, 5],
-                        [10, 10, 5],
-                        [-10, 10, 5],
-                        [-10, -10, 5]]
-    reference_shift = 200
+    #path = [base_path+'load0_adaptiveON.csv', base_path+'load_300_adaptiveON.csv', base_path+'load_500_adaptiveON.csv']
+    path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0.csv',
+            '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load300.csv',
+            '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load500.csv']
+    timeshifts = [0, 0, 0]
+    reference_points =  [[-10, -10, 6],
+                        [-10, 10, 6],
+                        [10, 10, 6],
+                        [-10, 10, 6],
+                        [-10, -10, 6]]
+    reference_shift = 220
     legend = [r'm_{load} = 0.0 kg', r'm_{load} = 0.3 kg', r'm_{load} = 0.5 kg']
     # cwd = os.getcwd()
     # dir = os.listdir()

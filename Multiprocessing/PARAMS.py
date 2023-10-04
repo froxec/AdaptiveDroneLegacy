@@ -1,5 +1,4 @@
 from Factories.ConfigurationsFactory.modes import MPCModes
-from Factories.SimulationsFactory.TrajectoriesDepartment.trajectories import SinglePoint
 from Factories.ModelsFactory.model_parameters import Z550_parameters_new, Iris_parameters
 import numpy as np
 
