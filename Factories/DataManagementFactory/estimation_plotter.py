@@ -8,7 +8,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 class EstimationPlotter:
-    def __init__(self, dirs, save_path, stats_save_path, freq, buffer_length, convergence_n, realvalue, params):
+    def __init__(self, dirs, save_path, stats_save_path, freq, buffer_lengths, convergence_n, realvalue, params, titles, max_t=50):
         if isinstance(dirs, list):
             self.dfs = []
             for dir in dirs:
@@ -19,13 +19,15 @@ class EstimationPlotter:
             raise ValueError("paths should be a list")
         self.freq = freq
         self.dt = 1 / freq
-        self.buffer_length = buffer_length
-        self.sample_dt = self.dt * self.buffer_length
+        self.buffer_lengths = buffer_lengths
+        self.sample_dt = list(self.dt * np.array(self.buffer_lengths))
         self.save_path = save_path
         self.stats_save_paths = stats_save_path
         self.realvalue = realvalue
         self.convergence_n = convergence_n
         self.params = params
+        self.titles=titles
+        self.max_t = max_t
 
     def plot_estimation_result(self, realvalue, estimatedvalue):
         column_names = ['action', 'penalty']
@@ -60,41 +62,45 @@ class EstimationPlotter:
     def plot_tests_heatmap(self):
         plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
         plt.tight_layout = True
-        plt.rcParams['figure.figsize'] = (16, 4)
+        plt.rcParams['figure.figsize'] = (16, 3*len(self.dfs))
         heatmaps = []
         extents = []
+        data = []
+        t_max = 0
         #generate heatmaps
-        for dfs in self.dfs:
-            x, y = self.collect_data_for_hm(dfs, 'action')
-            heatmap, xedges, yedges = np.histogram2d(x, y, bins=(100, 50))
+        for i, dfs in enumerate(self.dfs):
+            x, y = self.collect_data_for_hm(dfs, 'action', test_num=i)
+            t_max = max(t_max, np.max(x))
+            data.append((x,y))
+        if t_max > self.max_t:
+            t_max = self.max_t
+        x_bins = np.linspace(0, t_max, 100)
+        for i, data_pair in enumerate(data):
+            x, y = data_pair[0], data_pair[1]
+            heatmap, xedges, yedges = np.histogram2d(x, y, bins=(x_bins, 50))
             heatmap = gaussian_filter(heatmap, sigma=2)
             heatmaps.append(heatmap)
             extents.append([xedges[0], xedges[-1], yedges[0], yedges[-1]])
-
-        # calculate min and max t
-        extents = np.array(extents)
-        min_t = np.min(extents[:, 0])
-        max_t = np.max(extents[:, 1])
-        # extents[:, 0] = min_t
-        # extents[:, 1] = max_t
         # draw heatmaps
         if len(heatmaps) > 1:
-            fig, ax = plt.subplots(nrows=len(heatmaps), ncols=1, sharex=True)
+            fig, ax = plt.subplots(nrows=len(heatmaps), ncols=1, sharex=True, gridspec_kw={'hspace': 0.3})
             for i, hm in enumerate(heatmaps):
                 ax[i].imshow(hm.T, extent=list(extents[i]), origin='lower', cmap='jet', aspect='auto')
+                ax[i].set_ylabel(r'$\hat{m}$ [kg]')
+                ax[i].axhline(y=self.realvalue, color='white', linestyle='--', linewidth=2, label=r'$\hat{m}$' + '= {} [kg]'.format(self.realvalue))
+                ax[i].set_title(titles[i])
                 #ax[i].colorbar()
         else:
             plt.imshow(heatmaps[0], extent=list(extents[0]), origin='lower', cmap='jet', aspect='auto')
             plt.colorbar()
         plt.xlabel(r't [s]')
-        plt.ylabel(r'$\hat{m}$ [kg]')
         plt.savefig(self.save_path+'.png')
         plt.show()
-    def collect_data_for_hm(self, dfs, column_names):
+    def collect_data_for_hm(self, dfs, column_names, test_num):
         data_for_hm = []
         for df in dfs:
             data = df[column_names]
-            t = np.arange(0, len(data)) * self.sample_dt
+            t = np.arange(0, len(data)) * self.sample_dt[test_num]
             for i in range(len(data)):
                 data_for_hm.append((t[i], data[i]))
         data_for_hm = list(zip(*data_for_hm))
@@ -107,9 +113,9 @@ class EstimationPlotter:
             estimated_values = []
             for df in dfs:
                 data = df[column_names]
-                t = np.arange(0, len(data)) * self.sample_dt
+                t = np.arange(0, len(data)) * self.sample_dt[i]
                 conv_times.append(t[-1])
-                influencers = np.array(data[-self.convergence_n:]).flatten()
+                influencers = np.array(data[-self.convergence_n[i]:]).flatten()
                 estimation = np.mean(influencers)
                 estimated_values.append(estimation)
 
@@ -129,8 +135,8 @@ class EstimationPlotter:
             std_error = np.std(errors)
 
             stats = {'mean_convergence_time':[mean_convergence_time],
-                     'max_convergence_time': [max_convergence_time],
                      'min_convergence_time': [min_convergence_time],
+                     'max_convergence_time': [max_convergence_time],
                      'conv_time_std': [conv_time_std],
                      'mean_error': [mean_error],
                      'minimum_error': [minimum_error],
@@ -162,13 +168,20 @@ class EstimationPlotter:
 if __name__ == "__main__":
     #path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_estimation.csv']
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    test_name = 'length_changes'
+    test_name = 'lque_changes'
     stats_save_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/estimation_tests/' + test_name + '.csv'
-    estim_base_dir = '/home/pete/PycharmProjects/AdaptiveDrone/logs/estimation_tests/'
-    folders = ['ns0.08len0.1con_smpl15eps0.15atm_smpls35/', 'ns0.08len0.3con_smpl15eps0.15atm_smpls35/', 'ns0.08len0.7con_smpl15eps0.15atm_smpls35/']
+    estim_base_dir = '/home/pete/PycharmProjects/AdaptiveDrone/logs/estimation_tests/' + test_name +'/'
+    folders = ['ns0.08len0.7con_smpl15eps0.15atm_smpls3/',
+               'ns0.08len0.7con_smpl15eps0.15atm_smpls10/',
+               'ns0.08len0.7con_smpl15eps0.15atm_smpls35/',
+               'ns0.08len0.7con_smpl15eps0.15atm_smpls50/']
+    titles = [r'$l_{que} = 3$',
+              r'$l_{que} = 10$',
+              r'$l_{que} = 35$',
+              r'$l_{que} = 50$']
     dirs = [estim_base_dir + folder_name for folder_name in folders]
-    plotter = EstimationPlotter(dirs=dirs, save_path=save_path, stats_save_path=None,
-                                freq=100, buffer_length=35, convergence_n=15, realvalue=2.25, params=folders)
+    plotter = EstimationPlotter(dirs=dirs, save_path=save_path, stats_save_path=stats_save_path,
+                                freq=100, buffer_lengths=[3, 10, 35, 50], convergence_n=[15, 15, 15, 15], realvalue=2.25, params=folders, titles=titles, max_t=50)
     plotter.calculate_statistics()
     plotter.plot_tests_heatmap()
     # plotter.plot_estimation_result(realvalue=1.75, estimatedvalue=1.766)
