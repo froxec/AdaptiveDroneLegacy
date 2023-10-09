@@ -1,8 +1,9 @@
 import numpy as np
 import itertools
 class RBF_Kernel():
-    def __init__(self, length = 1):
+    def __init__(self, length = 1, uncertainty=1):
         self.length = length
+        self.uncertainty = uncertainty
     def __call__(self, x1, x2):
         #x = np.array(list(itertools.product(x1, x2)))
         x1 = x1.flatten()
@@ -14,7 +15,7 @@ class RBF_Kernel():
     def calculate_covariance(self, x1, x2):
         #distance = np.linalg.norm(x1 - x2, axis=0)
         distance = np.sqrt((x1-x2)**2)
-        return np.exp(-(distance ** 2) / (2 * self.length ** 2))
+        return self.uncertainty*np.exp(-(distance ** 2) / (2 * self.length ** 2))
 
     def cartesian_product(self, *arrays):
         ## function from https://stackoverflow.com/questions/11144513/cartesian-product-of-x-and-y-array-points-into-single-array-of-2d-points

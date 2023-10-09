@@ -232,18 +232,19 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/official_sim_tests/'
+    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/field_07_10/'
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    #path = [base_path+'load0_adaptiveON.csv', base_path+'load_300_adaptiveON.csv', base_path+'load_500_adaptiveON.csv']
-    path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_1762.csv',
-            '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load300_2066.csv',
-            '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load500_2268.csv']
-    timeshifts = [0, 0, 0]
-    reference_points =  [[-10, -10, 6],
-                        [-10, 10, 6],
-                        [10, 10, 6],
-                        [-10, 10, 6],
-                        [-10, -10, 6]]
+    path = [base_path+'testbaro1.csv']
+    # path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_1762.csv',
+    #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load300_2066.csv',
+    #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load500_2268.csv']
+    timeshifts = [0]
+    # reference_points =  [[-10, -10, 6],
+    #                     [-10, 10, 6],
+    #                     [10, 10, 6],
+    #                     [-10, 10, 6],
+    #                     [-10, -10, 6]]
+    reference_points= None
     reference_shift = 220
     legend = [r'm_{load} = 0.0 kg', r'm_{load} = 0.3 kg', r'm_{load} = 0.5 kg']
     # cwd = os.getcwd()

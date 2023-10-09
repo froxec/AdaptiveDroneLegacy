@@ -5,6 +5,7 @@ import itertools
 from Factories.ToolsFactory.GeneralTools import minmax_rescale
 from scipy.linalg import cholesky, cho_solve
 from collections import Counter
+import matplotlib.pyplot as plt
 class GaussianProcess():
     def __init__(self, predict_at, kernel_function, noise_std=0, max_samples=100, overflow_handling_mode='OLDEST'):
         self.kernel_function = kernel_function
@@ -14,6 +15,8 @@ class GaussianProcess():
         self.sample = None
         self.best_action_idx = None
         self.plots = 0
+        self.mean = np.zeros_like(self.X).flatten()
+        self.std = np.sqrt(np.diag(self.cov22))
         self.max_samples=max_samples
         self.memory = {'obs_x': [],
                        'obs_y': []}
@@ -59,28 +62,11 @@ class GaussianProcess():
         predicted_reward = y[best_action_idx]
         return {'best_action': best_action, 'predicted_reward': predicted_reward}
     def plot(self, img_path):
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=self.X.flatten(), y=self.mean, name='mean', line=dict(width=4)))
-        fig.add_trace(go.Scatter(x=self.memory['obs_x'], y=self.memory['obs_y'], name="Obserwacja", mode='markers',
-                                 marker=dict(size=16)))
-        fig.add_traces(
-            [go.Scatter(x=self.X.flatten(), y=self.mean + self.std, name="std", showlegend=False, mode='lines',
-                        line_color='rgba(0,0,0,0)'),
-             go.Scatter(x=self.X.flatten(), y=self.mean - self.std, name="std", mode='lines',
-                        line_color='rgba(0, 0, 255, 0.2)',
-                        fill='tonexty', fillcolor='rgba(0, 0, 255, 0.2)')])
-        fig.update_layout(
-            autosize=False,
-            width=1600,
-            height=800,
-            xaxis_title="X",
-            yaxis_title="Y",
-            font=dict(
-                family="Courier New, monospace",
-                size=28,
-                color="RebeccaPurple"
-            ))
-        fig.write_image(img_path + "gp_plot{}.jpg".format(self.plots))
+        plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
+        plt.cla()
+        plt.errorbar(self.X.flatten(), self.mean, self.std, linestyle=None, capsize=10)
+        plt.scatter(self.memory['obs_x'], self.memory['obs_y'], label='obserwacja')
+        plt.savefig(img_path + "gp_plot{}.jpg".format(self.plots))
         self.plots += 1
 
     def plot_with_sample(self):
