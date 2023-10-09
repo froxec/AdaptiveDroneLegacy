@@ -28,6 +28,33 @@ def plot_round(gp, domain, true_values, img_path, i):
     plt.tight_layout()
     plt.savefig(img_path + "gp_plot{}.jpg".format(i))
 
+
+def plot_sampled_function(gp, img_path, i):
+    plt.cla()
+    plt.rcParams['figure.figsize'] = (16, 2)
+    plt.rcParams['figure.titlesize'] = 36
+    plt.rcParams['legend.fontsize'] = 28
+    plt.rcParams['xtick.labelsize'] = 36
+    plt.rcParams['ytick.labelsize'] = 36
+    plt.plot(gp.sampled_function['x'], gp.sampled_function['y'], color='green', label='Realizacja GP', linestyle='--')
+    plt.scatter(gp.sampled_function['best_action'], gp.sampled_function['predicted_reward'], color='red', label='Minimum')
+    plt.errorbar(gp.X.flatten(), gp.mean, gp.std, linestyle=None, capsize=10, label='Model próbkowanej funkcji',
+                 color='grey')
+    plt.title('Przykład próbkowania Thompsona {}'.format(i))
+    plt.xlabel(r"$\hat{p}$")
+    plt.ylabel(r"$e_{pred}(\hat{p})$")
+    plt.legend(loc='upper left')
+    plt.xticks(gp.X.flatten())
+    ax.tick_params(axis='x', colors='red', width=5, length=10)
+    n = 10
+    [l.set_visible(False) for (i, l) in enumerate(ax.xaxis.get_ticklabels()) if i % n != 0]
+    for label in ax.xaxis.get_ticklabels():
+        label.set_color('#2c2d2e')
+    plt.tight_layout()
+    plt.savefig(img_path + "ts_plot{}.jpg".format(i))
+
+
+
 if __name__ == "__main__":
     img_path = '../../images/ilustracje4.6/'
     samples_num = 100
@@ -75,6 +102,7 @@ if __name__ == "__main__":
     plot_round(gp, X0, y_true, img_path, 1)
     for i in range(2, observations + 2):
         best = gp.Thompson_sampling(mode='min')
+        plot_sampled_function(gp, img_path, i)
         action = best['best_action']
         y = sample_function(action).flatten()
         gp(np.array([action]).reshape(-1, 1), y)

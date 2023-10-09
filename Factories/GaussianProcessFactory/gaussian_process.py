@@ -60,6 +60,10 @@ class GaussianProcess():
         self.best_action_idx = best_action_idx
         best_action = x[best_action_idx[1]]
         predicted_reward = y[best_action_idx]
+        self.sampled_function = {'x': x.flatten(),
+                                 'y': y.flatten(),
+                                 'best_action': best_action,
+                                 'predicted_reward': predicted_reward}
         return {'best_action': best_action, 'predicted_reward': predicted_reward}
     def plot(self, img_path):
         plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
@@ -169,6 +173,10 @@ class ContextualGaussianProcess(GaussianProcess):
             best_action_idx = np.unravel_index(np.argmin(y), y.shape)
         best_action = x[best_action_idx[1]][0]
         predicted_reward = y[best_action_idx]
+        self.sampled_function = {'x': x,
+                                 'y': y,
+                                 'best_action': best_action,
+                                 'predicted_reward': predicted_reward}
         return {'best_action': best_action, 'predicted_reward': predicted_reward}
     def find_closest_point(self, context, grids1d):
         x_idx = np.searchsorted(grids1d[0], context[0])
