@@ -115,6 +115,16 @@ class DataPlotter():
         else:
             self._plotting_3rows(column_names, 'u_reference')
 
+    def plot_throttle(self):
+        column_names = ['THROTTLE', 'U_OUTPUT:Y', 'U_OUTPUT:Z']
+        ylabels = [r'$throttle [N]$', r'$\phi_{zad} [rad]$', r'$\theta_{zad} [rad]$']
+        xlabel = '$t [s]$'
+        if self.use_plt:
+            self._plotting_3_rows_matplotlib(column_names, 'Przebiegi czasowe throttle', xlabel, ylabels)
+        else:
+            self._plotting_3rows(column_names, 'u_reference')
+
+
     def animate_position_local(self):
         column_names = ['POSITION_LOCAL:X', 'POSITION_LOCAL:Y', 'POSITION_LOCAL:Z']
         self._animate_3_rows(column_names, title='position_local')
@@ -232,9 +242,9 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/09_10_field/'
+    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/10_10_field/'
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    path = [base_path+'test_working.csv']
+    path = [base_path+'test3.csv']
     # path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_1762.csv',
     #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load300_2066.csv',
     #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load500_2268.csv']
@@ -264,7 +274,8 @@ if __name__ == "__main__":
     data_plotter.plot_output_control()
     data_plotter.plot_u_l1()
     data_plotter.plot_u_ref()
-    data_plotter.plot_sigma()
+    #data_plotter.plot_sigma()
     data_plotter.plot_attitude()
+    data_plotter.plot_throttle()
     plt.show(block=True)
     # data_plotter.animate_position_local()
