@@ -242,9 +242,9 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/10_10_field/'
+    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/12_10_fiels/'
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    path = [base_path+'test3.csv']
+    path = [base_path+'test1_2.csv']
     # path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_1762.csv',
     #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load300_2066.csv',
     #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load500_2268.csv']
@@ -274,7 +274,7 @@ if __name__ == "__main__":
     data_plotter.plot_output_control()
     data_plotter.plot_u_l1()
     data_plotter.plot_u_ref()
-    #data_plotter.plot_sigma()
+    data_plotter.plot_sigma()
     data_plotter.plot_attitude()
     data_plotter.plot_throttle()
     plt.show(block=True)
