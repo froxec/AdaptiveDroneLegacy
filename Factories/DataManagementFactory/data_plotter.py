@@ -124,6 +124,33 @@ class DataPlotter():
         else:
             self._plotting_3rows(column_names, 'u_reference')
 
+    def plot_desired_and_real_attitude(self, linestyles=['solid', 'dashdot', 'dotted']):
+        plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
+        fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
+        column_names1 = ['U_OUTPUT:Y', 'U_OUTPUT:Z']
+        column_names2 = ['ATTITUDE:X', 'ATTITUDE:Y', 'ATTITUDE:Z']
+        ylabels = [r'$\phi [rad]$', r'$\theta [rad]$', r'$\psi [rad]$']
+        for k, df in enumerate(self.df):
+            t = pd.to_datetime(df['TIME'])
+            t = t[timeshifts[k]:]
+            t = t - t[timeshifts[k]]
+            t = t.dt.total_seconds()
+            data = df[column_names1][timeshifts[k]:]
+            for i, col in enumerate(data):
+                ax[i].plot(t, data[col], label=ylabels[i]+'zad', linestyle=linestyles[k])
+                ax[i].set_ylabel(ylabels[i])
+                ax[i].legend()
+            data = df[column_names2][timeshifts[k]:]
+            for i, col in enumerate(data):
+                ax[i].plot(t, -data[col], label=ylabels[i], linestyle=linestyles[k])
+                ax[i].set_ylabel(ylabels[i])
+                ax[i].legend()
+
+            psi_zad = np.zeros_like(t)
+            ax[2].plot(t, psi_zad, label='psi_zad')
+            ax[i].legend()
+
+
 
     def animate_position_local(self):
         column_names = ['POSITION_LOCAL:X', 'POSITION_LOCAL:Y', 'POSITION_LOCAL:Z']
@@ -242,9 +269,9 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/12_10_fiels/'
+    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/13_10/'
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    path = [base_path+'test1_2.csv']
+    path = [base_path+'test1estim.csv']
     # path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_1762.csv',
     #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load300_2066.csv',
     #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load500_2268.csv']
@@ -269,13 +296,14 @@ if __name__ == "__main__":
     # path = candidates[0]
     #print(os.listdir(os.getcwd()))
     data_plotter = DataPlotter(path, save_path, timeshifts, legend)
-    data_plotter.plot_position_local(reference_points, reference_shift)
-    data_plotter.plot_velocity()
-    data_plotter.plot_output_control()
-    data_plotter.plot_u_l1()
-    data_plotter.plot_u_ref()
-    data_plotter.plot_sigma()
-    data_plotter.plot_attitude()
-    data_plotter.plot_throttle()
+    # data_plotter.plot_position_local(reference_points, reference_shift)
+    # data_plotter.plot_velocity()
+    # data_plotter.plot_output_control()
+    # data_plotter.plot_u_l1()
+    # data_plotter.plot_u_ref()
+    # data_plotter.plot_sigma()
+    # data_plotter.plot_attitude()
+    # data_plotter.plot_throttle()
+    data_plotter.plot_desired_and_real_attitude()
     plt.show(block=True)
     # data_plotter.animate_position_local()

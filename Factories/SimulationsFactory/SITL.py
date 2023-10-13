@@ -332,3 +332,34 @@ class InnerLoopSITL(SoftwareInTheLoop):
             fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 3], name='ω_4 [rad/s]', line=dict(width=3, dash='dash', color='rgb(100, 100, 100)')), row=3, col=1)
 
         fig.write_image('../images/yaw_trajectory.jpeg')
+
+class VerificationSITL:
+    def __init__(self,
+                 quadModel,):
+        self.quadModel = quadModel
+        self.system = System(self.quadModel)
+    def run(self, stop_time, deltaT, x0, motors):
+        t = np.arange(0, stop_time, deltaT)
+        x = np.zeros((t.size, 12))
+        u = np.zeros((t.size, 4))
+        x[0] = x0
+        u[0] = motors
+        for i, t_i in enumerate(t[1:], 1):
+            x[i], _ = self.system(motors, deltaT, self.quadModel)[:12]
+            u[i] = motors
+        return t, x, u
+
+    def plot_trajectory(self, t, x):
+        import matplotlib.pyplot as plt
+        plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
+        x = x.transpose()
+        data_and_labels = [[(r'$$x [m]$$', x[0]), (r'$$y [m]$$', x[1]), (r'$$z [m]$$', x[2])],
+                           [(r'$$V_x [m/s]$$', x[3]), (r'$$V_y [m/s]$$', x[4]), (r'$$V_z [m/s]$$', x[5])],
+                           [(r'$$\phi [rad]$$', x[6]), (r'$$\theta [rad]$$', x[7]), (r'$$\psi [rad]$$', x[8])],
+                           [(r'$$\omega_{\phi} [rad/s]$$', x[9]), (r'$$\omega_{\theta} [rad/s]$$', x[10]), (r'$$\omega_{\psi} [rad/s]$$', x[11])]]
+        fig, ax = plt.subplots(nrows=4, ncols=3, sharex=True, dpi=100)
+        for i in range(4):
+            for j in range(3):
+                ax[i][j].plot(t, data_and_labels[i][j][1])
+                ax[i][j].set_ylabel(data_and_labels[i][j][0])
+        plt.show()

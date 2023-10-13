@@ -18,7 +18,7 @@ pendulum_parameters = {
     'ro': 1.23
 }
 Z550_parameters = {
-    'm': 0.940 + 0.182, #quad_mass + lipo_mass
+    'm': 1.630, #quad_mass + lipo_mass
     'g': 9.81,
     'Kt': 1.3550195446154272e-05,
     'Kd': 2.4953940390301706e-07,

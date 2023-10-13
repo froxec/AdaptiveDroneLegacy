@@ -43,7 +43,8 @@ class QuadConfiguration(Configuration):
         self.load0 = load0
         self.model_parameters = model_parameters
         self.quadcopter = quadcopterModel(self.quad0, model_parameters, external_disturbance=external_disturbance)
-        self.load = loadPendulum(self.load0, pendulum_parameters, self.quadcopter.translational_accelerations, self.quadcopter.state)
+        if pendulum_parameters is not None:
+            self.load = loadPendulum(self.load0, pendulum_parameters, self.quadcopter.translational_accelerations, self.quadcopter.state)
         self.esc = ElectronicSpeedControler(pwm_range=pwm_range, angular_velocity_range=angular_velocity_range)
 
 
