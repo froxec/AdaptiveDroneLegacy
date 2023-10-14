@@ -18,7 +18,7 @@ def plotly_fig2array(fig):
     return np.asarray(img)
 
 class DataPlotter():
-    def __init__(self, paths, save_path, timeshifts, legend=None, use_plt = True):
+    def __init__(self, paths, save_path, cuts, legend=None, use_plt = True, height_origin_shift=None):
         self.paths = paths
         if isinstance(paths, list):
             self.df = [pd.read_csv(path) for path in paths]
@@ -51,7 +51,8 @@ class DataPlotter():
             self.legend=legend
         else:
             self.legend=['none']*len(self.paths)
-        self.timeshifts = timeshifts
+        self.cuts = cuts
+        self.height_shift = height_origin_shift
     def plot_velocity(self):
         column_names = ['VELOCITY:X', 'VELOCITY:Y', 'VELOCITY:Z']
         ylabels = [r'$V_x [m/s]$', r'$V_y [m/s]$', r'$V_z [m/s]$']
@@ -132,15 +133,16 @@ class DataPlotter():
         ylabels = [r'$\phi [rad]$', r'$\theta [rad]$', r'$\psi [rad]$']
         for k, df in enumerate(self.df):
             t = pd.to_datetime(df['TIME'])
-            t = t[timeshifts[k]:]
-            t = t - t[timeshifts[k]]
+            cut = (int(cuts[k][0]*t.size), int(cuts[k][1]*t.size))
+            t = t[cut[0]:cut[1]]
+            t = t - t[cut[0]]
             t = t.dt.total_seconds()
-            data = df[column_names1][timeshifts[k]:]
+            data = df[column_names1][cut[0]:cut[1]]
             for i, col in enumerate(data):
                 ax[i].plot(t, data[col], label=ylabels[i]+'zad', linestyle=linestyles[k])
                 ax[i].set_ylabel(ylabels[i])
                 ax[i].legend()
-            data = df[column_names2][timeshifts[k]:]
+            data = df[column_names2][cut[0]:cut[1]]
             for i, col in enumerate(data):
                 ax[i].plot(t, -data[col], label=ylabels[i], linestyle=linestyles[k])
                 ax[i].set_ylabel(ylabels[i])
@@ -175,11 +177,14 @@ class DataPlotter():
         fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
         for k, df in enumerate(self.df):
             t = pd.to_datetime(df['TIME'])
-            t = t[timeshifts[k]:]
-            t = t - t[timeshifts[k]]
+            cut = (int(cuts[k][0] * t.size), int(cuts[k][1] * t.size))
+            t = t[cut[0]:cut[1]]
+            t = t - t[cut[0]]
             t = t.dt.total_seconds()
-            data = df[column_names][timeshifts[k]:]
+            data = df[column_names][cut[0]:cut[1]]
             for i, col in enumerate(data):
+                if col == "POSITION_LOCAL:Z" and height_shifts is not None:
+                    data[col] = data[col] + self.height_shift[k]
                 ax[i].plot(t, data[col], label=self.legend[k], linestyle=linestyles[k])
                 ax[i].set_ylabel(ylabels[i])
                 ax[i].legend()
@@ -269,13 +274,14 @@ class DataPlotter():
 if __name__ == "__main__":
     import os
     TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/13_10/'
+    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/field_tests_official/adaptive_tests/'
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    path = [base_path+'test1estim.csv']
+    path = [base_path+'adaptive_0g.csv', base_path+'adaptive_200g.csv', base_path+'adaptive_400g.csv']
     # path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_1762.csv',
     #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load300_2066.csv',
     #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load500_2268.csv']
-    timeshifts = [0]
+    cuts = [(0.19, 0.61), (0.33, 0.65), (0.072, 0.3)] # normalized to length
+    height_shifts = [0.0, 0.5, 1.0]
     # reference_points =  [[-10, -10, 6],
     #                     [-10, 10, 6],
     #                     [10, 10, 6],
@@ -283,7 +289,7 @@ if __name__ == "__main__":
     #                     [-10, -10, 6]]
     reference_points= None
     reference_shift = 220
-    legend = [r'm_{load} = 0.0 kg', r'm_{load} = 0.3 kg', r'm_{load} = 0.5 kg']
+    legend = [r'm_{load} = 0.0 kg', r'm_{load} = 0.2 kg', r'm_{load} = 0.4 kg']
     # cwd = os.getcwd()
     # dir = os.listdir()
     # candidates = []
@@ -295,15 +301,15 @@ if __name__ == "__main__":
     # print(candidates)
     # path = candidates[0]
     #print(os.listdir(os.getcwd()))
-    data_plotter = DataPlotter(path, save_path, timeshifts, legend)
-    # data_plotter.plot_position_local(reference_points, reference_shift)
-    # data_plotter.plot_velocity()
-    # data_plotter.plot_output_control()
-    # data_plotter.plot_u_l1()
-    # data_plotter.plot_u_ref()
-    # data_plotter.plot_sigma()
-    # data_plotter.plot_attitude()
-    # data_plotter.plot_throttle()
-    data_plotter.plot_desired_and_real_attitude()
+    data_plotter = DataPlotter(path, save_path, cuts, legend, height_origin_shift=height_shifts)
+    data_plotter.plot_position_local(reference_points, reference_shift)
+    data_plotter.plot_velocity()
+    data_plotter.plot_output_control()
+    data_plotter.plot_u_l1()
+    data_plotter.plot_u_ref()
+    data_plotter.plot_sigma()
+    data_plotter.plot_attitude()
+    data_plotter.plot_throttle()
+    #data_plotter.plot_desired_and_real_attitude()
     plt.show(block=True)
     # data_plotter.animate_position_local()
