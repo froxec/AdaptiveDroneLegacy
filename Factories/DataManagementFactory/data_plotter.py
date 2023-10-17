@@ -9,6 +9,7 @@ from PIL import Image
 import numpy as np
 from matplotlib.lines import Line2D
 from Factories.ToolsFactory.GeneralTools import euclidean_distance
+from scipy import stats
 
 def plotly_fig2array(fig):
     #convert Plotly fig to  an array
@@ -175,6 +176,7 @@ class DataPlotter():
     def _plotting_3_rows_matplotlib(self, column_names, title, xlabel, ylabels, reference_points=None, reference_shift=None, linestyles=['solid', 'dashdot', 'dotted'], markers=['o', '*', 'P']):
         plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
         fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
+        lengths = []
         for k, df in enumerate(self.df):
             t = pd.to_datetime(df['TIME'])
             cut = (int(cuts[k][0] * t.size), int(cuts[k][1] * t.size))
@@ -182,6 +184,10 @@ class DataPlotter():
             t = t - t[cut[0]]
             t = t.dt.total_seconds()
             data = df[column_names][cut[0]:cut[1]]
+            outliers_mask = (np.abs(stats.zscore(data)) < 3).all(axis=1)
+            data = data[outliers_mask]
+            t = t[outliers_mask]
+            lengths.append(data.shape[0])
             for i, col in enumerate(data):
                 if col == "POSITION_LOCAL:Z" and height_shifts is not None:
                     data[col] = data[col] + self.height_shift[k]
@@ -189,6 +195,14 @@ class DataPlotter():
                 ax[i].set_ylabel(ylabels[i])
                 ax[i].legend()
         if reference_points is not None:
+            max_length_id = np.argmax(lengths)
+            df = self.df[max_length_id]
+            t = pd.to_datetime(df['TIME'])
+            cut = (int(cuts[max_length_id][0] * t.size), int(cuts[max_length_id][1] * t.size))
+            t = t[cut[0]:cut[1]]
+            t = t - t[cut[0]]
+            t = t.dt.total_seconds()
+            data = df[column_names][cut[0]:cut[1]]
             reference_points = np.array(reference_points)
             ref = np.empty_like(data)
             for i, point in enumerate(np.array(data)):
@@ -272,44 +286,28 @@ class DataPlotter():
 
 
 if __name__ == "__main__":
-    import os
-    TEST_NAME = 'TEST WITH ADDITIONAL DATA RPI.csv'
-    base_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/field_tests_official/adaptive_tests/'
+    from Factories.DataManagementFactory.data_plotter_configs import SIM_ESTIM_TESTS_CONF, ONE_FILE_CONF, FIELD_ESTIM_TESTS_CONF
+    CONFIG = FIELD_ESTIM_TESTS_CONF
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    path = [base_path+'adaptive_0g.csv', base_path+'adaptive_200g.csv', base_path+'adaptive_400g.csv']
-    # path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_1762.csv',
-    #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load300_2066.csv',
-    #         '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load500_2268.csv']
-    cuts = [(0.19, 0.61), (0.33, 0.65), (0.072, 0.3)] # normalized to length
-    height_shifts = [0.0, 0.5, 1.0]
-    # reference_points =  [[-10, -10, 6],
-    #                     [-10, 10, 6],
-    #                     [10, 10, 6],
-    #                     [-10, 10, 6],
-    #                     [-10, -10, 6]]
-    reference_points= None
-    reference_shift = 220
-    legend = [r'm_{load} = 0.0 kg', r'm_{load} = 0.2 kg', r'm_{load} = 0.4 kg']
-    # cwd = os.getcwd()
-    # dir = os.listdir()
-    # candidates = []
-    # for i in range(len(dir)):
-    #     print(dir[i])
-    #     name = dir[i].split("_")[1]
-    #     if name == TEST_NAME:
-    #         candidates.append(dir[i])
-    # print(candidates)
-    # path = candidates[0]
-    #print(os.listdir(os.getcwd()))
+    base_path = CONFIG['base_path']
+    path = [base_path + filename for filename in CONFIG['file_names']]
+    cuts = CONFIG['cuts']  # normalized to length
+    height_shifts = CONFIG['height_shifts']
+    reference_points = CONFIG['reference_points']
+    reference_shift = CONFIG['reference_shift']
+    legend = CONFIG['legend']
+
+    # generate selected plots
+
     data_plotter = DataPlotter(path, save_path, cuts, legend, height_origin_shift=height_shifts)
     data_plotter.plot_position_local(reference_points, reference_shift)
-    data_plotter.plot_velocity()
-    data_plotter.plot_output_control()
-    data_plotter.plot_u_l1()
-    data_plotter.plot_u_ref()
-    data_plotter.plot_sigma()
-    data_plotter.plot_attitude()
-    data_plotter.plot_throttle()
+    # data_plotter.plot_velocity()
+    # data_plotter.plot_output_control()
+    # data_plotter.plot_u_l1()
+    # data_plotter.plot_u_ref()
+    # data_plotter.plot_sigma()
+    # data_plotter.plot_attitude()
+    #data_plotter.plot_throttle()
     #data_plotter.plot_desired_and_real_attitude()
     plt.show(block=True)
     # data_plotter.animate_position_local()

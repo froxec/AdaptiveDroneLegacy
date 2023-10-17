@@ -1,0 +1,2 @@
+cuts = [(0.25, 0.74), (0.34, 0.63)] # normalized to length
+height_shifts = [0.0, 0.0, 0.0]
