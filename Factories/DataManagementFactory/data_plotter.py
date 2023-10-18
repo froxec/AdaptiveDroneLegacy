@@ -191,6 +191,8 @@ class DataPlotter():
             for i, col in enumerate(data):
                 if col == "POSITION_LOCAL:Z" and height_shifts is not None:
                     data[col] = data[col] + self.height_shift[k]
+                if col == "POSITION_LOCAL:Z":
+                    ax[i].set_ylim([0, 10])
                 ax[i].plot(t, data[col], label=self.legend[k], linestyle=linestyles[k])
                 ax[i].set_ylabel(ylabels[i])
                 ax[i].legend()
@@ -286,8 +288,9 @@ class DataPlotter():
 
 
 if __name__ == "__main__":
-    from Factories.DataManagementFactory.data_plotter_configs import SIM_ESTIM_TESTS_CONF, ONE_FILE_CONF, FIELD_ESTIM_TESTS_CONF
-    CONFIG = FIELD_ESTIM_TESTS_CONF
+    from Factories.DataManagementFactory.data_plotter_configs import SIM_ESTIM_TESTS_CONF, ONE_FILE_CONF, FIELD_ESTIM_TESTS_CONF, \
+        MPC_FIELD_TESTS_CONF
+    CONFIG = MPC_FIELD_TESTS_CONF
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
     base_path = CONFIG['base_path']
     path = [base_path + filename for filename in CONFIG['file_names']]
@@ -301,12 +304,12 @@ if __name__ == "__main__":
 
     data_plotter = DataPlotter(path, save_path, cuts, legend, height_origin_shift=height_shifts)
     data_plotter.plot_position_local(reference_points, reference_shift)
-    # data_plotter.plot_velocity()
-    # data_plotter.plot_output_control()
-    # data_plotter.plot_u_l1()
-    # data_plotter.plot_u_ref()
-    # data_plotter.plot_sigma()
-    # data_plotter.plot_attitude()
+    data_plotter.plot_velocity()
+    data_plotter.plot_output_control()
+    data_plotter.plot_u_l1()
+    data_plotter.plot_u_ref()
+    data_plotter.plot_sigma()
+    data_plotter.plot_attitude()
     #data_plotter.plot_throttle()
     #data_plotter.plot_desired_and_real_attitude()
     plt.show(block=True)

@@ -349,7 +349,7 @@ class VerificationSITL:
             u[i] = motors
         return t, x, u
 
-    def plot_trajectory(self, t, x):
+    def plot_trajectory(self, t, x, low_value_indices=[]):
         import matplotlib.pyplot as plt
         plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
         x = x.transpose()
@@ -362,4 +362,7 @@ class VerificationSITL:
             for j in range(3):
                 ax[i][j].plot(t, data_and_labels[i][j][1])
                 ax[i][j].set_ylabel(data_and_labels[i][j][0])
+                indices = (i, j)
+                if indices in low_value_indices:
+                    ax[i][j].set_ylim([-1, 1])
         plt.show()

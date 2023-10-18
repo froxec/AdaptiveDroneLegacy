@@ -10,7 +10,7 @@ if __name__ == "__main__":
     # create simulator
     simulator = VerificationSITL(quad_config.quadcopter)
     # define control vector (motors speed [rad/s])
-    control_vector = np.array([545, 545, 550, 550])
+    control_vector = np.array([545, 555, 545, 555])
     # define initial state x0
     x0 = np.zeros(12)
     t, x, u = simulator.run(20, DELTA_T, x0, control_vector)
