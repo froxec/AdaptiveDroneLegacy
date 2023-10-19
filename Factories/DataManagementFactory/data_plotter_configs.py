@@ -12,6 +12,62 @@ SIM_ESTIM_TESTS_CONF = {
     'legend': [r'm_{load} = 0.0 kg', r'm_{load} = 0.2 kg', r'm_{load} = 0.4 kg']
 }
 
+SIM_MPC_TESTS_CONF2 = {
+    'base_path': '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new2/',
+    'file_names': ['load0g.csv', 'load250.csv', 'load500.csv'],
+    'cuts': [(0.01, 1), (0, 1), (0.01, 1)],
+    'height_shifts': [0.0, 0.0, 0.0],
+    'reference_points': [[-10, -10, 6],
+                         [-10, 10, 6],
+                         [10, 10, 6],
+                         [-10, 10, 6],
+                         [-10, -10, 6]],
+    'reference_shift': 220,
+    'legend': [r'm_{load} = 0.0 kg', r'm_{load} = 0.25 kg', r'm_{load} = 0.50 kg']
+}
+
+SIM_MPC_ADA_TESTS_CONF2 = {
+    'base_path': '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new2/',
+    'file_names': ['load0g_adaON.csv', 'load250_adaON.csv', 'load500_adaON.csv'],
+    'cuts': [(0, 1), (0.01, 1), (0, 1)],
+    'height_shifts': [0.0, 0.0, 0.0],
+    'reference_points': [[-10, -10, 6],
+                         [-10, 10, 6],
+                         [10, 10, 6],
+                         [-10, 10, 6],
+                         [-10, -10, 6]],
+    'reference_shift': 220,
+    'legend': [r'm_{load} = 0.0 kg', r'm_{load} = 0.25 kg', r'm_{load} = 0.50 kg']
+}
+
+SIM_ESTIM_TESTS_CONF2 = {
+    'base_path': '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new2/',
+    'file_names': ['load0g_1749.csv', 'load250_2026.csv', 'load500_2259.csv'],
+    'cuts': [(0, 1), (0, 1), (0, 1)],
+    'height_shifts': [0.0, 0.0, 0.0],
+    'reference_points': [[-10, -10, 6],
+                         [-10, 10, 6],
+                         [10, 10, 6],
+                         [-10, 10, 6],
+                         [-10, -10, 6]],
+    'reference_shift': 220,
+    'legend': [r'm_{load} = 0.0 kg', r'm_{load} = 0.25 kg', r'm_{load} = 0.50 kg']
+}
+
+SIM_ESTIM_TESTS_ADA_CONF2 = {
+    'base_path': '/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new2/',
+    'file_names': ['load0g_1749_adaON.csv', 'load250_2026_adaON.csv', 'load500_2259_adaON.csv'],
+    'cuts': [(0, 1), (0, 1), (0, 1)],
+    'height_shifts': [0.0, 0.0, 0.0],
+    'reference_points': [[-10, -10, 6],
+                         [-10, 10, 6],
+                         [10, 10, 6],
+                         [-10, 10, 6],
+                         [-10, -10, 6]],
+    'reference_shift': 220,
+    'legend': [r'm_{load} = 0.0 kg', r'm_{load} = 0.25 kg', r'm_{load} = 0.50 kg']
+}
+
 ONE_FILE_CONF = {
     'base_path': '/home/pete/PycharmProjects/AdaptiveDrone/logs/18_10/',
     'file_names': ['10-17-2023-16:19:27_estim400gRPI.csv'],
@@ -28,8 +84,8 @@ ONE_FILE_CONF = {
 
 FIELD_ESTIM_TESTS_CONF = {
     'base_path': '/home/pete/PycharmProjects/AdaptiveDrone/logs/field_tests_official/estim_tests2/',
-    'file_names': ['estim0g.csv', 'estim200g.csv', 'estim400g2.csv'],
-    'cuts': [(0.42, 0.7), (0.45, 0.62), (0.0, 1)],
+    'file_names': ['estim0g.csv', 'estim200g.csv', 'estim400g3.csv'],
+    'cuts': [(0.42, 0.7), (0.45, 0.62), (0.82, 0.93)],
     'height_shifts': [0.0, 0.0, 0.0],
     'reference_points': [[-10, -10, 6],
                         [-10, 10, 6],
@@ -53,3 +109,4 @@ MPC_FIELD_TESTS_CONF = {
     'reference_shift': 220,
     'legend': [r'm_{load} = 0.0 kg', r'm_{load} = 0.2 kg', r'm_{load} = 0.4 kg']
 }
+

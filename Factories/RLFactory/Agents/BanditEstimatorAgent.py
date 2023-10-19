@@ -546,6 +546,8 @@ class BanditEstimatorAccelerationQQ(BanditEstimatorAcceleration):
         elif self.trajectory_buffer.full['a']:
             penalty = self._calculate_penalty()
             self.penalties_buffer.add_sample(['penalties'], [penalty])
+            self.history['action'].append(self.action)
+            self.history['penalty'].append(penalty)
             if not self.converged:
                 self.update_gp(self.estimated_parameters_holder.m, penalty)
                 if self.save_images:
@@ -555,8 +557,6 @@ class BanditEstimatorAccelerationQQ(BanditEstimatorAcceleration):
                 self.history['action'].append(self.action)
                 self.estimated_parameters_holder.m = self.action
                 self.converged = self.convergence_checker(self.action)
-                self.history['action'].append(self.action)
-                self.history['penalty'].append(penalty)
             if self.converged and not self.parameters_changed:
                 parameters = self.get_parameters()
                 print("Converged to {}".format(parameters))

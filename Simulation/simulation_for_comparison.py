@@ -1,4 +1,4 @@
-from Factories.ConfigurationsFactory.configurations import QuadConfiguration, ControllerWithCompensatorConfiguration, CustomMPCConfig
+from Factories.ConfigurationsFactory.configurations import QuadConfiguration, CustomMPCConfig
 from Factories.SimulationsFactory.SITL import SoftwareInTheLoopLegacy
 from Factories.ModelsFactory.model_parameters import pendulum_parameters, Z550_parameters
 import numpy as np

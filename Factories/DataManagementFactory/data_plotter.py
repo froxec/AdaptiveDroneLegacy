@@ -212,6 +212,7 @@ class DataPlotter():
                 indices = zip(closest_ref_id, range(3))
                 closest_ref = [reference_points[id] for id in indices]
                 ref[i] = closest_ref
+            ref[:500] = np.array([[-10, 10, 6]]*500)
             ref = np.roll(ref, -reference_shift, axis=0)
             for i, line in enumerate(ref.T):
                 ax[i].plot(t, line, label='trajektoria referencyjna', color='red', linestyle='dashed')
@@ -289,8 +290,8 @@ class DataPlotter():
 
 if __name__ == "__main__":
     from Factories.DataManagementFactory.data_plotter_configs import SIM_ESTIM_TESTS_CONF, ONE_FILE_CONF, FIELD_ESTIM_TESTS_CONF, \
-        MPC_FIELD_TESTS_CONF
-    CONFIG = MPC_FIELD_TESTS_CONF
+        MPC_FIELD_TESTS_CONF, SIM_ESTIM_TESTS_CONF2, SIM_MPC_TESTS_CONF2, SIM_MPC_ADA_TESTS_CONF2, SIM_ESTIM_TESTS_ADA_CONF2
+    CONFIG = SIM_MPC_TESTS_CONF2
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
     base_path = CONFIG['base_path']
     path = [base_path + filename for filename in CONFIG['file_names']]

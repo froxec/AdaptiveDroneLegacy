@@ -31,4 +31,4 @@ if __name__ == "__main__":
     u0 = np.array([angular_speed0,  angular_speed0,  angular_speed0,  angular_speed0])
     stop_time = 4
     sim.run(attitude_ref, throttle, stop_time, x0, u0)
-    sim.plot_attitude_trajectory(tested_variable =2)
+    sim.plot_attitude_trajectory(tested_variable =0)

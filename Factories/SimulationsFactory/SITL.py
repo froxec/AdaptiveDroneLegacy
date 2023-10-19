@@ -11,6 +11,7 @@ from Factories.ModelsFactory.uncertain_models import *
 from Factories.ControllersFactory.position_controllers.position_controller import PositionController
 from typing import Type
 from copy import deepcopy
+import matplotlib.pyplot as plt
 
 class SoftwareInTheLoop:
     def __init__(self, quad: Type[quadcopterModel],
@@ -263,6 +264,7 @@ class InnerLoopSITL(SoftwareInTheLoop):
         self.quad = quad
         self.load = load
         self.attitude_controller = attitude_controler
+        self.system = System(self.quad)
         self.esc = esc
     def run(self,  attitude_ref, throttle, stop_time, x0, u0):
         t = np.arange(0, stop_time, self.deltaT)
@@ -274,70 +276,66 @@ class InnerLoopSITL(SoftwareInTheLoop):
             ESC_PWMs = self.attitude_controller(attitude_ref, self.quad.state[6:9], self.quad.state[9:12],
                                                 throttle)
             motors = self.esc(ESC_PWMs)
-            x[i] = system(np.array(motors), self.deltaT, self.quad, self.load)[:12]
+            x[i], _ = self.system(np.array(motors), self.deltaT, self.quad)[:12]
             u[i] = motors
         self.u = u
         self.attitude_ref = attitude_ref
         self.trajectory = x
         self.time = t
     def plot_attitude_trajectory(self, tested_variable):
-        fig = make_subplots(rows=3, cols=1,x_title='Czas [s]',
-                            subplot_titles=('Przebieg czasowy położenia kątowego',  'Przebieg czasowy prędkości kątowej',
-                                            'Przebieg czasowy sygnału sterującego'))
-        if tested_variable==0:
-            fig['layout']['yaxis']['title'] = 'φ [rad]'
-            fig['layout']['yaxis2']['title'] = 'ω_x [rad/s]'
-            fig['layout']['yaxis3']['title'] = 'ω_1,2,3,4 [rad/s]'
-            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 6], name='φ [rad]', line = dict(width=3)), row=1, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 9], name='ω_x [rad/s]', line = dict(width=3)), row=2, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=np.repeat([self.attitude_ref[0]], self.time.shape[0]), name='φ_ref [rad]', line = dict(dash = 'dash', color='rgb(255, 0, 0)', width=3)), row=1, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 0], name='ω_1 [rad/s]', line=dict(width=3, color='rgb(0, 0, 255)')), row=3, col=1)
+        from cycler import cycler
+        plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
+        fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
+        colors = ['#196E85', '#e89b26', 'red', '#326024']
+        u = self.u.transpose()
+        x = self.trajectory.transpose()
+        ref = self.attitude_ref[tested_variable]*np.ones_like(self.time)
+        if tested_variable == 0:
+            ylabels = [r'$$\phi [rad]$$', r'$$\omega_{\phi} [rad / s]$$', r'$$\varpi_{1, 2, 3, 4} [rad / s]$$']
+            data_to_plot = [[x[6, :], ref], [x[9, :]], [u[0,:], u[1,:], u[2,:], u[3,:]]]
+            legend = [[r'$$\phi [rad] $$', r'$$\phi_{zad} [rad]$$'], [r'$$\omega_{\phi} [rad/s]$$'], [r'$$\varpi_{1} [rad/s]$$', r'$$\varpi_{2} [rad/s]$$',
+                                                                     r'$$\varpi_{3} [rad/s]$$', r'$$\varpi_{4} [rad/s]$$']]
+            self._plot_traces(ax, ylabels, data_to_plot, colors, legend, rpm_linestyles=['solid', 'dashed', 'solid', 'dashed'])
+        elif tested_variable == 1:
+            ylabels = [r'$$\theta [rad]$$', r'$$\omega_{\theta} [rad / s]$$', r'$$\varpi_{1, 2, 3, 4} [rad / s]$$']
+            data_to_plot = [[x[7, :]], [x[10, :]], [u[0, :], u[1, :], u[2, :], u[3, :]]]
+            legend = [[r'$$\theta [rad]$$', r'$$\theta_{zad} [rad]$$'], [r'$$\omega_{\theta} [rad/s]$$'], [r'$$\varpi_{1} [rad/s]$$', r'$$\varpi_{2} [rad/s]$$',
+                                                                     r'$$\varpi_{3} [rad/s]$$', r'$$\varpi_{4} [rad/s]$$']]
+            self._plot_traces(ax, ylabels, data_to_plot, colors, legend, rpm_linestyles=['solid', 'solid', 'dashed', 'dashed'])
+        elif tested_variable == 2:
+            ylabels = [r'$$\psi [rad]$$', r'$$\omega_{\psi} [rad / s]$$', r'$$\varpi_{1, 2, 3, 4} [rad / s]$$']
+            data_to_plot = [[x[8, :]], [x[11, :]], [u[0, :], u[1, :], u[2, :], u[3, :]]]
+            legend = [[r'$$\psi [rad]$$', r'$$\psi_{zad} [rad]$$'], [r'$$\omega_{\psi} [rad/s]$$'], [r'$$\varpi_{1} [rad/s]$$',  r'$$\varpi_{2} [rad/s]$$',
+                      r'$$\varpi_{3} [rad/s]$$',  r'$$\varpi_{4} [rad/s]$$']]
+            self._plot_traces(ax, ylabels, data_to_plot, colors, legend, rpm_linestyles=['solid', 'solid', 'dashed', 'dashed'])
+        plt.show(block=True)
 
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 1], name='ω_2 [rad/s]', line=dict(width=3, dash='dash', color='rgb(255, 255, 0)')),
-                          row=3, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 2], name='ω_3 [rad/s]', line=dict(width=3, color='rgb(255, 150, 0)')),
-                          row=3, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 3], name='ω_4 [rad/s]', line=dict(width=3, dash='dash', color='rgb(100, 100, 100)')),
-                          row=3, col=1)
-        elif tested_variable==1:
-            fig['layout']['yaxis']['title'] = 'θ [rad]'
-            fig['layout']['yaxis2']['title'] = 'ω_y [rad/s]'
-            fig['layout']['yaxis3']['title'] = 'ω_1,2,3,4 [rad/s]'
-            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 7], name='θ [rad]', line=dict(width=3)), row=1,
-                          col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 10], name='ω_y [rad/s]', line=dict(width=3)),
-                          row=2, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=np.repeat([self.attitude_ref[1]], self.time.shape[0]), name='θ_ref [rad]', line = dict(dash = 'dash', color='rgb(255, 0, 0)', width=3)), row=1, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 0], name='ω_1 [rad/s]', line=dict(width=3, color='rgb(0, 0, 255)')), row=3, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 1], name='ω_2 [rad/s]', line=dict(width=3, color='rgb(255, 255, 0)')), row=3, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 2], name='ω_3 [rad/s]', line=dict(width=3,dash='dash', color='rgb(255, 150, 0)')),
-                          row=3, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 3], name='ω_4 [rad/s]', line=dict(width=3, dash='dash', color='rgb(100, 100, 100)')),
-                          row=3, col=1)
-        elif tested_variable==2:
-            fig['layout']['yaxis']['title'] = 'ψ [rad]'
-            fig['layout']['yaxis2']['title'] = 'ω_z [rad/s]'
-            fig['layout']['yaxis3']['title'] = 'ω_1,2,3,4 [rad/s]'
-            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 8], name='ψ [rad]', line=dict(width=3)), row=1,
-                          col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.trajectory[:, 11], name='ω_z [rad/s]', line=dict(width=3)), row=2,
-                          col=1)
-            fig.add_trace(
-                go.Scatter(x=self.time, y=np.repeat([self.attitude_ref[2]], self.time.shape[0]), name='ψ_ref [rad]',
-                           line=dict(dash='dash', color='rgb(255, 0, 0)', width=3)), row=1, col=1)
-
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 0], name='ω_1 [rad/s]', line=dict(width=3, color = 'rgb(0, 0, 255)')), row=3, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 1], name='ω_2 [rad/s]', line=dict(width=3, color='rgb(255, 255, 0)')), row=3, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 2], name='ω_3 [rad/s]', line=dict(width=3, dash='dash', color='rgb(255, 150, 0)')), row=3, col=1)
-            fig.add_trace(go.Scatter(x=self.time, y=self.u[:, 3], name='ω_4 [rad/s]', line=dict(width=3, dash='dash', color='rgb(100, 100, 100)')), row=3, col=1)
-
-        fig.write_image('../images/yaw_trajectory.jpeg')
+    def _plot_traces(self,ax, ylabels, data_to_plot, colors, legend, rpm_linestyles=None):
+        for i in range(3):
+            traces = data_to_plot[i]
+            labels = legend[i]
+            if i == 0:
+                colors_to_apply = [colors[0], 'red']
+            else:
+                colors_to_apply = colors
+            if i == 2:
+                linestyles = rpm_linestyles
+            else:
+                linestyles = ['solid', 'dashed']
+            for j, trace in enumerate(traces):
+                ax[i].plot(self.time, trace, linestyle=linestyles[j], color=colors_to_apply[j], label=labels[j])
+                ax[i].set_ylabel(ylabels[i])
+                ax[i].legend()
 
 class VerificationSITL:
     def __init__(self,
-                 quadModel,):
+                 quadModel,
+                 results_save_path,
+                 filename):
         self.quadModel = quadModel
         self.system = System(self.quadModel)
+        self.savepath = results_save_path
+        self.filename = filename
     def run(self, stop_time, deltaT, x0, motors):
         t = np.arange(0, stop_time, deltaT)
         x = np.zeros((t.size, 12))
@@ -365,4 +363,7 @@ class VerificationSITL:
                 indices = (i, j)
                 if indices in low_value_indices:
                     ax[i][j].set_ylim([-1, 1])
-        plt.show()
+                if i == 3:
+                    ax[i][j].set_xlabel(r'$$t [s]$$')
+        plt.tight_layout()
+        plt.savefig(self.savepath + '/' + self.filename + '.png')
