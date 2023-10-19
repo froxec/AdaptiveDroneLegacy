@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-10-19T16:32:23.479Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/118.0" etag="TDGUrHNwel5xWlNd86u1" version="22.0.5" type="github">
+<mxfile host="app.diagrams.net" modified="2023-10-19T16:33:56.462Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/118.0" etag="oBuq3g5MGaBgXmm79nOa" version="22.0.5" type="github">
   <diagram name="Page-1" id="ohGzNpQo8HC6i82rPRUq">
-    <mxGraphModel dx="3179" dy="-6856" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="4681" math="1" shadow="0">
+    <mxGraphModel dx="3528" dy="-6725" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="4681" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -775,7 +775,7 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="kpniaUHthUpJDasM99SZ-17" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+        <mxCell id="kpniaUHthUpJDasM99SZ-17" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#E3E4E5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
           <mxGeometry x="1132.38" y="8173.75" width="52.5" height="52.5" as="geometry" />
         </mxCell>
         <mxCell id="kpniaUHthUpJDasM99SZ-20" value="&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;b style=&quot;font-size: 30px;&quot;&gt;$$\boldsymbol{z}_{zad}$$&lt;/b&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=30;fontFamily=Arial;fontColor=#75787B;" vertex="1" parent="1">
