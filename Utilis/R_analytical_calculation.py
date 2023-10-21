@@ -12,5 +12,5 @@ Rz = Matrix([[cos(Ψ), sin(Ψ), 0],
             [-sin(Ψ), cos(Ψ), 0],
             [0, 0, 1]])
 
-R = Rx*Ry*Rz
+R = Rz*Ry*Rx
 pprint(R)

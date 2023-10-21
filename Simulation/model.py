@@ -120,12 +120,16 @@ class quadcopterModel():
         sR = sin(self.state[6])
         sP = sin(self.state[7])
         sY = sin(self.state[8])
-        self.R = np.array([[cP*cY, sR*sP*cY - cR*sY, cR*sP*cY + sR*sY],
-                    [cP*sY, sR*sP*sY - cR*cY, cR*sP*sY - sR*cY],
-                    [-sP, sR*cP, cR*cP]], dtype=np.float32)
+        # self.R = np.array([[cP*cY, sR*sP*cY - cR*sY, cR*sP*cY + sR*sY],
+        #             [cP*sY, sR*sP*sY - cR*cY, cR*sP*sY - sR*cY],
+        #             [-sP, sR*cP, cR*cP]], dtype=np.float32)
         # self.R = np.array([[cP * cY, sY * cP, sP],
         #               [sP * sR * cY - sY * cR, sP * sR * sY + cR * cY, -sR * cP],
         #               [-sP * cR * cY - sR * sY, -sP * sY * cR + sR * cY, cP * cR]], dtype=np.float32)
+        self.R = np.array([[cP*cY, sR*sP*cY + cR*sY, cR*sP*cY - sR*sY],
+                    [-cP*sY, -sR*sP*sY + cR*cY, -cR*sP*sY - sR*cY],
+                    [-sP, sR*cP, cR*cP]], dtype=np.float32)
+
         return self.R
 
     def translationalMotion(self):
@@ -149,7 +153,7 @@ class quadcopterModel():
     def angularMotion(self):
         T = np.zeros((3), dtype=np.float32)
         T[0] = (self.F[0] + self.F[1] - self.F[2] - self.F[3])*self.arm_length*cos(self.arm_angle)
-        T[1] = (self.F[1] + self.F[3] - self.F[0] - self.F[2])*self.arm_length*sin(self.arm_angle)
+        T[1] = (-self.F[1] - self.F[3] + self.F[0] + self.F[2])*self.arm_length*sin(self.arm_angle)
         T[2] = self.M[1] + self.M[2] - self.M[0] - self.M[3]
         accelerations =  T - np.cross(self.state[9:12], np.multiply(self.inertia, self.state[9:12]))
         accelerations = np.divide(accelerations, self.inertia)
