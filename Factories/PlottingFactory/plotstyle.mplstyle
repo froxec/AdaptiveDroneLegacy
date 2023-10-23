@@ -1,6 +1,6 @@
 axes.titlesize : 28
 axes.labelsize : 28
-axes.prop_cycle: cycler(color=['196E85', 'e89b26', '326024'])
+axes.prop_cycle: cycler(color=['196E85', 'e89b26', '326024', 'ff0000', '808080'])
 lines.linewidth : 3
 lines.markersize : 10
 xtick.labelsize : 24

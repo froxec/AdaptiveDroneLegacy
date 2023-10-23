@@ -1,3 +1,5 @@
+import os
+
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
@@ -5,9 +7,10 @@ import plotly
 import datetime
 import matplotlib.pyplot as plt
 class DataPlotter():
-    def __init__(self, path):
+    def __init__(self, path=None):
         self.path = path
-        self.df = pd.read_csv(path)
+        if path is not None:
+            self.df = pd.read_csv(path)
     def plot_velocity(self):
         column_names = ['Vx', 'Vy', 'Vz']
         self._plotting_3rows(column_names)
@@ -120,25 +123,34 @@ class DataPlotter():
             path += folder + '/'
         fig.write_image(path + filename + '_controls.png')
 
+    def plot_basic_mpc_test(self, path):
+        df = pd.read_csv(path + 'mpc_basic_tests.csv')
+        tests = [df]
+        colors = ['#196E85']
+        self.plot_tests_state(tests, legend_names=None, path=path, filename='mpc_basic_tests', colors=colors)
+        self.plot_tests_control(tests, legend_names=None, path=path, filename='mpc_basic_tests_control', colors=colors)
+
     def plot_mass_sensitivity_tests(self, path):
-        df_min05 = pd.read_csv(path + "perturbed-05.csv")
-        df_min02 = pd.read_csv(path + "perturbed-02.csv")
-        df_0 = pd.read_csv(path + "perturbed-00.csv")
-        df_plus02 = pd.read_csv(path + "perturbed+02.csv")
-        df_plus05 = pd.read_csv(path + "perturbed+05.csv")
+        df_min05 = pd.read_csv(path + "mpc-05kg.csv")
+        df_min02 = pd.read_csv(path + "mpc-02kg.csv")
+        df_0 = pd.read_csv(path + "mpc+00kg.csv")
+        df_plus02 = pd.read_csv(path + "mpc+02kg.csv")
+        df_plus05 = pd.read_csv(path + "mpc+05kg.csv")
         tests = [df_min05, df_min02, df_0, df_plus02, df_plus05]
+        colors = ['#808080', '#e89b26', '#326024', '#ff0000', '#196E85']
         legend_names = [r'$$\Delta m = -0.5 kg$$', r'$$\Delta m = -0.2 kg$$', r'$$\Delta m = 0.0 kg$$', r'$$\Delta m = 0.2 kg$$', r'$$\Delta m = 0.5 kg$$']
-        self.plot_tests_state(tests, legend_names, path, 'mass_sensitivity')
-        self.plot_tests_control(tests, legend_names, path, 'mass_sensitivity_control')
+        self.plot_tests_state(tests, legend_names, path, 'mass_sensitivity', colors=colors)
+        self.plot_tests_control(tests, legend_names, path, 'mass_sensitivity_control', colors=colors)
 
     def plot_wind_tests(self, path):
         wind1 = pd.read_csv(path + "wind_100_0.csv")
         wind2 = pd.read_csv(path + "wind_100_2.csv")
         wind3 = pd.read_csv(path + "wind_100_5.csv")
         tests = [wind1, wind2, wind3]
+        colors = ['#808080', '#e89b26', '#326024', '#ff0000', '#196E85']
         legend_names = [r'$$||w|| = 0 [N]$$', r'$$||w|| = 2 [N]$$', r'$$||w|| = 5 [N]$$']
-        self.plot_tests_state(tests, legend_names, path, 'wind_sensitivity')
-        self.plot_tests_control(tests, legend_names, path, 'wind_sensitivity_control')
+        self.plot_tests_state(tests, legend_names, path, 'wind_sensitivity', colors=colors)
+        self.plot_tests_control(tests, legend_names, path, 'wind_sensitivity_control', colors=colors)
     def plot_adaptive_mass_sensitivity_tests(self, path):
         test1 = pd.read_csv(path + "adaptive_mass-05.csv")
         test2 = pd.read_csv(path + "adaptive_mass-02.csv")
@@ -147,23 +159,28 @@ class DataPlotter():
         test5 = pd.read_csv(path + "adaptive_mass+05.csv")
         legend_names = [r'$$\Delta m = -0.5 kg$$', r'$$\Delta m = -0.2 kg$$', r'$$\Delta m = 0.0 kg$$', r'$$\Delta m = 0.2 kg$$', r'$$\Delta m = 0.5 kg$$']
         tests = [test1, test2, test3, test4, test5]
-        self.plot_tests_state(tests, legend_names, path, 'adaptive_mass_sensitivity')
-        self.plot_tests_control(tests, legend_names, path, 'adaptive_mass_sensitivity_control')
-        self.plot_tests_sigma(tests, legend_names, path, 'adaptive_mass_sensitivity_sigma')
-        self.plot_tests_u_adapt(tests, legend_names, path, 'adaptive_mass_sensitivity_u_adapt')
+        colors = ['#808080', '#e89b26', '#326024', '#ff0000', '#196E85']
+        self.plot_tests_state(tests, legend_names, path, 'adaptive_mass_sensitivity', colors=colors)
+        self.plot_tests_control(tests, legend_names, path, 'adaptive_mass_sensitivity_control', colors=colors)
+        self.plot_tests_sigma(tests, legend_names, path, 'adaptive_mass_sensitivity_sigma', colors=colors)
+        self.plot_tests_u_adapt(tests, legend_names, path, 'adaptive_mass_sensitivity_u_adapt', colors=colors)
     def plot_adaptive_wind_tests(self, path):
         wind1 = pd.read_csv(path + "adaptive_wind_100_00.csv")
         wind2 = pd.read_csv(path + "adaptive_wind_100_02.csv")
         wind3 = pd.read_csv(path + "adaptive_wind_100_05.csv")
         tests = [wind1, wind2, wind3]
+        colors = ['#808080', '#e89b26', '#326024', '#ff0000', '#196E85']
         legend_names = [r'$$||w|| = 0 [N]$$', r'$$||w|| = 2 [N]$$', r'$$||w|| = 5 [N]$$']
-        self.plot_tests_state(tests, legend_names, path, 'adaptive_wind_sensitivity')
-        self.plot_tests_control(tests, legend_names, path, 'adaptive_wind_sensitivity_control')
-        self.plot_tests_sigma(tests, legend_names, path, 'adaptive_wind_sensitivity_sigma')
-        self.plot_tests_u_adapt(tests, legend_names, path, 'adaptive_wind_sensitivity_u_adapt')
-    def plot_tests_state(self, tests, legend_names, path, filename):
+        self.plot_tests_state(tests, legend_names, path, 'adaptive_wind_sensitivity', colors=colors)
+        self.plot_tests_control(tests, legend_names, path, 'adaptive_wind_sensitivity_control', colors=colors)
+        self.plot_tests_sigma(tests, legend_names, path, 'adaptive_wind_sensitivity_sigma', colors=colors)
+        self.plot_tests_u_adapt(tests, legend_names, path, 'adaptive_wind_sensitivity_u_adapt', colors=colors)
+    def plot_tests_state(self, tests, legend_names, path, filename, colors):
         plt.style.use('./Factories/PlottingFactory/plotstyle.mplstyle')
-        fig, ax = plt.subplots(nrows=4, ncols=3, sharex=True, dpi=100)
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=colors)
+        nrows = 4
+        fig, ax = plt.subplots(nrows=nrows, ncols=3, sharex=True, dpi=100)
+        fix_range = [(3, 2), (2, 2)]
         plot_indices = [(0, 0), (0, 1), (0, 2),
                         (1, 0), (1, 1), (1, 2),
                         (2, 0), (2, 1), (2, 2),
@@ -172,33 +189,54 @@ class DataPlotter():
                          'phi', 'theta', 'psi', 'omega_x', 'omega_y', 'omega_z']
         y_labels = [r'$$x [m]$$', r'$$y [m]$$', r'$$z [m]$$', r'$$V_x [m/s]$$', r'$$V_y [m/s]$$', r'$$V_z [m/s]$$',
                     r'$$\phi [rad]$$', r'$$\theta [rad]$$', r'$$\psi [rad]$$', r'$$\omega_{\phi} [rad/s]$$', r'$$\omega_{\theta} [rad/s]$$', r'$$\omega_{\psi} [rad/s]$$']
+        xlabel = 't [s]'
         t = tests[0]['time']
         for l, test in enumerate(tests):
             data = test
             k = 0
             for m, (col, (i, j)) in enumerate(zip(state_columns, plot_indices)):
-                ax[i][j].plot(t, data[col], label=legend_names[l])
+                ax[i][j].plot(t, data[col])
                 ax[i][j].set_ylabel(y_labels[m])
-                ax[i][j].legend()
+                if i == nrows - 1:
+                    ax[i][j].set_xlabel(xlabel)
+                if (i, j) in fix_range:
+                    ax[i][j].set_ylim(-1, 1)
+        plt.tight_layout()
+        if legend_names is not None:
+            plt.subplots_adjust(right=0.85)
+            legend_ax = fig.add_axes([0.9, 0.6, 0.1, 0.05])
+            legend_ax.legend(ax[0, 0].get_lines(), legend_names, loc='upper right')
+            legend_ax.axis('off')
         plt.savefig(path + '/' + filename + '.png')
-    def plot_tests_control(self, tests, legend_names, path, filename):
+    def plot_tests_control(self, tests, legend_names, path, filename, colors):
         plt.style.use('./Factories/PlottingFactory/plotstyle.mplstyle')
-        fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=colors)
+        nrows = 3
+        fig, ax = plt.subplots(nrows=nrows, ncols=1, sharex=True, dpi=100)
         control_columns = ['F', 'phi_ref', 'theta_ref']
-        y_labels = [r'$$T_{zad} [N]$$', r'$$\phi_{zad} [rad]$$', r'$$\psi_{zad} [rad]$$']
+        y_labels = [r'$$T_{zad} [N]$$', r'$$\phi_{zad} [rad]$$', r'$$\theta_{zad} [rad]$$']
+        xlabel = 't [s]'
         plot_indices = [(0, 0), (1, 0), (2, 0)]
         t = tests[0]['time']
         for l, test in enumerate(tests):
             data = test
             k = 0
             for m, (col, (i, j)) in enumerate(zip(control_columns, plot_indices)):
-                ax[i].plot(t, data[col], label=legend_names[l])
+                ax[i].plot(t, data[col])
                 ax[i].set_ylabel(y_labels[m])
-                ax[i].legend()
+                if i == nrows-1:
+                    ax[i].set_xlabel(xlabel)
+        plt.tight_layout()
+        if legend_names is not None:
+            plt.subplots_adjust(right=0.85)
+            legend_ax = fig.add_axes([0.9, 0.6, 0.1, 0.05])
+            legend_ax.legend(ax[0].get_lines(), legend_names, loc='upper right')
+            legend_ax.axis('off')
         plt.savefig(path + '/' + filename + '.png')
 
-    def plot_tests_sigma(self, tests, legend_names, path, filename):
+    def plot_tests_sigma(self, tests, legend_names, path, filename, colors):
         plt.style.use('./Factories/PlottingFactory/plotstyle.mplstyle')
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=colors)
         fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
         control_columns = ['sigma_x', 'sigma_y', 'sigma_z']
         y_labels = [r'$$\hat{\sigma}_0 [N]$$',
@@ -210,14 +248,23 @@ class DataPlotter():
             data = test
             k = 0
             for m, (col, (i, j)) in enumerate(zip(control_columns, plot_indices)):
-                ax[i].plot(t, data[col], label=legend_names[l])
+                ax[i].plot(t, data[col])
                 ax[i].set_ylabel(y_labels[m])
-                ax[i].legend()
+                if legend_names[l] is not None:
+                    ax[i].legend()
+        plt.tight_layout()
+        if legend_names is not None:
+            plt.subplots_adjust(right=0.85)
+            legend_ax = fig.add_axes([0.9, 0.6, 0.1, 0.05])
+            legend_ax.legend(ax[0].get_lines(), legend_names, loc='upper right')
+            legend_ax.axis('off')
         plt.savefig(path + '/' + filename + '.png')
 
-    def plot_tests_u_adapt(self, tests, legend_names, path, filename):
+    def plot_tests_u_adapt(self, tests, legend_names, path, filename, colors):
         plt.style.use('./Factories/PlottingFactory/plotstyle.mplstyle')
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=colors)
         fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
+        plt.tight_layout()
         control_columns = ['u_l1_x', 'u_l1_y', 'u_l1_z']
         y_labels = [r"$$ u_{adapt, 0} [N]$$",
                     r'$$ u_{adapt, 1} [rad]$$',
@@ -228,21 +275,27 @@ class DataPlotter():
             data = test
             k = 0
             for m, (col, (i, j)) in enumerate(zip(control_columns, plot_indices)):
-                ax[i].plot(t, data[col], label=legend_names[l])
+                ax[i].plot(t, data[col])
                 ax[i].set_ylabel(y_labels[m])
-                ax[i].legend()
+                if legend_names[l] is not None:
+                    ax[i].legend()
+        plt.tight_layout()
+        if legend_names is not None:
+            plt.subplots_adjust(right=0.85)
+            legend_ax = fig.add_axes([0.9, 0.6, 0.1, 0.05])
+            legend_ax.legend(ax[0].get_lines(), legend_names, loc='upper right')
+            legend_ax.axis('off')
         plt.savefig(path + '/' + filename + '.png')
 
 if __name__ == "__main__":
-    path = './ResearchTests/MPCTestResults/BasicTest/2023:08:18:14:56:32mpc_basic_test.csv'
-    mass_sensitivity_tests_path = './ResearchTests/MPCTestResults/MassSensitivity/'
+    basic_test_path = './ResearchTests/SimulationResultsNew/MPC_BASIC_TEST/'
+    mass_sensitivity_tests_path = './ResearchTests/SimulationResultsNew/MPC_MASS_PERTURBATION_TESTS/'
     wind_tests_path = './ResearchTests/MPCTestResults/WindTests/'
     adaptive_mass_sensitivity = './ResearchTests/MPCTestResults/AdaptiveMassSensitivity/'
     adaptive_wind_sensitivity = './ResearchTests/MPCTestResults/AdaptiveWindSensitivity/'
-    data_plotter = DataPlotter(path)
-    #data_plotter._plotting_states()
-    #data_plotter._plotting_controls()
+    data_plotter = DataPlotter()
+    data_plotter.plot_basic_mpc_test(basic_test_path)
     data_plotter.plot_mass_sensitivity_tests(mass_sensitivity_tests_path)
-    data_plotter.plot_wind_tests(wind_tests_path)
-    data_plotter.plot_adaptive_mass_sensitivity_tests(adaptive_mass_sensitivity)
-    data_plotter.plot_adaptive_wind_tests(adaptive_wind_sensitivity)
+    # data_plotter.plot_wind_tests(wind_tests_path)
+    # data_plotter.plot_adaptive_mass_sensitivity_tests(adaptive_mass_sensitivity)
+    # data_plotter.plot_adaptive_wind_tests(adaptive_wind_sensitivity)

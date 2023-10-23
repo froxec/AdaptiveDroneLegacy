@@ -136,8 +136,8 @@ def limits(motors):
     return motors
     
 def motor_mixing_algorithm(throttle, roll, pitch, yaw):
-    motor1 = throttle + roll - pitch - yaw
-    motor2 = throttle + roll + pitch + yaw
-    motor3 = throttle - roll - pitch + yaw
-    motor4 = throttle - roll + pitch - yaw
+    motor1 = throttle + roll + pitch - yaw
+    motor2 = throttle + roll - pitch + yaw
+    motor3 = throttle - roll + pitch + yaw
+    motor4 = throttle - roll - pitch - yaw
     return [motor1, motor2, motor3, motor4]

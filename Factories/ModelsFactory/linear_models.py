@@ -117,7 +117,7 @@ class LinearizedQuad():
                       [0, 0, 0, 0],
                       [0, 0, 0, 0],
                       [0, self.g * np.sin(u4_ss), self.g * np.cos(u4_ss), 0],
-                      [0, -self.g * np.cos(u4_ss), self.g * np.sin(u4_ss), 0],
+                      [0, -self.g * np.cos(u4_ss), -self.g * np.sin(u4_ss), 0],
                       [1 / self.m, 0, 0, 0]])
         self.C = np.array([[1, 0, 0, 0, 0, 0],
                       [0, 1, 0, 0, 0, 0],
@@ -144,7 +144,7 @@ class LinearizedQuad():
                       [0, 0, 0, 0],
                       [0, 0, 0, 0],
                       [0, self.g * np.sin(u4_ss), self.g * np.cos(u4_ss), 0],
-                      [0, -self.g * np.cos(u4_ss), self.g * np.sin(u4_ss), 0],
+                      [0, -self.g * np.cos(u4_ss), -self.g * np.sin(u4_ss), 0],
                       [1 / self.m, 0, 0, 0]])
         if position_ref != None:
             self.X_OP = np.array([position_ref[0], position_ref[1], position_ref[2], 0, 0, 0])
@@ -159,7 +159,7 @@ class LinearizedQuadNoYaw(LinearizedQuad):
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
                            [0.0, self.g * np.sin(yaw_ss), self.g * np.cos(yaw_ss)],
-                           [0.0, -self.g * np.cos(yaw_ss), self.g * np.sin(yaw_ss)],
+                           [0.0, -self.g * np.cos(yaw_ss), -self.g * np.sin(yaw_ss)],
                            [1 / self.m, 0.0, 0.0]])
         self.D = np.array([[0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
@@ -187,7 +187,7 @@ class LinearizedQuadNoYaw(LinearizedQuad):
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
                            [0.0, self.g * np.sin(self.yaw_ss), self.g * np.cos(self.yaw_ss)],
-                           [0.0, -self.g * np.cos(self.yaw_ss), self.g * np.sin(self.yaw_ss)],
+                           [0.0, -self.g * np.cos(self.yaw_ss), -self.g * np.sin(self.yaw_ss)],
                            [1 / self.m, 0.0, 0.0]])
         self.U_OP = np.array([self.m*self.g, 0.0, 0.0, self.u4_ss])
         self.normalize_system(self.Nx, self.Nu, self.Ny)
@@ -262,7 +262,7 @@ class LinearizedQuadNoYawWithUncertainty(LinearizedQuad):
                            [0.0, 0.0, 0.0],
                            [0.0, 0.0, 0.0],
                            [0.0, self.g * np.sin(self.yaw_ss), self.g * np.cos(self.yaw_ss)],
-                           [0.0, -self.g * np.cos(self.yaw_ss), self.g * np.sin(self.yaw_ss)],
+                           [0.0, -self.g * np.cos(self.yaw_ss), -self.g * np.sin(self.yaw_ss)],
                            [1 / self.m, 0.0, 0.0]])
         self.U_OP = np.array([self.m * self.g, 0.0, 0.0, self.u4_ss])
         self.construct_augmented_system()

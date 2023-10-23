@@ -22,13 +22,13 @@ from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceCheck
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
 import datetime
 #WRITING_DATA
-filename = 'adaptive_wind_100_05.csv'
-path = "./ResearchTests/MPCTestResults/" + datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S") + filename
+filename = 'mpc+05kg.csv'
+path = "./ResearchTests/SimulationResultsNew/" + datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S") + filename
 WRITE = True
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = True
+USE_ADAPTIVE = False
 USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
@@ -46,12 +46,12 @@ PWM_RANGE = [1120, 1920]
 #MPC CONSTRAINTS
 MPC_CONSTRAINTS = {"x_bounds": {'lower': np.array([-100000, -100000, -100000, -5, -5, -5]),
                                 'upper': np.array([100000, 100000, 100000, 5, 5, 5])},
-                   "u_bounds": {'lower': np.array([-1000, -np.pi/6, -np.pi/6]),
-                                'upper': np.array([1000, np.pi/6, np.pi/6])},
+                   "u_bounds": {'lower': np.array([-1000, -np.pi/24, -np.pi/24]),
+                                'upper': np.array([1000, np.pi/24, np.pi/24])},
                    "delta_x_bounds": {'lower': np.array([-1000, -1000, -1000, -1000, -1000, -1000]),
                                    'upper': np.array([1000, 1000, 1000, 1000, 1000, 1000])},
-                   "delta_u_bounds": {'lower': np.array([-3, -np.pi/24, -np.pi/24]),
-                                   'upper': np.array([3, np.pi/24,np.pi/24])}}
+                   "delta_u_bounds": {'lower': np.array([-10, -np.pi/24, -np.pi/24]),
+                                   'upper': np.array([10, np.pi/24,np.pi/24])}}
 
 trajectory = SinglePoint([10, 10, 5])
 if __name__ == "__main__":
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                                   controller_conf.attitude_controller,quad_conf.esc,
                                   INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller,
                                   estimator=estimator_agent, acceleration_noise=[0, 0, 0])
-    t, x = simulator.run(30, deltaT, x0[0:12], u0, trajectory)
+    t, x = simulator.run(15, deltaT, x0[0:12], u0, trajectory)
     simulator.quad.external_disturbance.plot_history()
     if USE_ADAPTIVE:
         simulator.adaptive_controller.plot_history('sigma_hat')
@@ -168,11 +168,17 @@ if __name__ == "__main__":
     plotTrajectory(t, x.transpose()[0:12], 4, 3)
     if WRITE:
         import pandas as pd
-        columns = ['time', 'x', 'y', 'z', 'Vx', 'Vy', 'Vz', 'phi', 'theta', 'psi', 'omega_x', 'omega_y', 'omega_z', 'F', 'phi_ref', 'theta_ref', 'sigma_x', 'sigma_y', 'sigma_z', 'u_l1_x', 'u_l1_y', 'u_l1_z']
         u = np.array(simulator.history['u_ref'])
-        sigma = np.array(simulator.history['sigma'])
-        u_l1 = np.array(simulator.history['u_l1'])
-        data_array = np.concatenate([t.reshape(-1, 1), x, u, sigma, u_l1], axis=1)
+        if USE_ADAPTIVE:
+            columns = ['time', 'x', 'y', 'z', 'Vx', 'Vy', 'Vz', 'phi', 'theta', 'psi', 'omega_x', 'omega_y', 'omega_z',
+                       'F', 'phi_ref', 'theta_ref', 'sigma_x', 'sigma_y', 'sigma_z', 'u_l1_x', 'u_l1_y', 'u_l1_z']
+            sigma = np.array(simulator.history['sigma'])
+            u_l1 = np.array(simulator.history['u_l1'])
+            data_array = np.concatenate([t.reshape(-1, 1), x, u, sigma, u_l1], axis=1)
+        else:
+            columns = ['time', 'x', 'y', 'z', 'Vx', 'Vy', 'Vz', 'phi', 'theta', 'psi', 'omega_x', 'omega_y', 'omega_z',
+                       'F', 'phi_ref', 'theta_ref']
+            data_array = np.concatenate([t.reshape(-1, 1), x, u], axis=1)
         data = pd.DataFrame(data_array, columns=columns)
         data.to_csv(path)
     #plotTrajectory(t, x.transpose()[0:12], 4, 3, [1, 2, 4, 5, 7, 8, 9, 10, 11, 12])
