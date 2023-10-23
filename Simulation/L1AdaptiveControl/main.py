@@ -22,13 +22,13 @@ from Factories.RLFactory.Agents.Tools.convergenceChecker import ConvergenceCheck
 from Factories.ToolsFactory.Converters import RampSaturationWithManager
 import datetime
 #WRITING_DATA
-filename = 'mpc+05kg.csv'
-path = "./ResearchTests/SimulationResultsNew/" + datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S") + filename
+filename = 'adaptive_wind_100_00.csv'
+path = "./ResearchTests/SimulationResultsNew/" + filename
 WRITE = True
 #TESTING OPTIONS
 NORMALIZE = True
 MODEL = 0 # 0 - linearized, 1 - translational dynamics, #2 hybrid
-USE_ADAPTIVE = False
+USE_ADAPTIVE = True
 USE_ESTIMATOR = False
 ESTIMATOR_MODE = 'VELOCITY_CONTROL' #only available
 MPC_MODE = MPCModes.CONSTRAINED
@@ -57,10 +57,10 @@ trajectory = SinglePoint([10, 10, 5])
 if __name__ == "__main__":
     Z550_parameters['m'] = QUAD_NOMINAL_MASS
     perturber = ParametersPerturber(Z550_parameters)
-    perturber({'m': 0.5})
+    perturber({'m': 0.0})
 
     ## parameters holder
-    parameters_holder = DataHolder(perturber.perturbed_parameters)
+    parameters_holder = DataHolder(perturber.nominal_parameters)
 
     ##External Disturbances
     wind_force = WindModel(direction_vector=[1, 0, 0], strength=0)
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     ## Model configuration
     x0 = np.zeros(12)
     x0[2] = 5
-    quad_conf = QuadConfiguration(perturber.nominal_parameters, pendulum_parameters, x0, np.zeros(4), PWM_RANGE,
+    quad_conf = QuadConfiguration(perturber.perturbed_parameters, pendulum_parameters, x0, np.zeros(4), PWM_RANGE,
                                   ANGULAR_VELOCITY_RANGE, external_disturbance=wind_force)
     x0 = np.concatenate([quad_conf.quad0, quad_conf.load0])
 
@@ -87,8 +87,8 @@ if __name__ == "__main__":
     ## Adaptive Controller configuration
     z0 = x0[3:6]
     if MODEL == 0:
-        As = np.diag([-0.5, -0.5, -0.5])
-        bandwidths = [15, 0.1, 0.1]
+        As = np.diag([-5, -5, -0.1])
+        bandwidths = [15, 0.5, 0.5]
     elif MODEL == 1 or MODEL == 2:
         As = np.diag([-0.1, -0.1, -0.1])
         bandwidths = [.1, .1, .1]
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                                   controller_conf.attitude_controller,quad_conf.esc,
                                   INNER_LOOP_FREQ, OUTER_LOOP_FREQ, adaptive_controller=adaptive_controller,
                                   estimator=estimator_agent, acceleration_noise=[0, 0, 0])
-    t, x = simulator.run(15, deltaT, x0[0:12], u0, trajectory)
+    t, x = simulator.run(25, deltaT, x0[0:12], u0, trajectory)
     simulator.quad.external_disturbance.plot_history()
     if USE_ADAPTIVE:
         simulator.adaptive_controller.plot_history('sigma_hat')

@@ -152,11 +152,11 @@ class DataPlotter():
         self.plot_tests_state(tests, legend_names, path, 'wind_sensitivity', colors=colors)
         self.plot_tests_control(tests, legend_names, path, 'wind_sensitivity_control', colors=colors)
     def plot_adaptive_mass_sensitivity_tests(self, path):
-        test1 = pd.read_csv(path + "adaptive_mass-05.csv")
-        test2 = pd.read_csv(path + "adaptive_mass-02.csv")
-        test3 = pd.read_csv(path + "adaptive_mass-00.csv")
-        test4 = pd.read_csv(path + "adaptive_mass+02.csv")
-        test5 = pd.read_csv(path + "adaptive_mass+05.csv")
+        test1 = pd.read_csv(path + "adaptive-05kg.csv")
+        test2 = pd.read_csv(path + "adaptive-02kg.csv")
+        test3 = pd.read_csv(path + "adaptive+00kg.csv")
+        test4 = pd.read_csv(path + "adaptive+02kg.csv")
+        test5 = pd.read_csv(path + "adaptive+05kg.csv")
         legend_names = [r'$$\Delta m = -0.5 kg$$', r'$$\Delta m = -0.2 kg$$', r'$$\Delta m = 0.0 kg$$', r'$$\Delta m = 0.2 kg$$', r'$$\Delta m = 0.5 kg$$']
         tests = [test1, test2, test3, test4, test5]
         colors = ['#808080', '#e89b26', '#326024', '#ff0000', '#196E85']
@@ -250,8 +250,6 @@ class DataPlotter():
             for m, (col, (i, j)) in enumerate(zip(control_columns, plot_indices)):
                 ax[i].plot(t, data[col])
                 ax[i].set_ylabel(y_labels[m])
-                if legend_names[l] is not None:
-                    ax[i].legend()
         plt.tight_layout()
         if legend_names is not None:
             plt.subplots_adjust(right=0.85)
@@ -277,8 +275,6 @@ class DataPlotter():
             for m, (col, (i, j)) in enumerate(zip(control_columns, plot_indices)):
                 ax[i].plot(t, data[col])
                 ax[i].set_ylabel(y_labels[m])
-                if legend_names[l] is not None:
-                    ax[i].legend()
         plt.tight_layout()
         if legend_names is not None:
             plt.subplots_adjust(right=0.85)
@@ -290,12 +286,12 @@ class DataPlotter():
 if __name__ == "__main__":
     basic_test_path = './ResearchTests/SimulationResultsNew/MPC_BASIC_TEST/'
     mass_sensitivity_tests_path = './ResearchTests/SimulationResultsNew/MPC_MASS_PERTURBATION_TESTS/'
-    wind_tests_path = './ResearchTests/MPCTestResults/WindTests/'
-    adaptive_mass_sensitivity = './ResearchTests/MPCTestResults/AdaptiveMassSensitivity/'
-    adaptive_wind_sensitivity = './ResearchTests/MPCTestResults/AdaptiveWindSensitivity/'
+    wind_tests_path = './ResearchTests/SimulationResultsNew/MPC_WIND_TESTS/'
+    adaptive_mass_sensitivity = './ResearchTests/SimulationResultsNew/ADAPTIVE_MASS_PERTURBATION_TESTS/'
+    adaptive_wind_sensitivity = './ResearchTests/SimulationResultsNew/ADAPTIVE_WIND_TESTS/'
     data_plotter = DataPlotter()
-    data_plotter.plot_basic_mpc_test(basic_test_path)
-    data_plotter.plot_mass_sensitivity_tests(mass_sensitivity_tests_path)
-    # data_plotter.plot_wind_tests(wind_tests_path)
-    # data_plotter.plot_adaptive_mass_sensitivity_tests(adaptive_mass_sensitivity)
-    # data_plotter.plot_adaptive_wind_tests(adaptive_wind_sensitivity)
+    #data_plotter.plot_basic_mpc_test(basic_test_path)
+    #data_plotter.plot_mass_sensitivity_tests(mass_sensitivity_tests_path)
+    #data_plotter.plot_wind_tests(wind_tests_path)
+    #data_plotter.plot_adaptive_mass_sensitivity_tests(adaptive_mass_sensitivity)
+    data_plotter.plot_adaptive_wind_tests(adaptive_wind_sensitivity)
