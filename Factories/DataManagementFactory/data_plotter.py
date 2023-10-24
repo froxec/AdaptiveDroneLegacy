@@ -180,6 +180,8 @@ class DataPlotter():
         for k, df in enumerate(self.df):
             t = pd.to_datetime(df['TIME'])
             cut = (int(cuts[k][0] * t.size), int(cuts[k][1] * t.size))
+            print("record {}: timestamps {}:{}".format(k, (t - t[0]).dt.total_seconds()[cut[0]],
+                                                       (t - t[0]).dt.total_seconds()[cut[1]-1]))
             t = t[cut[0]:cut[1]]
             t = t - t[cut[0]]
             t = t.dt.total_seconds()
@@ -212,7 +214,7 @@ class DataPlotter():
                 indices = zip(closest_ref_id, range(3))
                 closest_ref = [reference_points[id] for id in indices]
                 ref[i] = closest_ref
-            ref[:500] = np.array([[-10, 10, 6]]*500)
+            ref[:500] = np.array([[-10, 10, 8]]*500)
             ref = np.roll(ref, -reference_shift, axis=0)
             for i, line in enumerate(ref.T):
                 ax[i].plot(t, line, label='trajektoria referencyjna', color='red', linestyle='dashed')
@@ -253,6 +255,83 @@ class DataPlotter():
     #     animation = mpy.VideoClip(mpy_make_frame, duration=duration)
     #     animation.write_gif(title + ".gif", fps=50)
 
+    def animate_position(self, reference_points=None, reference_shift=None):
+        column_names = ['POSITION_LOCAL:X', 'POSITION_LOCAL:Y', 'POSITION_LOCAL:Z']
+        ylabels = [r'$x [m]$', r'$y [m]$', r'$z [m]$']
+        xlabel = '$t [s]$'
+        self.animate_tests(column_names, 'Przebiegi czasowe położeń', xlabel, ylabels, reference_points, reference_shift)
+    def animate_tests(self, column_names, title, xlabel, ylabels, reference_points=None, reference_shift=None,  linestyles=['solid', 'dashdot', 'dotted'], markers=['o', '*', 'P']):
+        plt.style.use('../../Factories/PlottingFactory/plotstyle.mplstyle')
+        fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, dpi=100)
+        lengths = []
+        legend_names = self.legend
+        for k, df in enumerate(self.df):
+            df = df.iloc[::10, :]
+            df = df.reset_index()
+            t = pd.to_datetime(df['TIME'])
+            cut = (int(cuts[k][0] * t.size), int(cuts[k][1] * t.size))
+            t = t[cut[0]:cut[1]]
+            t = t - t[cut[0]]
+            t = t.dt.total_seconds()
+            data = df[column_names][cut[0]:cut[1]]
+            outliers_mask = (np.abs(stats.zscore(data)) < 3).all(axis=1)
+            data = data[outliers_mask]
+            t = t[outliers_mask]
+            lengths.append(data.shape[0])
+            for i, col in enumerate(data):
+                if col == "POSITION_LOCAL:Z" and height_shifts is not None:
+                    data[col] = data[col] + self.height_shift[k]
+                if col == "POSITION_LOCAL:Z":
+                    ax[i].set_ylim([0, 10])
+                ax[i].plot(t, data[col], label=self.legend[k], linestyle=linestyles[k])
+                ax[i].set_ylabel(ylabels[i])
+            if reference_points is not None:
+                max_length_id = np.argmax(lengths)
+                df = self.df[max_length_id]
+                t = pd.to_datetime(df['TIME'])
+                cut = (int(cuts[max_length_id][0] * t.size), int(cuts[max_length_id][1] * t.size))
+                t = t[cut[0]:cut[1]]
+                t = t - t[cut[0]]
+                t = t.dt.total_seconds()
+                data = df[column_names][cut[0]:cut[1]]
+                reference_points = np.array(reference_points)
+                ref = np.empty_like(data)
+                for i, point in enumerate(np.array(data)):
+                    closest_ref_id = np.argmin(np.abs(reference_points - point), axis=0)
+                    indices = zip(closest_ref_id, range(3))
+                    closest_ref = [reference_points[id] for id in indices]
+                    ref[i] = closest_ref
+                ref[:500] = np.array([[-10, 10, 6]] * 500)
+                ref = np.roll(ref, -reference_shift, axis=0)
+                for i, line in enumerate(ref.T):
+                    ax[i].plot(t, line, label='trajektoria referencyjna', color='red', linestyle='dashed')
+                legend_names.append('ref')
+        ax[-1].set_xlabel(xlabel)
+        fig.suptitle(title)
+        plt.tight_layout()
+        if legend_names is not None:
+            plt.subplots_adjust(right=0.83)
+            legend_ax = fig.add_axes([0.9, 0.6, 0.1, 0.05])
+            legend_ax.legend(ax[0].get_lines(), legend_names, loc='upper right')
+            legend_ax.axis('off')
+
+        # initialize time markers
+        t = t.reset_index()['TIME']
+        timemarkers = [ax[i].plot([], [], lw=2) for i in range(len(column_names))]
+        intervals = np.array(t.tolist())[1:] - np.array(t.to_list())[:-1]
+        mean_interval = intervals.mean()
+        indices_array = np.arange(t.size)
+
+        limits = [ax_element.get_ylim() for ax_element in ax]
+        def update(time_step):
+            for i, marker in enumerate(timemarkers):
+                marker[0].set_data([t[time_step], t[time_step]], limits[i])
+
+        ani = animation.FuncAnimation(fig=fig, func=update, frames=int(indices_array.shape[0]), interval=mean_interval*1000)
+        writervideo = animation.FFMpegWriter(fps=1/mean_interval)
+        ani.save(title + '.mp4', writer=writervideo)
+        plt.close()
+
     def _animate_3_rows(self, column_names, title):
         # get data
         df = self.df.iloc[::10, :]
@@ -291,7 +370,7 @@ class DataPlotter():
 if __name__ == "__main__":
     from Factories.DataManagementFactory.data_plotter_configs import SIM_ESTIM_TESTS_CONF, ONE_FILE_CONF, FIELD_ESTIM_TESTS_CONF, \
         MPC_FIELD_TESTS_CONF, SIM_ESTIM_TESTS_CONF2, SIM_MPC_TESTS_CONF2, SIM_MPC_ADA_TESTS_CONF2, SIM_ESTIM_TESTS_ADA_CONF2
-    CONFIG = SIM_MPC_TESTS_CONF2
+    CONFIG = MPC_FIELD_TESTS_CONF
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
     base_path = CONFIG['base_path']
     path = [base_path + filename for filename in CONFIG['file_names']]
@@ -304,14 +383,15 @@ if __name__ == "__main__":
     # generate selected plots
 
     data_plotter = DataPlotter(path, save_path, cuts, legend, height_origin_shift=height_shifts)
-    data_plotter.plot_position_local(reference_points, reference_shift)
-    data_plotter.plot_velocity()
-    data_plotter.plot_output_control()
-    data_plotter.plot_u_l1()
-    data_plotter.plot_u_ref()
-    data_plotter.plot_sigma()
-    data_plotter.plot_attitude()
+    # data_plotter.plot_position_local(reference_points, reference_shift)
+    # data_plotter.plot_velocity()
+    # data_plotter.plot_output_control()
+    # data_plotter.plot_u_l1()
+    # data_plotter.plot_u_ref()
+    # data_plotter.plot_sigma()
+    # data_plotter.plot_attitude()
     #data_plotter.plot_throttle()
     #data_plotter.plot_desired_and_real_attitude()
+    data_plotter.animate_position(reference_points, reference_shift)
     plt.show(block=True)
     # data_plotter.animate_position_local()

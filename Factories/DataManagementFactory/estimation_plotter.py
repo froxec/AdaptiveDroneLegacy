@@ -87,7 +87,7 @@ class EstimationPlotter:
             for i, hm in enumerate(heatmaps):
                 ax[i].imshow(hm.T, extent=list(extents[i]), origin='lower', cmap='jet', aspect='auto')
                 ax[i].set_ylabel(r'$\hat{m}$ [kg]')
-                ax[i].axhline(y=self.realvalue, color='white', linestyle='--', linewidth=2, label=r'$\hat{m}$' + '= {} [kg]'.format(self.realvalue))
+                ax[i].axhline(y=self.realvalue[i], color='white', linestyle='--', linewidth=2, label=r'$\hat{m}$' + '= {} [kg]'.format(self.realvalue))
                 ax[i].set_title(titles[i])
                 #ax[i].colorbar()
         else:
@@ -128,7 +128,7 @@ class EstimationPlotter:
 
             # mean_error, minimum_error, maximum_error, error_variance
             estimated_values = np.array(estimated_values).flatten()
-            errors = np.abs(estimated_values - self.realvalue)
+            errors = np.abs(estimated_values - self.realvalue[i])
             mean_error = np.mean(errors)
             minimum_error = np.min(errors)
             maximum_error = np.max(errors)
@@ -168,20 +168,18 @@ class EstimationPlotter:
 if __name__ == "__main__":
     #path = ['/home/pete/PycharmProjects/AdaptiveDrone/logs/sim_official_new/load0_estimation.csv']
     save_path = '/home/pete/PycharmProjects/AdaptiveDrone/images/test_plots/'
-    test_name = 'lque_changes'
-    stats_save_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/estimation_tests/' + test_name + '.csv'
-    estim_base_dir = '/home/pete/PycharmProjects/AdaptiveDrone/logs/estimation_tests/' + test_name +'/'
-    folders = ['ns0.08len0.7con_smpl15eps0.15atm_smpls3/',
-               'ns0.08len0.7con_smpl15eps0.15atm_smpls10/',
-               'ns0.08len0.7con_smpl15eps0.15atm_smpls35/',
-               'ns0.08len0.7con_smpl15eps0.15atm_smpls50/']
-    titles = [r'$l_{que} = 3$',
-              r'$l_{que} = 10$',
-              r'$l_{que} = 35$',
-              r'$l_{que} = 50$']
+    test_name = ''
+    stats_save_path = '/home/pete/PycharmProjects/AdaptiveDrone/logs/field_estimation_tests_official/' + 'estim_field_tests' + '.csv'
+    estim_base_dir = '/home/pete/PycharmProjects/AdaptiveDrone/logs/field_estimation_tests_official/' + test_name + ''
+    folders = ['estim0g/tests/',
+               'estim200g/tests/',
+               'estim400g/tests/']
+    titles = [r'$m_{load} = 0.0 kg$',
+              r'$m_{load} = 0.2 kg$',
+              r'$m_{load} = 0.4 kg$']
     dirs = [estim_base_dir + folder_name for folder_name in folders]
     plotter = EstimationPlotter(dirs=dirs, save_path=save_path, stats_save_path=stats_save_path,
-                                freq=100, buffer_lengths=[3, 10, 35, 50], convergence_n=[15, 15, 15, 15], realvalue=2.25, params=folders, titles=titles, max_t=50)
+                                freq=100, buffer_lengths=[20, 20, 20, 20, 20], convergence_n=[10, 10, 10, 10, 10], realvalue=[1.630, 1.830, 2.030], params=folders, titles=titles, max_t=50)
     plotter.calculate_statistics()
     plotter.plot_tests_heatmap()
     # plotter.plot_estimation_result(realvalue=1.75, estimatedvalue=1.766)
