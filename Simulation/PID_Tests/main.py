@@ -5,6 +5,7 @@ from Factories.ModelsFactory.model_parameters import Z550_parameters, pendulum_p
 from Factories.ToolsFactory.Converters import LinearScaler, Normalizer, ThrustToAngularVelocity
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 INNER_LOOP_FREQ = 1000
 ANGULAR_VELOCITY_RANGE = [0, 800]
@@ -17,7 +18,7 @@ if __name__ == "__main__":
     thrust_converter = ThrustToAngularVelocity(Z550_parameters['Kt'])
     angular_vel_normalizer = Normalizer(min=ANGULAR_VELOCITY_RANGE[0], max=ANGULAR_VELOCITY_RANGE[1])
     throttle_to_pwm = LinearScaler(min=PWM_RANGE[0], max=PWM_RANGE[1])
-    attitude_ref = np.array([np.pi /6, 0, 0])
+    attitude_ref = np.array([0, 0, np.pi /6])
     angular_speed0 = thrust_converter(THRUST_SS)
     throttle = angular_vel_normalizer(angular_speed0)
     PWM0 = throttle_to_pwm(throttle)
@@ -28,7 +29,8 @@ if __name__ == "__main__":
                         INNER_LOOP_FREQ)
 
     x0 = np.zeros((12))
-    u0 = np.array([angular_speed0,  angular_speed0,  angular_speed0,  angular_speed0])
-    stop_time = 1
+    u0 = np.array([angular_speed0,  angular_speed0,  angular_speed0,  angular_spee<d0])
+    stop_time = 4
     sim.run(attitude_ref, throttle, stop_time, x0, u0)
-    sim.plot_attitude_trajectory(tested_variable =0)
+    sim.plot_attitude_trajectory(tested_variable =2)
+    plt.savefig("psi_pid" + ".png")

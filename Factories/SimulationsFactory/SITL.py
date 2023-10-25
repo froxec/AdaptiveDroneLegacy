@@ -293,22 +293,21 @@ class InnerLoopSITL(SoftwareInTheLoop):
         if tested_variable == 0:
             ylabels = [r'$$\phi [rad]$$', r'$$\omega_{\phi} [rad / s]$$', r'$$\varpi_{1, 2, 3, 4} [rad / s]$$']
             data_to_plot = [[x[6, :], ref], [x[9, :]], [u[0,:], u[1,:], u[2,:], u[3,:]]]
-            legend = [[r'$$\phi [rad] $$', r'$$\phi_{zad} [rad]$$'], [r'$$\omega_{\phi} [rad/s]$$'], [r'$$\varpi_{1} [rad/s]$$', r'$$\varpi_{2} [rad/s]$$',
+            legend = [[r'$$\phi [rad] $$', r'$$\phi_{zad} [rad]$$'], [None], [r'$$\varpi_{1} [rad/s]$$', r'$$\varpi_{2} [rad/s]$$',
                                                                      r'$$\varpi_{3} [rad/s]$$', r'$$\varpi_{4} [rad/s]$$']]
             self._plot_traces(ax, ylabels, data_to_plot, colors, legend, rpm_linestyles=['solid', 'dashed', 'solid', 'dashed'])
         elif tested_variable == 1:
             ylabels = [r'$$\theta [rad]$$', r'$$\omega_{\theta} [rad / s]$$', r'$$\varpi_{1, 2, 3, 4} [rad / s]$$']
             data_to_plot = [[x[7, :]], [x[10, :]], [u[0, :], u[1, :], u[2, :], u[3, :]]]
-            legend = [[r'$$\theta [rad]$$', r'$$\theta_{zad} [rad]$$'], [r'$$\omega_{\theta} [rad/s]$$'], [r'$$\varpi_{1} [rad/s]$$', r'$$\varpi_{2} [rad/s]$$',
+            legend = [[r'$$\theta [rad]$$', r'$$\theta_{zad} [rad]$$'], [None], [r'$$\varpi_{1} [rad/s]$$', r'$$\varpi_{2} [rad/s]$$',
                                                                      r'$$\varpi_{3} [rad/s]$$', r'$$\varpi_{4} [rad/s]$$']]
             self._plot_traces(ax, ylabels, data_to_plot, colors, legend, rpm_linestyles=['solid', 'solid', 'dashed', 'dashed'])
         elif tested_variable == 2:
             ylabels = [r'$$\psi [rad]$$', r'$$\omega_{\psi} [rad / s]$$', r'$$\varpi_{1, 2, 3, 4} [rad / s]$$']
             data_to_plot = [[x[8, :]], [x[11, :]], [u[0, :], u[1, :], u[2, :], u[3, :]]]
-            legend = [[r'$$\psi [rad]$$', r'$$\psi_{zad} [rad]$$'], [r'$$\omega_{\psi} [rad/s]$$'], [r'$$\varpi_{1} [rad/s]$$',  r'$$\varpi_{2} [rad/s]$$',
+            legend = [[r'$$\psi [rad]$$', r'$$\psi_{zad} [rad]$$'], [None], [r'$$\varpi_{1} [rad/s]$$',  r'$$\varpi_{2} [rad/s]$$',
                       r'$$\varpi_{3} [rad/s]$$',  r'$$\varpi_{4} [rad/s]$$']]
             self._plot_traces(ax, ylabels, data_to_plot, colors, legend, rpm_linestyles=['solid', 'solid', 'dashed', 'dashed'])
-        plt.show(block=True)
 
     def _plot_traces(self,ax, ylabels, data_to_plot, colors, legend, rpm_linestyles=None):
         for i in range(3):
@@ -325,7 +324,8 @@ class InnerLoopSITL(SoftwareInTheLoop):
             for j, trace in enumerate(traces):
                 ax[i].plot(self.time, trace, linestyle=linestyles[j], color=colors_to_apply[j], label=labels[j])
                 ax[i].set_ylabel(ylabels[i])
-                ax[i].legend()
+                if labels[j] is not None:
+                    ax[i].legend(loc='right')
 
 class VerificationSITL:
     def __init__(self,

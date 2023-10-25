@@ -97,7 +97,7 @@ class ThrottleThrustCharacteristicsMastTest:
         plt.plot(throttle_reg, reg_y, label='Model')
         plt.xlabel(r'T_h')
         plt.ylabel(r'T [N]')
-        plt.suptitle(r'Przybliżona charakterystyka T(T_h) dla drona Iris')
+        plt.suptitle(r'Przybliżona charakterystyka T(T_h) dla rzeczywistego drona')
         plt.legend()
         plt.savefig("./images/charakterystyki/t-th.png")
         print("Equation: thrust = {} * throttle + {}".format(slope, intercept))
