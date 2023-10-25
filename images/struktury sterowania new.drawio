@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-10-25T14:22:58.688Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/118.0" etag="kRVx5dP1N3kYnE8sbd3A" version="22.0.8" type="github">
+<mxfile host="app.diagrams.net" modified="2023-10-25T16:03:56.329Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/118.0" etag="IjczVZCvA-M_mYxahMP8" version="22.0.8" type="github">
   <diagram name="Page-1" id="ohGzNpQo8HC6i82rPRUq">
-    <mxGraphModel dx="3210" dy="-5073" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="4681" math="1" shadow="0">
+    <mxGraphModel dx="1870" dy="-6491" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="4681" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -1067,7 +1067,7 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="kpniaUHthUpJDasM99SZ-43" value="&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;b style=&quot;font-size: 30px;&quot;&gt;$$\boldsymbol{x}^{trans}$$&lt;/b&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=30;fontFamily=Arial;fontColor=#75787B;" parent="1" vertex="1">
+        <mxCell id="kpniaUHthUpJDasM99SZ-43" value="&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;b style=&quot;font-size: 30px;&quot;&gt;$$\boldsymbol{x}_{trans}$$&lt;/b&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=30;fontFamily=Arial;fontColor=#75787B;" parent="1" vertex="1">
           <mxGeometry x="1473.62" y="8270" width="135" height="30" as="geometry" />
         </mxCell>
         <mxCell id="kpniaUHthUpJDasM99SZ-45" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;labelBackgroundColor=default;strokeColor=#75787B;fontFamily=Arial;fontSize=24;fontColor=#75787B;startSize=8;endSize=8;curved=1;fillColor=#E3E4E5;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="1" edge="1">
@@ -1077,8 +1077,8 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="kpniaUHthUpJDasM99SZ-46" value="&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;b style=&quot;font-size: 30px;&quot;&gt;$$\boldsymbol{x}_{zad}^{trans}$$&lt;/b&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=30;fontFamily=Arial;fontColor=#75787B;" parent="1" vertex="1">
-          <mxGeometry x="1473.62" y="8348.25" width="135" height="30" as="geometry" />
+        <mxCell id="kpniaUHthUpJDasM99SZ-46" value="&lt;b&gt;$$\boldsymbol{x}_{trans}^{zad}$$&lt;br&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=30;fontFamily=Arial;fontColor=#75787B;" parent="1" vertex="1">
+          <mxGeometry x="1473.62" y="8358.95" width="135" height="30" as="geometry" />
         </mxCell>
         <mxCell id="kpniaUHthUpJDasM99SZ-50" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;labelBackgroundColor=default;strokeColor=#75787B;fontFamily=Arial;fontSize=24;fontColor=#75787B;startSize=8;endSize=8;curved=1;fillColor=#E3E4E5;entryX=0;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
