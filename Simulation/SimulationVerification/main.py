@@ -6,7 +6,7 @@ import numpy as np
 if __name__ == "__main__":
     # define initial state x0
     x0 = np.zeros(12)
-    x0[8] = np.pi /4
+    x0[8] = np.pi / 4
 
     # create quadcopter configuration
     quad_config = QuadConfiguration(Z550_parameters, None, x0, None,
