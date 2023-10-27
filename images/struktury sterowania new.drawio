@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-10-26T22:01:06.099Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/118.0" etag="TBfGFvflyKpy2cBWQLgk" version="22.0.8" type="github">
+<mxfile host="app.diagrams.net" modified="2023-10-27T17:04:50.764Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/119.0" etag="GisB8gvoD7vnJuMrhGp6" version="22.0.8" type="github">
   <diagram name="Page-1" id="ohGzNpQo8HC6i82rPRUq">
-    <mxGraphModel dx="4215" dy="-4010" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="4681" math="1" shadow="0">
+    <mxGraphModel dx="3304" dy="-4813" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="4681" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -2143,6 +2143,15 @@
         </mxCell>
         <mxCell id="sfSQzo8rW72u-awas7B7-23" value="&lt;div style=&quot;font-size: 32px;&quot;&gt;&lt;font style=&quot;font-size: 32px;&quot;&gt;Model&lt;br&gt;&lt;/font&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontFamily=Arial;fontStyle=1;labelBackgroundColor=none;labelBorderColor=none;fontColor=#FFFFFF;" parent="1" vertex="1">
           <mxGeometry x="860" y="11627.13" width="190.5" height="25.01" as="geometry" />
+        </mxCell>
+        <mxCell id="cvRyWwbCjwgbohCBk6vN-4" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/social-media-vol-3/24/_video-128.png" vertex="1" parent="1">
+          <mxGeometry x="4036.42" y="6920" width="370" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="cvRyWwbCjwgbohCBk6vN-5" value="" style="endArrow=none;html=1;rounded=0;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;strokeWidth=10;fillColor=#f8cecc;strokeColor=#FF0000;" edge="1" parent="1" source="cvRyWwbCjwgbohCBk6vN-4" target="cvRyWwbCjwgbohCBk6vN-4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="4280" y="7230" as="sourcePoint" />
+            <mxPoint x="4330" y="7180" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
