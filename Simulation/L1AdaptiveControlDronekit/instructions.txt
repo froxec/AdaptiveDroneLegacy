@@ -1,0 +1,4 @@
+
+RUN:
+socat -d -d pty,rawer,echo=0 pty,rawer,echo=0
+to create virtual serial ports for GCS and control_algorithm communication.

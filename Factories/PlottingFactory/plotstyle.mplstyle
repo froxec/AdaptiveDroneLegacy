@@ -1,0 +1,27 @@
+axes.titlesize : 28
+axes.labelsize : 28
+axes.prop_cycle: cycler(color=['196E85', 'e89b26', '326024', 'ff0000', '808080'])
+lines.linewidth : 3
+lines.markersize : 10
+xtick.labelsize : 24
+ytick.labelsize : 24
+grid.color: E3E4E5
+grid.linewidth: 2
+grid.alpha: 1
+axes.grid: True
+axes.axisbelow: True
+text.color: 2c2d2e
+axes.labelcolor: 2c2d2e
+xtick.color: 75787B
+ytick.color: 75787B
+
+# figure properties
+figure.titlesize: 28
+figure.figsize: 16, 8
+
+#legend
+legend.fontsize: 16
+
+#text properties
+text.usetex: True
+font.family: "sans-serif

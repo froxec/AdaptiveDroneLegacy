@@ -1,0 +1,37 @@
+## uruchomenie QGroundControl
+folder praca magisterska -> QGroundControl
+
+##!UWAGA
+Aby sterowanie działało poprawnie należy ustawić drona w tryb GUIDED!
+
+#Uruchomienie symulacji SITL
+1. w folderze Documents/Studia/praca magisterska/ardupilot_repo/ardupilot uruchomić komendę
+PC:
+sim_vehicle.py -v ArduCopter -m "--out udp:localhost:8000 --out udp:localhost:8500 --streamrate=-1"
+RPI:
+sim_vehicle.py -v ArduCopter -m "--out udp:localhost:8000 localhost:8500 --streamrate=-1"
+skrypt automatycznie uruchomi server mavproxy z dodatkowymi parametrami zapisanymi w argumencie -m
+2. Można odbierać i wysyłać komendy za pomocą dronekit lub pymavlink
+
+LOKALIZACJE DRONA ZAPISYWANE SĄ W PLIKU Tools/autotest/locations.txt (w folderze repo ardupilot)
+ewentualnie: --custom-location=54.25084,18.66943,0,180
+
+
+
+
+
+
+
+
+
+
+
+
+## !LEGACY! Uruchomienie symulacji SITL !LEGACY
+1. Uruchom dronekit-sitl copter --home=54.25084,18.66943,0,180 (zmiana trybu lotu nie działa)
+2. Wprowadź komendę, aby przekierować komunikację na odpowiedni port: mavproxy.py --out 127.0.0.1:14550 --out 127.0.0.1:14551 --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out udp:localhost:8000
+ 
+3. Możesz odbierać i wysyłać komendy używając dronekit lub pymavlink
+
+!Komentarz: Symulacja SITL na dronekit-sitl copter-3.3 NIE DZIAŁA POPRAWNIE, ponieważ ta wersja coptera nie
+wspiera komendy SET_ATTITUDE_TARGET (vehicle.capabilities.set_attitude_target=False)
