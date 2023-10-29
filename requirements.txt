@@ -1,11 +1,14 @@
 absl-py @ file:///home/conda/feedstock_root/build_artifacts/absl-py_1658854572623/work
+aiofiles==23.2.1
 aiohttp @ file:///home/conda/feedstock_root/build_artifacts/aiohttp_1649013153846/work
 aiosignal @ file:///home/conda/feedstock_root/build_artifacts/aiosignal_1636093929600/work
+aiosqlite==0.19.0
 argon2-cffi @ file:///opt/conda/conda-bld/argon2-cffi_1645000214183/work
 argon2-cffi-bindings @ file:///tmp/build/80754af9/argon2-cffi-bindings_1644569684262/work
 asttokens @ file:///opt/conda/conda-bld/asttokens_1646925590279/work
 astunparse @ file:///home/conda/feedstock_root/build_artifacts/astunparse_1610696312422/work
 async-timeout @ file:///home/conda/feedstock_root/build_artifacts/async-timeout_1640026696943/work
+asyncua==1.0.3
 atari-py==0.2.9
 attrs @ file:///opt/conda/conda-bld/attrs_1642510447205/work
 backcall @ file:///home/ktietz/src/ci/backcall_1611930011877/work
@@ -38,7 +41,7 @@ dash-html-components==2.0.0
 dash-table==5.0.0
 dataclasses==0.6
 debugpy @ file:///tmp/build/80754af9/debugpy_1637091796427/work
-decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
+decorator==4.4.2
 defusedxml @ file:///tmp/build/80754af9/defusedxml_1615228127516/work
 docopt==0.6.2
 dronecan==1.0.22
@@ -55,6 +58,7 @@ Flask==2.3.2
 flatbuffers @ file:///home/conda/feedstock_root/build_artifacts/python-flatbuffers_1620718971772/work
 folium==0.14.0
 fonttools==4.34.4
+freeopcua==0.90.6
 frozenlist @ file:///home/conda/feedstock_root/build_artifacts/frozenlist_1648771696385/work
 future==0.18.3
 gast @ file:///home/conda/feedstock_root/build_artifacts/gast_1636964356021/work
@@ -69,6 +73,8 @@ h5py @ file:///home/conda/feedstock_root/build_artifacts/h5py_1618606422931/work
 HILO-MPC==1.0.2
 iconify==0.0.103
 idna==2.10
+imageio==2.31.3
+imageio-ffmpeg==0.4.9
 importlib-metadata @ file:///home/conda/feedstock_root/build_artifacts/importlib-metadata_1653252793585/work
 importlib-resources @ file:///tmp/build/80754af9/importlib_resources_1625135880749/work
 install==1.3.5
@@ -105,6 +111,7 @@ mccabe==0.7.0
 mistune==0.8.4
 mock==5.1.0
 monotonic==1.6
+moviepy==1.0.3
 mpmath==1.2.1
 multidict @ file:///home/conda/feedstock_root/build_artifacts/multidict_1648882420627/work
 munkres==1.1.4
@@ -116,11 +123,18 @@ notebook @ file:///tmp/abs_abf6xa6h6f/croots/recipe/notebook_1659083654985/work
 numexpr @ file:///opt/conda/conda-bld/numexpr_1656071944761/work
 numpy==1.24.4
 oauthlib @ file:///home/conda/feedstock_root/build_artifacts/oauthlib_1643507977997/work
+oclock==1.3.2
 olefile @ file:///home/conda/feedstock_root/build_artifacts/olefile_1602866521163/work
+opcua==0.98.13
+opcua-client==0.8.4
+opcua-modeler==0.5.14
+opcua-webclient==1.0.0
+opcua-widgets==0.6.1
 opencv-python==4.6.0.66
 opt-einsum @ file:///home/conda/feedstock_root/build_artifacts/opt_einsum_1617859230218/work
 osqp==0.6.2.post8
 packaging @ file:///tmp/build/80754af9/packaging_1637314298585/work
+paho-mqtt==1.6.1
 pandas==1.4.2
 pandocfilters @ file:///opt/conda/conda-bld/pandocfilters_1643405455980/work
 parso @ file:///opt/conda/conda-bld/parso_1641458642106/work
@@ -131,6 +145,7 @@ Pillow==9.2.0
 plotly==5.13.1
 ply==3.11
 prettytable==3.7.0
+proglog==0.1.10
 prometheus-client @ file:///opt/conda/conda-bld/prometheus_client_1643788673601/work
 prompt-toolkit @ file:///tmp/build/80754af9/prompt-toolkit_1633440160888/work
 protobuf==3.20.1
@@ -171,6 +186,7 @@ PyYAML @ file:///home/conda/feedstock_root/build_artifacts/pyyaml_1648757091578/
 pyzmq @ file:///opt/conda/conda-bld/pyzmq_1657724186960/work
 qdldl==0.1.5.post3
 qpsolvers==3.4.0
+-e git+https://github.com/qpSWIFT/qpSWIFT@24608b671d0e7ecde4d14ee8530d1656d6940fd1#egg=qpSWIFT&subdirectory=python
 qtconsole @ file:///opt/conda/conda-bld/qtconsole_1657544067832/work
 QtPy @ file:///opt/conda/conda-bld/qtpy_1649073884068/work
 qtsass==0.4.0
@@ -189,6 +205,7 @@ shiboken6==6.5.1.1
 sip @ file:///tmp/abs_44cd77b_pu/croots/recipe/sip_1659012365470/work
 six @ file:///tmp/build/80754af9/six_1644875935023/work
 slycot @ file:///home/conda/feedstock_root/build_artifacts/slycot_1671636378973/work
+sockets==1.0.0
 sortedcontainers==2.4.0
 soupsieve @ file:///tmp/build/80754af9/soupsieve_1636706018808/work
 stack-data @ file:///opt/conda/conda-bld/stack_data_1646927590127/work

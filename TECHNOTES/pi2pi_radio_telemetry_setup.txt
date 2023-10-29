@@ -1,1 +1,0 @@
-https://raspberrypi.stackexchange.com/questions/105223/how-can-rpi4b-use-uart-to-read-and-analyze-received-data-at-a-3dr-fpv-air-radio

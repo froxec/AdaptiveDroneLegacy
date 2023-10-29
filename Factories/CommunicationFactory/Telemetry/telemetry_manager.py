@@ -804,7 +804,7 @@ class MQTT_TelemetryManagerGCS(MQTT_TelemetryManager):
 
 if __name__ == "__main__":
     from dronekit import connect
-    host = "192.168.0.27"
+    host = "localhost"
     port = 8955
     print("Connecting to drone {}".format("udp:localhost:8000"))
     vehicle = connect("udp:localhost:8000", baud=921600, wait_ready=True, rate=100)

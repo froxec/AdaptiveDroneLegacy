@@ -44,7 +44,7 @@ position_controller = PositionController(mpc,
                                          trajectory)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--connect', default='192.168.0.12:8000')
+    parser.add_argument('--connect', default='localhost:8000')
     args = parser.parse_args()
     print('Connecting to vehicle on: %s' % args.connect)
     vehicle = connect(args.connect, baud=57600, wait_ready=True)

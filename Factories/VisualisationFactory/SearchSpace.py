@@ -35,7 +35,7 @@ class SearchSpace:
         in_region_chosen = np.random.choice(in_region_indices, size=int(len(in_region_indices)/4), replace=False)
         color_map = np.array(['#196E85']*len(space), dtype='object')
         color_map[chosen] = 'red'
-        color_map[in_region_chosen] = '#FFD700'
+        color_map[in_region_chosen] = '#00FF00'
         markers_map = np.array(['.']*len(space), dtype='object')
         markers_map[chosen] = 'X'
         markers_map[in_region_chosen] = '*'

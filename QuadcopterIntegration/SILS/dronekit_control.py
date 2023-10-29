@@ -6,7 +6,7 @@
 #
 # import argparse
 # parser = argparse.ArgumentParser()
-# parser.add_argument('--connect', default='192.168.0.12:8000')
+# parser.add_argument('--connect', default='localhost')
 # args = parser.parse_args()
 #
 # # Connect to the Vehicle

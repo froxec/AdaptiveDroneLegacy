@@ -17,7 +17,7 @@ def mpc_command_convert(delta_u, u_ss, u_min, u_max):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--connect', default='192.168.0.12:8000')
+parser.add_argument('--connect', default='localhost:8000')
 args = parser.parse_args()
 
 # Create MPC configurator

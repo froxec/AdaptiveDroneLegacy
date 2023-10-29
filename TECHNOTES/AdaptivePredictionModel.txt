@@ -1,4 +1,0 @@
-Adaptive predictive model should be the same as baseline controller uses.
-
-When there is missmatch e.g. linear and nonlinear model adpative controller which uses nonlinear model doesn't
-see any problem with behaviour when in reality control input from baseline is prompt to errors.

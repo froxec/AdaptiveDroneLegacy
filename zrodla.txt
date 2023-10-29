@@ -1,9 +1,0 @@
-https://www.youtube.com/watch?v=GK1t8YIvGM8 - MATLAB Drone Simulation and Control
-http://han.bg.pg.edu.pl/han/ebsco/search.ebscohost.com/login.aspx?authtype=ip,guest&custid=s7165615&direct=true&db=edb&AN=119836746&site=eds-live&scope=site&lang=pl - model matematyczny
-https://www.youtube.com/watch?v=7SVv07QXO5M - OPEN AI GYM, w innym filmie pokazuje parallelism
-https://www.youtube.com/watch?v=bD6V3rcr_54 - tworzenie własnego środowiska w OpenAI gym
-https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html#sitl-simulator-software-in-the-loop - SITL
-https://ai.stackexchange.com/questions/12255/can-q-learning-be-used-for-continuous-state-or-action-spaces - wyjaśnienie Q-learning dla ciągłej przestrzeni sterowań
-https://www.youtube.com/watch?v=LawaN3BdI00 - Actor Critic explanations
-https://www.sciencedirect.com/science/article/pii/S1110016822005245 - ciekawy artykuł z pomysłem na pomiar położenia wahadła
-https://www.ti.com/lit/ug/sbau380a/sbau380a.pdf - texas instruments - joystick z magnesem sferycznym

@@ -1,12 +1,12 @@
-PC_IP = "192.168.0.12"
+PC_IP = "localhost"
 PC_PORT = 5006
 
 ##RASPBERRY PI 4 B+
 
-RASP_IP = "192.168.0.23"
+RASP_IP = "localhost"
 
 #RASPBERRY PI ZERO
 
-#RASP_IP = "192.168.0.27"
+#RASP_IP = "localhost"
 
 RASP_PORT = 5005

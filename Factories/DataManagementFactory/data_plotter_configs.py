@@ -110,3 +110,18 @@ MPC_FIELD_TESTS_CONF = {
     'legend': [r'm_{load} = 0.0 kg', r'm_{load} = 0.2 kg', r'm_{load} = 0.4 kg']
 }
 
+
+ADAPTIVE_FIELD_TESTS_CONF = {
+    'base_path': '/home/pete/PycharmProjects/AdaptiveDrone/logs/field_tests_official/adaptive_tests/',
+    'file_names': ['adaptive_0g.csv', 'adaptive_200g.csv', 'adaptive_400g.csv'],
+    'cuts': [(0.19, 0.61), (0.33, 0.65), (0.072, 0.3)],
+    'height_shifts': [0.0, 0.0, 0.0],
+    'reference_points': [[-10, -10, 6],
+                        [-10, 10, 6],
+                        [10, 10, 6],
+                        [-10, 10, 6],
+                        [-10, -10, 6]],
+    'reference_shift': 220,
+    'legend': [r'm_{load} = 0.0 kg', r'm_{load} = 0.2 kg', r'm_{load} = 0.4 kg']
+}
+

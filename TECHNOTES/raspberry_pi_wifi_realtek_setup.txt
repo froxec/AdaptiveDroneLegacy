@@ -1,8 +1,0 @@
-Na najnowszych kernelach raspbian nie folder lib/modules/"kernel"/ nie zawiera folderu build
-w związku z tym nie można zbuilodwać sterowników do realteka (wifi).
-
-rozwiązanie:
-instalacja ubuntu serwer 22.04 z kernelem 5.15.0-1024-raspi
-
-instalacja sterowników z repozytorium:
-https://github.com/aircrack-ng/rtl8812au.git

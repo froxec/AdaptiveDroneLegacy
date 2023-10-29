@@ -1,5 +1,0 @@
-Najlepiej wykorzystywać rpi w nadrzędnej pętli sterowania i FC w podrzędnej - wymóg real time.
-Dronekit w pythonie pozwala na symulację drona na Companion Computer, czyli jednostki zainstalowanej na pokładzie drona, która komunikuje się z autopilotem poprzez łącze o niskim opóźnieniu i pozwala wykonywać zadania krytyczne z punktu widzenia potrzebnej mocy obliczeniowej. DroneKit instalowany na CC symuluje działanie drona i połączenia z FC.
-Policy - trajektoria optymalna (jeżeli dotyczy wszystkich stanów)
-
-https://youtu.be/lzjp66ktnb4?t=3802 - "Digital Control Systems 4/14" Converting a continous state-space model to dtm" DrEstes - próbkowanie 20-30 krotnie wyższe niż pasmo przenoszenia pozwala na to, żeby system sterowania dla modelu ciągłego działał poprawnie
